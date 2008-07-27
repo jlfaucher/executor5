@@ -1,0 +1,253 @@
+* text=auto !eol
+trunk/Makefile.am -text
+trunk/bootstrap -text
+trunk/lib/makedef.cmd -text
+trunk/platform/unix/makepkg.rex -text svn_eol_002dtype=native
+trunk/platform/unix/prepare.rex -text svn_eol_002dtype=native
+trunk/platform/unix/rexx.csh -text
+trunk/platform/unix/rexx.sh -text svn_eol_002dtype=native
+trunk/platform/windows/oodialog/3dcheck.bmp -text svneol=unset#image/bmp
+trunk/platform/windows/oodialog/appicon.res -text
+trunk/platform/windows/oodialog/build.rex -text svn_eol_002dtype=native
+trunk/platform/windows/oodialog/m_oodcls.rex -text svn_eol_002dtype=native
+trunk/platform/windows/oodialog/oodialog.ico -text
+trunk/platform/windows/orange-uninstall.bmp -text svneol=unset#image/bmp
+trunk/platform/windows/orange.bmp -text svneol=unset#image/bmp
+trunk/platform/windows/orxscrpt/rexx2inc.rex -text svn_eol_002dtype=native
+trunk/platform/windows/orxscrpt/security.rex -text svn_eol_002dtype=native
+trunk/platform/windows/orxw.ico -text
+trunk/platform/windows/rexx.ico -text
+trunk/platform/windows/uninstall.ico -text
+trunk/rexxapi/windows/rxapi.ico -text
+trunk/samples/Makefile.am -text
+trunk/samples/ccreply.rex svn_eol_002dtype=native
+trunk/samples/complex.rex svn_eol_002dtype=native
+trunk/samples/factor.rex svn_eol_002dtype=native
+trunk/samples/greply.rex svn_eol_002dtype=native
+trunk/samples/guess.rex svn_eol_002dtype=native
+trunk/samples/ktguard.rex svn_eol_002dtype=native
+trunk/samples/makestring.rex svn_eol_002dtype=native
+trunk/samples/month.rex svn_eol_002dtype=native
+trunk/samples/pipe.rex svn_eol_002dtype=native
+trunk/samples/qdate.rex svn_eol_002dtype=native
+trunk/samples/qtime.rex svn_eol_002dtype=native
+trunk/samples/readme -text
+trunk/samples/rexxcps.rex svn_eol_002dtype=native
+trunk/samples/rexxtry.rex svn_eol_002dtype=native
+trunk/samples/semcls.rex svn_eol_002dtype=native
+trunk/samples/stack.rex svn_eol_002dtype=native
+trunk/samples/unix/Makefile.am -text
+trunk/samples/unix/api/Makefile.am -text
+trunk/samples/unix/api/callrexx/Makefile.am -text
+trunk/samples/unix/api/callrexx/del_macro.rex -text svn_eol_002dtype=native
+trunk/samples/unix/api/callrexx/example.rex -text svn_eol_002dtype=native
+trunk/samples/unix/api/callrexx/load_macro.rex -text svn_eol_002dtype=native
+trunk/samples/unix/api/callrexx/macros.rex -text svn_eol_002dtype=native
+trunk/samples/unix/api/callrexx/startrx1.rex -text svn_eol_002dtype=native
+trunk/samples/unix/api/callrexx/startrx2.rex -text svn_eol_002dtype=native
+trunk/samples/unix/api/callrexx/startrx3.rex -text svn_eol_002dtype=native
+trunk/samples/unix/api/wpipe1/Makefile.am -text
+trunk/samples/unix/api/wpipe1/aspitest1.rex -text svn_eol_002dtype=native
+trunk/samples/unix/api/wpipe2/Makefile.am -text
+trunk/samples/unix/api/wpipe2/aspitest2.rex -text svn_eol_002dtype=native
+trunk/samples/unix/api/wpipe3/Makefile.am -text
+trunk/samples/unix/api/wpipe3/aspitest3.rex -text svn_eol_002dtype=native
+trunk/samples/unix/trexx -text
+trunk/samples/usecomp.rex svn_eol_002dtype=native
+trunk/samples/usepipe.rex svn_eol_002dtype=native
+trunk/samples/windows/api/callrxnt/callrxnt.ico -text
+trunk/samples/windows/api/callrxwn/callrxwn.ico -text
+trunk/samples/windows/api/rexxexit/rexxexit.ico -text
+trunk/samples/windows/api/wpipe/wpipe1/apitest1.rex -text svn_eol_002dtype=native
+trunk/samples/windows/api/wpipe/wpipe2/apitest2.rex -text svn_eol_002dtype=native
+trunk/samples/windows/api/wpipe/wpipe3/apitest3.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/adsi/adsi1.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/adsi/adsi2.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/adsi/adsi3.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/adsi/adsi4.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/adsi/adsi5.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/adsi/adsi6.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/adsi/adsi7.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/adsi/adsi8.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/apps/MSAccessDemo.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/apps/samp01.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/apps/samp02.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/apps/samp03.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/apps/samp04.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/apps/samp05.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/apps/samp06.mwp -text
+trunk/samples/windows/ole/apps/samp06.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/apps/samp07.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/apps/samp08.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/apps/samp09.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/apps/samp10.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/apps/samp11.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/apps/samp12.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/apps/samp13.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/apps/samp14.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/methinfo/main.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/oleinfo/icons.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/ole/oleinfo/oleinfo.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/wmi/accounts.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/wmi/osinfo.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/wmi/process.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/wmi/services.rex -text svn_eol_002dtype=native
+trunk/samples/windows/ole/wmi/sysinfo/sysinfo.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/GUI_Template.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/bmp/bigpiece.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/blank.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/blanks.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake1.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake10.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake11.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake2.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake3.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake4.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake5.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake6.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake7.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake8.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake9.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cakepiec.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/chihuahu.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/eleph2.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/fork.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/goat.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/handfkle.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/handfkri.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/handleft.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/handrite.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/horse.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/install.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/install2.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/kanguru.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/moose.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/movie.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/oodlist1.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/oodlist2.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/oodtree.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/phileat.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/phileat2.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/phileata.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/philouch.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/philphil.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/philslep.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/philtest.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/philwait.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/psdemolv.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/psdemotv.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/rhinoce.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2anim.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2arch.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2backg.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2input.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2jack.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2list.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2mov.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2philf.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2prog.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2prop.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2scroll.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2tree.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2walker.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/sealion.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/ticket.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/tiger.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/wlkfig1.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/wlkfig2.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/wlkfig3.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/wlkfig4.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/wlkfig5.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/wlkfig6.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/wlkfig7.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/wlkfig8.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/calculator.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/dlgAreaUDemo.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/editrex.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/ftyperex.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/oobandit.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/oobmpvu.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/oodlist.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/oodpbar.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/oodraw.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/oodtree.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/oograph.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/oopet.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/oopet1.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/oophil.ico -text
+trunk/samples/windows/oodialog/oophil.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/oostddlg.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/oostdfct.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/ooticket.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/oovideo.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/oowalk2.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/oowalker.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/propdemo.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/sample.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/tutorial/add.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/tutorial/drawing1.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/tutorial/drawing2.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/tutorial/em_categ.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/tutorial/emp_mend.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/tutorial/emp_menu.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/tutorial/employe1.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/tutorial/employe2.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/tutorial/employe3.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/tutorial/employe4.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/tutorial/employe5.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/tutorial/employe6.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/tutorial/employe7.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/tutorial/employe8.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/tutorial/employe9.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/tutorial/empvalid.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/tutorial/logo.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/tutorial/textscrl.rex -text svn_eol_002dtype=native
+trunk/samples/windows/oodialog/wav/byebye.wav -text
+trunk/samples/windows/oodialog/wav/cancel.wav -text
+trunk/samples/windows/oodialog/wav/clap.wav -text
+trunk/samples/windows/oodialog/wav/elephant.wav -text
+trunk/samples/windows/oodialog/wav/goat.wav -text
+trunk/samples/windows/oodialog/wav/gotcha.wav -text
+trunk/samples/windows/oodialog/wav/guess.wav -text
+trunk/samples/windows/oodialog/wav/help.wav -text
+trunk/samples/windows/oodialog/wav/horse.wav -text
+trunk/samples/windows/oodialog/wav/inst.wav -text
+trunk/samples/windows/oodialog/wav/jackpot.wav -text
+trunk/samples/windows/oodialog/wav/moose.wav -text
+trunk/samples/windows/oodialog/wav/nope.wav -text
+trunk/samples/windows/oodialog/wav/philcake.wav -text
+trunk/samples/windows/oodialog/wav/phileat.wav -text
+trunk/samples/windows/oodialog/wav/philhelp.wav -text
+trunk/samples/windows/oodialog/wav/philouch.wav -text
+trunk/samples/windows/oodialog/wav/philslep.wav -text
+trunk/samples/windows/oodialog/wav/philstop.wav -text
+trunk/samples/windows/oodialog/wav/philstrt.wav -text
+trunk/samples/windows/oodialog/wav/philwait.wav -text
+trunk/samples/windows/oodialog/wav/rhino.wav -text
+trunk/samples/windows/oodialog/wav/sample.wav -text
+trunk/samples/windows/oodialog/wav/sealion.wav -text
+trunk/samples/windows/oodialog/wav/start.wav -text
+trunk/samples/windows/oodialog/wav/take.wav -text
+trunk/samples/windows/oodialog/wav/tiger.wav -text
+trunk/samples/windows/oodialog/wav/whistle.wav -text
+trunk/samples/windows/oodialog/wav/yourgood.wav -text
+trunk/samples/windows/philfork.rex -text svn_eol_002dtype=native
+trunk/samples/windows/rexutils/deskicon.rex -text svn_eol_002dtype=native
+trunk/samples/windows/rexutils/desktop.rex -text svn_eol_002dtype=native
+trunk/samples/windows/rexutils/drives.rex -text svn_eol_002dtype=native
+trunk/samples/windows/rexutils/eventlog.rex -text svn_eol_002dtype=native
+trunk/samples/windows/rexutils/registry.rex -text svn_eol_002dtype=native
+trunk/samples/windows/rexutils/usewmgr.rex -text svn_eol_002dtype=native
+trunk/samples/windows/wsh/99bottles.htm -text
+trunk/samples/windows/wsh/blank.htm -text
+trunk/samples/windows/wsh/call_simpleobjectrexxcom.rex -text svn_eol_002dtype=native
+trunk/samples/windows/wsh/extraparms.wsc -text
+trunk/samples/windows/wsh/fullcomfeatures.wsc -text
+trunk/samples/windows/wsh/print.rex -text svn_eol_002dtype=native
+trunk/samples/windows/wsh/propertyorexx.wsc -text
+trunk/samples/windows/wsh/sandbox.htm -text
+trunk/samples/windows/wsh/simpleevent.htm -text
+trunk/samples/windows/wsh/simpleorexxcom.wsc -text
+trunk/samples/windows/wsh/tagproperties.htm -text
+trunk/touchheaders.sh svn_eol_002dtype=native

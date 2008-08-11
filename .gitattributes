@@ -50,6 +50,7 @@ platform/windows/orxw.ico -text svneol=unset#applicatiion/octet-stream
 platform/windows/path.nsh -text
 platform/windows/rexx.exe.manifest -text
 platform/windows/rexx.ico -text svneol=unset#applicatiion/octet-stream
+platform/windows/rxftp.mak -text
 platform/windows/uninstall.ico -text svneol=unset#applicatiion/octet-stream
 /readme.version -text
 rexutils/rxmath.exp -text

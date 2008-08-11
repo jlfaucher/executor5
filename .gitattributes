@@ -53,9 +53,6 @@ platform/windows/rexx.ico -text svneol=unset#applicatiion/octet-stream
 platform/windows/rxftp.mak -text
 platform/windows/uninstall.ico -text svneol=unset#applicatiion/octet-stream
 /readme.version -text
-rexutils/rxmath.exp -text
-rexutils/rxsock.exp -text
-rexutils/unix/rexxutil.exp -text
 rexxapi/client/ClientMessage.cpp -text
 rexxapi/client/ClientMessage.hpp -text
 rexxapi/client/LocalAPIContext.cpp -text

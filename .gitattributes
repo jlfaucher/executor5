@@ -13,6 +13,10 @@ common/platform/windows/SysSemaphore.cpp -text
 common/platform/windows/SysSemaphore.hpp -text
 common/platform/windows/SysThread.cpp -text
 common/platform/windows/SysThread.hpp -text
+extensions/platform/windows/oodialog/3dcheck.bmp -text svneol=unset#image/bmp
+extensions/platform/windows/oodialog/AppIcon.ico -text
+extensions/platform/windows/oodialog/AppIcon2.ico -text
+extensions/platform/windows/oodialog/oodialog.ico -text svneol=unset#applicatiion/octet-stream
 interpreter/classes/ContextClass.cpp -text
 interpreter/classes/ContextClass.hpp -text
 interpreter/platform/unix/SysActivity.cpp -text
@@ -38,10 +42,6 @@ platform/windows/WriteEnv.nsh -text
 platform/windows/admin.nsh -text
 platform/windows/isnt.nsh -text
 platform/windows/newpath.nsh -text
-platform/windows/oodialog/3dcheck.bmp -text svneol=unset#image/bmp
-platform/windows/oodialog/AppIcon.ico -text
-platform/windows/oodialog/AppIcon2.ico -text
-platform/windows/oodialog/oodialog.ico -text svneol=unset#applicatiion/octet-stream
 platform/windows/oorexx.nsi -text
 platform/windows/oorexx_ss.ini -text
 platform/windows/orange-uninstall.bmp -text svneol=unset#image/bmp

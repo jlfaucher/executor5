@@ -248,6 +248,7 @@ samples/windows/wsh/wcall_propertyorexx.wsf -text
 utilities/platform/windows/rexxhide/rexxhide.mak -text
 utilities/platform/windows/rexxpaws/rexxpaws.mak -text
 utilities/rexx/platform/windows/rexx.mak -text
+utilities/rexxc/platform/windows/rexxc.mak -text
 utilities/rxqueue/platform/unix/rxqueue.cpp -text
 utilities/rxqueue/platform/windows/rxqueue.cpp -text
 utilities/rxsubcom/platform/unix/rxsubcom.cpp -text

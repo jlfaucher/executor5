@@ -17,7 +17,6 @@ extensions/platform/windows/oodialog/3dcheck.bmp -text svneol=unset#image/bmp
 extensions/platform/windows/oodialog/AppIcon.ico -text
 extensions/platform/windows/oodialog/AppIcon2.ico -text
 extensions/platform/windows/oodialog/oodialog.ico -text svneol=unset#applicatiion/octet-stream
-extensions/rxregexp/rxregexp.exp -text
 interpreter/classes/ContextClass.cpp -text
 interpreter/classes/ContextClass.hpp -text
 interpreter/platform/unix/SysActivity.cpp -text

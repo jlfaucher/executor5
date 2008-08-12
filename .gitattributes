@@ -50,6 +50,7 @@ platform/windows/orxw.ico -text svneol=unset#applicatiion/octet-stream
 platform/windows/path.nsh -text
 platform/windows/rexx.exe.manifest -text
 platform/windows/rexx.ico -text svneol=unset#applicatiion/octet-stream
+platform/windows/rexximage.mak -text
 platform/windows/rxftp.mak -text
 platform/windows/uninstall.ico -text svneol=unset#applicatiion/octet-stream
 /readme.version -text
@@ -244,6 +245,9 @@ samples/windows/wsh/simpleorexxcom.wsc -text
 samples/windows/wsh/tagproperties.htm -text
 samples/windows/wsh/wcall_extraparms.wsf -text
 samples/windows/wsh/wcall_propertyorexx.wsf -text
+utilities/platform/windows/rexxhide/rexxhide.mak -text
+utilities/platform/windows/rexxpaws/rexxpaws.mak -text
+utilities/rexx/platform/windows/rexx.mak -text
 utilities/rxqueue/platform/unix/rxqueue.cpp -text
 utilities/rxqueue/platform/windows/rxqueue.cpp -text
 utilities/rxsubcom/platform/unix/rxsubcom.cpp -text

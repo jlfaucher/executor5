@@ -38,21 +38,21 @@ platform/unix/debian/rules -text
 platform/unix/oorexx-config.1 -text
 platform/unix/rexx.csh -text
 platform/unix/rxdelipc.1 -text
-platform/windows/WriteEnv.nsh -text
-platform/windows/admin.nsh -text
-platform/windows/isnt.nsh -text
-platform/windows/newpath.nsh -text
-platform/windows/oorexx.nsi -text
-platform/windows/oorexx_ss.ini -text
-platform/windows/orange-uninstall.bmp -text svneol=unset#image/bmp
-platform/windows/orange.bmp -text svneol=unset#image/bmp
+platform/windows/install/WriteEnv.nsh -text
+platform/windows/install/admin.nsh -text
+platform/windows/install/isnt.nsh -text
+platform/windows/install/newpath.nsh -text
+platform/windows/install/oorexx.nsi -text
+platform/windows/install/oorexx_ss.ini -text
+platform/windows/install/orange-uninstall.bmp -text svneol=unset#image/bmp
+platform/windows/install/orange.bmp -text svneol=unset#image/bmp
+platform/windows/install/path.nsh -text
+platform/windows/install/uninstall.ico -text svneol=unset#applicatiion/octet-stream
 platform/windows/orxw.ico -text svneol=unset#applicatiion/octet-stream
-platform/windows/path.nsh -text
 platform/windows/rexx.exe.manifest -text
 platform/windows/rexx.ico -text svneol=unset#applicatiion/octet-stream
 platform/windows/rexximage.mak -text
 platform/windows/rxftp.mak -text
-platform/windows/uninstall.ico -text svneol=unset#applicatiion/octet-stream
 /readme.version -text
 rexxapi/client/ClientMessage.cpp -text
 rexxapi/client/ClientMessage.hpp -text

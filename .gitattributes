@@ -49,8 +49,9 @@ platform/windows/install/orange.bmp -text svneol=unset#image/bmp
 platform/windows/install/path.nsh -text
 platform/windows/install/uninstall.ico -text svneol=unset#applicatiion/octet-stream
 platform/windows/orxw.ico -text svneol=unset#applicatiion/octet-stream
-platform/windows/rexx.exe.manifest -text
 platform/windows/rexx.ico -text svneol=unset#applicatiion/octet-stream
+platform/windows/rexx32.exe.manifest -text
+platform/windows/rexx64.exe.manifest -text
 platform/windows/rexximage.mak -text
 platform/windows/rxftp.mak -text
 /readme.version -text

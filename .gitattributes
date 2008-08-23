@@ -39,7 +39,6 @@ platform/unix/debian/prerm -text
 platform/unix/debian/rules -text
 platform/unix/oorexx-config.1 -text
 platform/unix/rexx.csh -text
-platform/unix/rxdelipc.1 -text
 platform/windows/install/WriteEnv.nsh -text
 platform/windows/install/admin.nsh -text
 platform/windows/install/isnt.nsh -text

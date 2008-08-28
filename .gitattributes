@@ -25,7 +25,11 @@ interpreter/classes/IdentityTableClass.cpp -text
 interpreter/classes/IdentityTableClass.hpp -text
 interpreter/classes/files.html -text
 interpreter/classes/support/files.html -text
+interpreter/concurrency/files.html -text
+interpreter/execution/files.html -text
+interpreter/expression/files.html -text
 interpreter/files.html -text
+interpreter/instructions/files.html -text
 interpreter/platform/unix/SysActivity.cpp -text
 interpreter/platform/unix/SysActivity.hpp -text
 interpreter/platform/unix/SysNativeMethods.h -text

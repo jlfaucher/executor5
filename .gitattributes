@@ -23,6 +23,8 @@ interpreter/classes/ContextClass.cpp -text
 interpreter/classes/ContextClass.hpp -text
 interpreter/classes/IdentityTableClass.cpp -text
 interpreter/classes/IdentityTableClass.hpp -text
+interpreter/classes/files.html -text
+interpreter/classes/support/files.html -text
 interpreter/files.html -text
 interpreter/platform/unix/SysActivity.cpp -text
 interpreter/platform/unix/SysActivity.hpp -text

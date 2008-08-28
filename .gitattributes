@@ -17,6 +17,7 @@ extensions/platform/windows/oodialog/3dcheck.bmp -text svneol=unset#image/bmp
 extensions/platform/windows/oodialog/AppIcon.ico -text
 extensions/platform/windows/oodialog/AppIcon2.ico -text
 extensions/platform/windows/oodialog/oodialog.ico -text svneol=unset#applicatiion/octet-stream
+interpreter/RexxClasses/files.html -text
 interpreter/api/files.html -text
 interpreter/behaviour/files.html -text
 interpreter/classes/ContextClass.cpp -text
@@ -33,11 +34,14 @@ interpreter/instructions/files.html -text
 interpreter/memory/files.html -text
 interpreter/messages/files.html -text
 interpreter/package/files.html -text
+interpreter/parser/files.html -text
 interpreter/platform/unix/SysActivity.cpp -text
 interpreter/platform/unix/SysActivity.hpp -text
 interpreter/platform/unix/SysNativeMethods.h -text
 interpreter/platform/windows/SysActivity.cpp -text
 interpreter/platform/windows/SysActivity.hpp -text
+interpreter/runtime/files.html -text
+interpreter/streamLibrary/files.html -text
 lib/makedef.cmd -text
 platform/unix/debian/changelog.in -text
 platform/unix/debian/compat -text

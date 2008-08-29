@@ -35,11 +35,14 @@ interpreter/memory/files.html -text
 interpreter/messages/files.html -text
 interpreter/package/files.html -text
 interpreter/parser/files.html -text
+interpreter/platform/files.html -text
 interpreter/platform/unix/SysActivity.cpp -text
 interpreter/platform/unix/SysActivity.hpp -text
 interpreter/platform/unix/SysNativeMethods.h -text
+interpreter/platform/unix/files.html -text
 interpreter/platform/windows/SysActivity.cpp -text
 interpreter/platform/windows/SysActivity.hpp -text
+interpreter/platform/windows/files.html -text
 interpreter/runtime/files.html -text
 interpreter/streamLibrary/files.html -text
 lib/makedef.cmd -text

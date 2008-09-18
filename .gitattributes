@@ -130,7 +130,7 @@ rexxapi/server/RegistrationManager.cpp -text
 rexxapi/server/RegistrationManager.hpp -text
 rexxapi/server/platform/Makefile.am -text
 rexxapi/server/platform/unix/APIService.cpp -text
-rexxapi/server/platform/unix/rxapid.sh.in -text
+rexxapi/server/platform/unix/rxapi.in -text
 rexxapi/server/platform/windows/APIService.cpp -text
 rexxapi/server/platform/windows/rxapi.ico -text
 rexxapi/server/platform/windows/rxapi.rc -text

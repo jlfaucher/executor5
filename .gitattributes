@@ -26,6 +26,8 @@ interpreter/classes/IdentityTableClass.cpp -text
 interpreter/classes/IdentityTableClass.hpp -text
 interpreter/classes/files.html -text
 interpreter/classes/support/files.html -text
+interpreter/concurrency/CommandHandler.cpp -text
+interpreter/concurrency/CommandHandler.hpp -text
 interpreter/concurrency/files.html -text
 interpreter/execution/files.html -text
 interpreter/expression/files.html -text

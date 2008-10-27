@@ -1,39 +1,13 @@
 * text=auto !eol
 /CHANGES -text
 /CONTRIBUTORS -text
-/INSTALL -text
 /Makefile.am -text
 /NOTICE -text
 extensions/platform/windows/oodialog/3dcheck.bmp -text svneol=unset#image/bmp
 extensions/platform/windows/oodialog/AppIcon.ico -text
 extensions/platform/windows/oodialog/AppIcon2.ico -text
 extensions/platform/windows/oodialog/oodialog.ico -text svneol=unset#applicatiion/octet-stream
-interpreter/RexxClasses/files.html -text
-interpreter/api/files.html -text
-interpreter/behaviour/files.html -text
-interpreter/classes/ContextClass.cpp -text
-interpreter/classes/ContextClass.hpp -text
-interpreter/classes/IdentityTableClass.cpp -text
-interpreter/classes/IdentityTableClass.hpp -text
-interpreter/classes/files.html -text
-interpreter/classes/support/files.html -text
-interpreter/concurrency/files.html -text
-interpreter/execution/files.html -text
-interpreter/expression/files.html -text
-interpreter/files.html -text
-interpreter/instructions/files.html -text
-interpreter/memory/files.html -text
-interpreter/messages/files.html -text
-interpreter/package/files.html -text
-interpreter/parser/files.html -text
-interpreter/platform/files.html -text
 interpreter/platform/unix/SysNativeMethods.h -text
-interpreter/platform/windows/SysActivity.cpp -text
-interpreter/platform/windows/SysActivity.hpp -text
-interpreter/platform/windows/files.html -text
-interpreter/runtime/files.html -text
-interpreter/streamLibrary/files.html -text
-lib/makedef.cmd -text
 platform/unix/debian/changelog.in -text
 platform/unix/debian/compat -text
 platform/unix/debian/control -text
@@ -45,40 +19,14 @@ platform/unix/debian/postrm -text
 platform/unix/debian/prerm -text
 platform/unix/debian/rules -text
 platform/unix/oorexx-config.1 -text
-platform/windows/install/WriteEnv.nsh -text
-platform/windows/install/admin.nsh -text
-platform/windows/install/isnt.nsh -text
-platform/windows/install/newpath.nsh -text
 platform/windows/install/oorexx.nsi -text
-platform/windows/install/oorexx_ss.ini -text
 platform/windows/install/orange-uninstall.bmp -text svneol=unset#image/bmp
 platform/windows/install/orange.bmp -text svneol=unset#image/bmp
-platform/windows/install/path.nsh -text
 platform/windows/install/uninstall.ico -text svneol=unset#applicatiion/octet-stream
 platform/windows/orxw.ico -text svneol=unset#applicatiion/octet-stream
 platform/windows/rexx.ico -text svneol=unset#applicatiion/octet-stream
-platform/windows/rexx32.exe.manifest -text
-platform/windows/rexx64.exe.manifest -text
-platform/windows/rexximage.mak -text
-platform/windows/rxftp.mak -text
 /readme.version -text
-rexxapi/client/RexxAPI.h -text
-rexxapi/server/QueueManager.cpp -text
-rexxapi/server/QueueManager.hpp -text
-rexxapi/server/RegistrationManager.cpp -text
-rexxapi/server/RegistrationManager.hpp -text
 rexxapi/server/platform/windows/rxapi.ico -text
-samples/Makefile.am -text
-samples/readme -text
-samples/unix/Makefile.am -text
-samples/unix/api/Makefile.am -text
-samples/unix/api/callrexx.README -text
-samples/unix/api/callrexx/Makefile.am -text
-samples/unix/api/wpipe.README -text
-samples/unix/api/wpipe1/Makefile.am -text
-samples/unix/api/wpipe2/Makefile.am -text
-samples/unix/api/wpipe3/Makefile.am -text
-samples/unix/trexx -text
 samples/windows/api/callrxnt/callrxnt.ico -text svneol=unset#applicatiion/octet-stream
 samples/windows/api/callrxwn/callrxwn.ico -text svneol=unset#applicatiion/octet-stream
 samples/windows/api/rexxexit/rexxexit.ico -text svneol=unset#applicatiion/octet-stream
@@ -184,26 +132,4 @@ samples/windows/oodialog/wav/take.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/tiger.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/whistle.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/yourgood.wav -text svneol=unset#audio/x-wav
-samples/windows/wsh/99bottles.htm -text
-samples/windows/wsh/blank.htm -text
-samples/windows/wsh/call_extraparms.wsf -text
-samples/windows/wsh/call_fullcomfeatures.wsf -text
-samples/windows/wsh/call_propertyorexx.wsf -text
-samples/windows/wsh/call_simpleobjectrexxcom.wsf -text
-samples/windows/wsh/extraparms.wsc -text
-samples/windows/wsh/fullcomfeatures.wsc -text
-samples/windows/wsh/propertyorexx.wsc -text
-samples/windows/wsh/sandbox.htm -text
-samples/windows/wsh/simpleevent.htm -text
-samples/windows/wsh/simpleorexx.wsf -text
-samples/windows/wsh/simpleorexxcom.wsc -text
-samples/windows/wsh/tagproperties.htm -text
-samples/windows/wsh/wcall_extraparms.wsf -text
-samples/windows/wsh/wcall_propertyorexx.wsf -text
-utilities/platform/windows/rexxhide/rexxhide.mak -text
-utilities/platform/windows/rexxpaws/rexxpaws.mak -text
 utilities/rexx/platform/windows/rexx.mak -text
-utilities/rexxc/platform/windows/rexxc.mak -text
-utilities/rxqueue/platform/windows/rxqueue.cpp -text
-utilities/rxsubcom/platform/windows/rxsubcom.cpp -text
-utilities/rxsubcom/platform/windows/rxsubcom.mak -text

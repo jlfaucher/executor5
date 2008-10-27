@@ -4,11 +4,6 @@
 /INSTALL -text
 /Makefile.am -text
 /NOTICE -text
-common/SynchronizedBlock.hpp -text
-common/platform/unix/SysSemaphore.cpp -text
-common/platform/unix/SysSemaphore.hpp -text
-common/platform/unix/SysThread.cpp -text
-common/platform/unix/SysThread.hpp -text
 common/platform/windows/SysSemaphore.cpp -text
 common/platform/windows/SysSemaphore.hpp -text
 common/platform/windows/SysThread.cpp -text
@@ -38,10 +33,7 @@ interpreter/messages/files.html -text
 interpreter/package/files.html -text
 interpreter/parser/files.html -text
 interpreter/platform/files.html -text
-interpreter/platform/unix/SysActivity.cpp -text
-interpreter/platform/unix/SysActivity.hpp -text
 interpreter/platform/unix/SysNativeMethods.h -text
-interpreter/platform/unix/files.html -text
 interpreter/platform/windows/SysActivity.cpp -text
 interpreter/platform/windows/SysActivity.hpp -text
 interpreter/platform/windows/files.html -text

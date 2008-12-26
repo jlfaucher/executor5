@@ -73,6 +73,7 @@ samples/windows/oodialog/bmp/philphil.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/philslep.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/philtest.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/philwait.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/bmp/psdemoTab.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/psdemolv.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/psdemotv.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/rhinoce.bmp -text svneol=unset#image/bmp

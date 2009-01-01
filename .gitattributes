@@ -8,17 +8,16 @@ extensions/platform/windows/oodialog/AppIcon.ico -text
 extensions/platform/windows/oodialog/AppIcon2.ico -text
 extensions/platform/windows/oodialog/oodialog.ico -text svneol=unset#applicatiion/octet-stream
 interpreter/platform/unix/SysNativeMethods.h -text
-platform/unix/debian/changelog.in -text
-platform/unix/debian/compat -text
-platform/unix/debian/control -text
-platform/unix/debian/copyright -text
-platform/unix/debian/dirs -text
-platform/unix/debian/docs -text
-platform/unix/debian/postinst.in -text
-platform/unix/debian/postrm -text
-platform/unix/debian/prerm -text
-platform/unix/debian/rules -text
-platform/unix/oorexx-config.1 -text
+platform/unix/debian/changelog.in -text svnc_snv_003aeol_002dstyle=native
+platform/unix/debian/compat -text svnc_snv_003aeol_002dstyle=native
+platform/unix/debian/control -text svnc_snv_003aeol_002dstyle=native
+platform/unix/debian/copyright -text svnc_snv_003aeol_002dstyle=native
+platform/unix/debian/dirs -text svnc_snv_003aeol_002dstyle=native
+platform/unix/debian/docs -text svnc_snv_003aeol_002dstyle=native
+platform/unix/debian/postinst.in -text svnc_snv_003aeol_002dstyle=native
+platform/unix/debian/postrm -text svnc_snv_003aeol_002dstyle=native
+platform/unix/debian/prerm -text svnc_snv_003aeol_002dstyle=native
+platform/unix/debian/rules -text svnc_snv_003aeol_002dstyle=native
 platform/windows/install/oorexx.nsi -text
 platform/windows/install/orange-uninstall.bmp -text svneol=unset#image/bmp
 platform/windows/install/orange.bmp -text svneol=unset#image/bmp

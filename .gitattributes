@@ -3,6 +3,7 @@
 /CONTRIBUTORS -text
 /Makefile.am -text
 /NOTICE -text
+/ReleaseNotes -text
 extensions/platform/windows/oodialog/3dcheck.bmp -text svneol=unset#image/bmp
 extensions/platform/windows/oodialog/AppIcon.ico -text
 extensions/platform/windows/oodialog/AppIcon2.ico -text

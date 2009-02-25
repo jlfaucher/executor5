@@ -3,7 +3,6 @@
 /CONTRIBUTORS -text
 /Makefile.am -text
 /NOTICE -text
-/ReleaseNotes -text
 extensions/platform/windows/oodialog/3dcheck.bmp -text svneol=unset#image/bmp
 extensions/platform/windows/oodialog/AppIcon.ico -text
 extensions/platform/windows/oodialog/AppIcon2.ico -text
@@ -25,7 +24,6 @@ platform/windows/install/orange.bmp -text svneol=unset#image/bmp
 platform/windows/install/uninstall.ico -text svneol=unset#applicatiion/octet-stream
 platform/windows/orxw.ico -text svneol=unset#applicatiion/octet-stream
 platform/windows/rexx.ico -text svneol=unset#applicatiion/octet-stream
-/readme.version -text
 rexxapi/server/platform/windows/rxapi.ico -text
 samples/windows/api/callrxnt/callrxnt.ico -text svneol=unset#applicatiion/octet-stream
 samples/windows/api/callrxwn/callrxwn.ico -text svneol=unset#applicatiion/octet-stream

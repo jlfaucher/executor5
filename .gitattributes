@@ -1,5 +1,4 @@
 * text=auto !eol
-/CHANGES -text
 /CONTRIBUTORS -text
 /Makefile.am -text
 /NOTICE -text

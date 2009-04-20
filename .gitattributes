@@ -105,6 +105,9 @@ samples/windows/oodialog/examples/resources/Disabled.bmp -text svneol=unset#imag
 samples/windows/oodialog/examples/resources/Hot.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/examples/resources/Normal.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/examples/resources/Pushed.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/ooRexxTry/Makefile.am -text
+samples/windows/oodialog/ooRexxTry/ooRexxTry.pdf -text
+samples/windows/oodialog/ooRexxTry/ooRexxTry.rex -text
 samples/windows/oodialog/oophil.ico -text svneol=unset#applicatiion/octet-stream
 samples/windows/oodialog/tutorial/add.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/tutorial/logo.bmp -text svneol=unset#image/bmp

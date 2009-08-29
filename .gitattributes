@@ -6,7 +6,7 @@ extensions/platform/windows/oodialog/3dcheck.bmp -text svneol=unset#image/bmp
 extensions/platform/windows/oodialog/AppIcon.ico -text
 extensions/platform/windows/oodialog/AppIcon2.ico -text
 extensions/platform/windows/oodialog/oodCommon.h -text
-extensions/platform/windows/oodialog/oodControls.cpp -text
+extensions/platform/windows/oodialog/oodControl.cpp -text
 extensions/platform/windows/oodialog/oodRoutines.cpp -text
 extensions/platform/windows/oodialog/oodialog.ico -text svneol=unset#applicatiion/octet-stream
 interpreter/platform/unix/SysNativeMethods.h -text

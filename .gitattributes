@@ -115,6 +115,7 @@ samples/windows/oodialog/ooRexxTry/doc/Makefile.am -text
 samples/windows/oodialog/ooRexxTry/doc/ooRexxTry.pdf -text
 samples/windows/oodialog/ooRexxTry/ooRexxTry.rex -text
 samples/windows/oodialog/oophil.ico -text svneol=unset#applicatiion/octet-stream
+samples/windows/oodialog/rc/oodtreeNewItem.rc -text
 samples/windows/oodialog/tutorial/add.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/tutorial/logo.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/wav/byebye.wav -text svneol=unset#audio/x-wav

@@ -7,6 +7,7 @@ extensions/platform/windows/oodialog/AppIcon.ico -text
 extensions/platform/windows/oodialog/AppIcon2.ico -text
 extensions/platform/windows/oodialog/oodCommon.hpp -text
 extensions/platform/windows/oodialog/oodControl.cpp -text
+extensions/platform/windows/oodialog/oodControl.hpp -text
 extensions/platform/windows/oodialog/oodData.hpp -text
 extensions/platform/windows/oodialog/oodRoutines.cpp -text
 extensions/platform/windows/oodialog/oodText.hpp -text

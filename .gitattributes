@@ -9,6 +9,8 @@ extensions/platform/windows/oodialog/oodCommon.hpp -text
 extensions/platform/windows/oodialog/oodControl.cpp -text
 extensions/platform/windows/oodialog/oodControl.hpp -text
 extensions/platform/windows/oodialog/oodData.hpp -text
+extensions/platform/windows/oodialog/oodDeviceGraphics.hpp -text
+extensions/platform/windows/oodialog/oodMessaging.hpp -text
 extensions/platform/windows/oodialog/oodRoutines.cpp -text
 extensions/platform/windows/oodialog/oodText.hpp -text
 extensions/platform/windows/oodialog/oodUtilities.cpp -text

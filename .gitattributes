@@ -16,6 +16,7 @@ extensions/platform/windows/oodialog/oodRoutines.cpp -text
 extensions/platform/windows/oodialog/oodText.hpp -text
 extensions/platform/windows/oodialog/oodUtilities.cpp -text
 extensions/platform/windows/oodialog/oodialog.ico -text svneol=unset#applicatiion/octet-stream
+interpreter/RexxClasses/Serializable.orx -text
 interpreter/platform/unix/SysNativeMethods.h -text
 platform/unix/debian/changelog.in -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/compat -text svnc_snv_003aeol_002dstyle=native

@@ -109,6 +109,11 @@ samples/windows/oodialog/bmp/wlkfig5.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/wlkfig6.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/wlkfig7.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/wlkfig8.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/controls/Makefile.am -text
+samples/windows/oodialog/controls/ReadMe.txt -text
+samples/windows/oodialog/controls/upDown.h -text
+samples/windows/oodialog/controls/upDown.rc -text
+samples/windows/oodialog/controls/upDown.rex -text
 samples/windows/oodialog/examples/resources/Default.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/examples/resources/Disabled.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/examples/resources/Hot.bmp -text svneol=unset#image/bmp
@@ -120,6 +125,9 @@ samples/windows/oodialog/ooRexxTry/doc/ooRexxTry.pdf -text
 samples/windows/oodialog/ooRexxTry/ooRexxTry.rex -text
 samples/windows/oodialog/oophil.ico -text svneol=unset#applicatiion/octet-stream
 samples/windows/oodialog/rc/oodtreeNewItem.rc -text
+samples/windows/oodialog/simple/Makefile.am -text
+samples/windows/oodialog/simple/ReadMe.txt -text
+samples/windows/oodialog/simple/SimpleUpDown.rex -text
 samples/windows/oodialog/tutorial/add.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/tutorial/logo.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/wav/byebye.wav -text svneol=unset#audio/x-wav

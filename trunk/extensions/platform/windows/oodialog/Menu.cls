@@ -339,7 +339,7 @@
   return status
 
 ::method disable
-  use strict arg itemID, byPosition = .false
+  use strict arg itemIDs, byPosition = .false
   return self~enable(itemIDs, byPosition, .false)
 
 ::method gray

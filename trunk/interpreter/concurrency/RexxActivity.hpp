@@ -64,6 +64,7 @@ class InterpreterInstance;
 class ActivityDispatcher;
 class CallbackDispatcher;
 class CommandHandler;
+class TrappingDispatcher;
 
                                        /* interface values for the          */
                                        /* activity_queue method             */
@@ -267,6 +268,7 @@ typedef enum
    void exitCurrentThread();
    void run(ActivityDispatcher &target);
    void run(CallbackDispatcher &target);
+   void run(TrappingDispatcher &target);
 
    inline RexxActivation *getCurrentRexxFrame() {return currentRexxFrame;}
    inline RexxActivationBase *getTopStackFrame() { return topStackFrame; }

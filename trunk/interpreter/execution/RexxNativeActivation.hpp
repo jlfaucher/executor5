@@ -48,6 +48,7 @@
 class RexxNativeCode;
 class ActivityDispatcher;
 class CallbackDispatcher;
+class TrappingDispatcher;
 class RexxNativeMethod;
 class RexxNativeRoutine;
 class RegisteredRoutine;
@@ -74,6 +75,7 @@ class RexxNativeActivation : public RexxActivationBase
       RexxString  *_msgname, RexxObject **_arglist, size_t _argcount, ProtectedObject &resultObj);
   void run(ActivityDispatcher &dispatcher);
   void run(CallbackDispatcher &dispatcher);
+  void run(TrappingDispatcher &dispatcher);
   RexxVariableDictionary *methodVariables();
   bool   isInteger(RexxObject *);
   wholenumber_t signedIntegerValue(RexxObject *o, size_t position, wholenumber_t maxValue, wholenumber_t minValue);
@@ -187,6 +189,7 @@ protected:
         FUNCTION_ACTIVATION,           // function call activation
         DISPATCHER_ACTIVATION,         // running a top-level dispatcher
         CALLBACK_ACTIVATION,           // running a callback, such as an exit
+        TRAPPING_ACTIVATION,           // running a protected method call, such as an uninit
     } ActivationType;
 
     RexxActivity   *activity;            /* current activity                  */

@@ -68,6 +68,7 @@
 #include "Interpreter.hpp"
 #include "PackageManager.hpp"
 #include "SysFileSystem.hpp"
+#include "UninitDispatcher.hpp"
 
 // restore a class from its
 // associated primitive behaviour
@@ -511,6 +512,9 @@ void  RexxMemory::runUninits()
     processingUninits = true;
     pendingUninits = 0;
 
+    // get the current activity for running the uninits
+    RexxActivity *activity = ActivityManager::currentActivity;
+
     /* uninitTabe exists, run UNINIT     */
     for (iterTable = uninitTable->first();
         (zombieObj = uninitTable->index(iterTable)) != OREF_NULL;)
@@ -524,12 +528,11 @@ void  RexxMemory::runUninits()
         {
             /* make sure we don't recurse        */
             uninitTable->put(TheFalseObject, zombieObj);
-            try
             {
-                zombieObj->uninit();           /* run the UNINIT method           */
+                // run this method with appropriate error trapping
+                UninitDispatcher dispatcher(zombieObj);
+                activity->run(dispatcher);
             }
-            catch (RexxActivation *) { }
-            catch (ActivityException) { }
                                            /* remove zombie from uninit table   */
             uninitTable->remove(zombieObj);
 

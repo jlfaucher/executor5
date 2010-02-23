@@ -382,6 +382,109 @@ static   P_GDFSE pGetDiskFreeSpaceEx = NULL;
 /****************  REXXUTIL Supporting Functions  ********************/
 /*********************************************************************/
 
+/**
+ * Tests if the the current operating system version meets the specified
+ * requirements. Really a front end to VerifyVersionInfo().  See MSDN docs for
+ * type and condition flags.
+ *
+ * @param major       OS major number.
+ * @param minor       OS minor number.
+ * @param sp          Service pack level.
+ * @param type        Further refines the test.  See MSDN for all the flags, but
+ *                    for example there is VER_NT_WORKSTATION to differentiate
+ *                    between NT desktop and NT server.
+ * @param condition   The test condition.  Typical flags would be VER_EQUAL or
+ *                    VER_GREATER_EQUAL.
+ *
+ * @return True if the condition is met by the current operating system, or
+ *         false if not.
+ */
+static bool isWindowsVersion(DWORD major, DWORD minor, unsigned int sp, unsigned int type, unsigned int condition)
+{
+    OSVERSIONINFOEX ver;
+    DWORDLONG       mask = 0;
+    DWORD           testForMask = VER_MAJORVERSION | VER_MINORVERSION;
+
+    ZeroMemory(&ver, sizeof(OSVERSIONINFOEX));
+
+    ver.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+    ver.dwMajorVersion = major;
+    ver.dwMinorVersion = minor;
+
+    VER_SET_CONDITION(mask, VER_MAJORVERSION, condition);
+    VER_SET_CONDITION(mask, VER_MINORVERSION, condition);
+
+    if ( condition != VER_EQUAL )
+    {
+        ver.wServicePackMajor = sp;
+        testForMask |= VER_SERVICEPACKMAJOR;
+        VER_SET_CONDITION(mask, VER_SERVICEPACKMAJOR, condition);
+    }
+
+    if ( type != 0 )
+    {
+        ver.wProductType = type;
+        testForMask |= VER_PRODUCT_TYPE;
+        VER_SET_CONDITION(mask, VER_PRODUCT_TYPE, condition);
+    }
+
+    if ( VerifyVersionInfo(&ver, testForMask, mask) )
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+/********************************************************************
+* Function:  string2size_t(string, number)                          *
+*                                                                   *
+* Purpose:   Validates and converts an ASCII-Z string from string   *
+*            form to an unsigned long.  Returns false if the number *
+*            is not valid, true if the number was successfully      *
+*            converted.                                             *
+*                                                                   *
+* RC:        true - Good number converted                           *
+*            false - Invalid number supplied.                       *
+*********************************************************************/
+bool string2size_t(
+    const char *string,                  /* string to convert          */
+    size_t *number)                      /* converted number           */
+{
+    size_t   accumulator;                /* converted number           */
+    size_t   length;                     /* length of number           */
+
+    length = strlen(string);             /* get length of string       */
+    if (length == 0 ||                   /* if null string             */
+        length > MAX_DIGITS + 1)         /* or too long                */
+    {
+        return false;                    /* not valid                  */
+    }
+
+    accumulator = 0;                     /* start with zero            */
+
+    while (length)                       /* while more digits          */
+    {
+        if (!isdigit(*string))             /* not a digit?               */
+        {
+            return false;                    /* tell caller                */
+        }
+                                             /* add to accumulator         */
+        accumulator = accumulator * 10 + (*string - '0');
+        length--;                          /* reduce length              */
+        string++;                          /* step pointer               */
+    }
+    *number = accumulator;               /* return the value           */
+    return true;                         /* good number                */
+}
+
+inline bool isAtLeastVista(void)
+{
+    return isWindowsVersion(6, 0, 0, 0, VER_GREATER_EQUAL);
+}
+
 /*********************************************************************/
 /*                                                                   */
 /*   Subroutine Name:   memupper                                     */
@@ -2910,17 +3013,17 @@ size_t RexxEntry SysSearchPath(const char *name, size_t numargs, CONSTRXSTRING a
     if (szEnvStr != NULL)
     {
         DWORD charCount = GetEnvironmentVariable(args[0].strptr, szEnvStr, MAX_ENVVAR);
-        if (charCount == 0) 
+        if (charCount == 0)
         {
             *szEnvStr = '\0';
         }
         else if (charCount > MAX_ENVVAR)
         {
-            szEnvStr = (LPTSTR) realloc(szEnvStr, sizeof(char) * charCount);   
-            if (szEnvStr != NULL) 
+            szEnvStr = (LPTSTR) realloc(szEnvStr, sizeof(char) * charCount);
+            if (szEnvStr != NULL)
             {
                 DWORD charCount2 = GetEnvironmentVariable(args[0].strptr, szEnvStr, charCount);
-                if (charCount2 == 0 || charCount2 > charCount) 
+                if (charCount2 == 0 || charCount2 > charCount)
                 {
                     *szEnvStr = '\0';
                 }
@@ -2936,7 +3039,7 @@ size_t RexxEntry SysSearchPath(const char *name, size_t numargs, CONSTRXSTRING a
     {
         /* search current directory   */
         DWORD charCount = GetCurrentDirectory(_MAX_PATH, szCurDir);
-        if (charCount == 0 || charCount > _MAX_PATH) 
+        if (charCount == 0 || charCount > _MAX_PATH)
         {
             szCurDir[0] = '\0';
         }
@@ -2944,7 +3047,7 @@ size_t RexxEntry SysSearchPath(const char *name, size_t numargs, CONSTRXSTRING a
         if (szEnvStr != NULL)
         {
             lpPath = (LPTSTR) malloc(sizeof(char) * (strlen(szCurDir) + 1 + strlen(szEnvStr) + 1));
-            if (lpPath != NULL) 
+            if (lpPath != NULL)
             {
                 strcpy(lpPath, szCurDir);
                 strcat(lpPath, ";");
@@ -5334,7 +5437,7 @@ size_t RexxEntry SysStemSort(const char *name, size_t numargs, CONSTRXSTRING arg
     // first element to sort
     if ( (numargs >= 4) && RXVALIDSTRING(args[3]) )
     {
-        if ( sscanf(args[3].strptr, "%Iu", &first) != 1 )
+        if (!string2size_t(args[3].strptr, &first))
         {
             return INVALID_ROUTINE;
         }
@@ -5346,7 +5449,7 @@ size_t RexxEntry SysStemSort(const char *name, size_t numargs, CONSTRXSTRING arg
     // last element to sort
     if ( (numargs >= 5) && RXVALIDSTRING(args[4]) )
     {
-        if ( sscanf(args[4].strptr, "%Iu", &last) != 1 )
+        if (!string2size_t(args[4].strptr, &last))
             return INVALID_ROUTINE;
         if ( last < first )
             return INVALID_ROUTINE;
@@ -5354,7 +5457,7 @@ size_t RexxEntry SysStemSort(const char *name, size_t numargs, CONSTRXSTRING arg
     // first column to sort
     if ( (numargs >= 6) && RXVALIDSTRING(args[5]) )
     {
-        if ( sscanf(args[5].strptr, "%Iu", &firstCol) != 1 )
+        if (!string2size_t(args[5].strptr, &firstCol))
         {
             return INVALID_ROUTINE;
         }
@@ -5363,7 +5466,7 @@ size_t RexxEntry SysStemSort(const char *name, size_t numargs, CONSTRXSTRING arg
     // last column to sort
     if ( (numargs == 7) && RXVALIDSTRING(args[6]) )
     {
-        if ( sscanf(args[6].strptr, "%Iu", &lastCol) != 1 )
+        if (!string2size_t(args[6].strptr, &lastCol))
         {
             return INVALID_ROUTINE;
         }

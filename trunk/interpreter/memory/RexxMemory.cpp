@@ -69,6 +69,7 @@
 #include "PackageManager.hpp"
 #include "SysFileSystem.hpp"
 #include "UninitDispatcher.hpp"
+#include "GlobalProtectedObject.hpp"
 
 // restore a class from its
 // associated primitive behaviour
@@ -921,6 +922,14 @@ void RexxMemory::live(size_t liveMark)
   SystemInterpreter::live(liveMark);
   ActivityManager::live(liveMark);
   PackageManager::live(liveMark);
+  // mark any protected objects we've been watching over
+
+  GlobalProtectedObject *p = protectedObjects;
+  while (p != NULL)
+  {
+      memory_mark(p->protectedObject);
+      p = p->next;
+  }
 }
 
 void RexxMemory::liveGeneral(int reason)

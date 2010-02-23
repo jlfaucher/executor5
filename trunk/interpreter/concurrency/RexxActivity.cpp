@@ -1448,6 +1448,15 @@ bool RexxActivity::popStackFrame(bool  reply)
     {
         // update the frame information.
         updateFrameMarkers();
+
+        // if this is not a reply operation, mark this as not having references.
+        if (!reply)
+        {
+            // the popped stack frame might still be in the save stack, but can
+            // also contain pointers back to locations on the C stack.  Make sure
+            // that this never tries to mark anything in case of a garbage collection
+            poppedStackFrame->setHasNoReferences();
+        }
         return true;
     }
 }
@@ -1457,6 +1466,8 @@ void RexxActivity::cleanupStackFrame(RexxActivationBase *poppedStackFrame)
 {
     // make sure this frame is terminated first
     poppedStackFrame->termination();
+    // ensure this never marks anything
+    poppedStackFrame->setHasNoReferences();
 }
 
 

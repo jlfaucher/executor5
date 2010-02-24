@@ -745,9 +745,11 @@ size_t RexxEntry MemMenu(const char *f, size_t argc, CONSTRXSTRING *argv, const 
         * almost all cases, the bytes used will be much smaller, so there is
         * quite a bit of wiggle room here.
         *
-        * A string of length 48, will use up 96 bytes.
+        * A string of length 64, will use up 128 bytes, but a separator will
+        * only use 8 bytes.  So, two long menu items and a separator will still
+        * have quite a few bytes to spare.
         */
-       if (strlen(argv[3].strptr) >= 48)
+       if (strlen(argv[3].strptr) >= 64)
        {
            *p++ = 0;
            *p++ = 0;

@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2006 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2009 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                          */
+/* http://www.oorexx.org/license.html                                         */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -36,7 +36,7 @@
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 /****************************************************************************/
-/* Name: OOGRAPH.REX                                                       */
+/* Name: OOGRAPH.REX                                                        */
 /* Type: Object REXX Script                                                 */
 /*                                                                          */
 /* Description: Graphical demonstration                                     */
@@ -55,24 +55,24 @@
    exit
  end
 
- d~createCenter(770 / d~FactorX, 440 / d~FactorY, ,
-                "Graphical Demonstration of Open Object Rexx and OODialog Capabilities")
+ title = "Graphical Demonstration of Open Object Rexx and ooDialog Capabilities"
+ d~createCenter(trunc(770 / d~FactorX), trunc(470 / d~FactorY), title)
  d~execute("SHOWTOP")
  d~deinstall
  return
 
 /*-------------------------------- requires --------------------------*/
 
-::requires "OODIALOG.CLS"
+::requires "ooDialog.cls"
 
 /*-------------------------------- dialog class ----------------------*/
 
-::class GraphDialog subclass UserDialog
+::class 'GraphDialog' subclass UserDialog
 
-::method DefineDialog
+::method defineDialog
    expose but2size
-   but2pos  = 160 / self~FactorY
-   but2size = 300 / self~FactorY
+   but2pos  = trunc(170 / self~factorY)
+   but2size = trunc(300 / self~factorY)
 
    -- The two bitmap buttons are created larger than they need to be.  In particular,
    -- The 102 button height is much larger, it covers most of the lower part of the

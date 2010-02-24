@@ -214,8 +214,8 @@
    if Arg(6,"o") = 0 then datas.101 = predev; else datas.101 = ""
    self~init:super(datas.)
    s = self~getTextSizeDlg(message)
-   self~sx = s.width
-   self~sy = s.height
+   self~sx = s~width
+   self~sy = s~height
    self~message = message
 
 ::method DefineDialog
@@ -306,7 +306,7 @@
    do while var("entries."count+1) = 1
       count = count + 1
       s = self~getTextSizeDlg(entries.count)
-      if s.width > ll then ll = s~width
+      if s~width > ll then ll = s~width
    end
 
    if max = 0 then max = count

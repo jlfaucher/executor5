@@ -8053,7 +8053,7 @@ RexxMethod0(logical_t, dlgutil_init_cls)
         return false;
     }
 
-    if ( ! initCommonControls(context, ICC_WIN95_CLASSES | ICC_STANDARD_CLASSES, "ooDialog", COMCTL_ERR_TITLE) )
+    if ( ! initCommonControls(context, ICC_WIN95_CLASSES, "ooDialog", COMCTL_ERR_TITLE) )
     {
         ComCtl32Version = 0;
         return false;

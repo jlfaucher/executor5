@@ -2610,8 +2610,11 @@ RexxDirectory *RexxNativeActivation::getAllContextVariables()
  */
 RexxObject *RexxNativeActivation::getObjectVariable(const char *name)
 {
+    RexxString *target = new_string(name);
+    ProtectedObject p1(target);
     // get the REXX activation for the target context
-    RexxVariableBase *retriever = RexxVariableDictionary::getVariableRetriever(new_string(name));
+    RexxVariableBase *retriever = RexxVariableDictionary::getVariableRetriever(target);
+    ProtectedObject p2(retriever);
     // if this didn't parse, it's an illegal name
     // we also don't allow compound variables here because the source for
     // resolving the tail pieces is not defined.
@@ -2631,8 +2634,11 @@ RexxObject *RexxNativeActivation::getObjectVariable(const char *name)
  */
 void RexxNativeActivation::setObjectVariable(const char *name, RexxObject *value)
 {
+    RexxString *target = new_string(name);
+    ProtectedObject p1(target);
     // get the REXX activation for the target context
-    RexxVariableBase *retriever = RexxVariableDictionary::getVariableRetriever(new_string(name));
+    RexxVariableBase *retriever = RexxVariableDictionary::getVariableRetriever(target);
+    ProtectedObject p2(retriever);
     // if this didn't parse, it's an illegal name
     // we also don't allow compound variables here because the source for
     // resolving the tail pieces is not defined.
@@ -2651,8 +2657,11 @@ void RexxNativeActivation::setObjectVariable(const char *name, RexxObject *value
  */
 void RexxNativeActivation::dropObjectVariable(const char *name)
 {
+    RexxString *target = new_string(name);
+    ProtectedObject p1(target);
     // get the REXX activation for the target context
-    RexxVariableBase *retriever = RexxVariableDictionary::getVariableRetriever(new_string(name));
+    RexxVariableBase *retriever = RexxVariableDictionary::getVariableRetriever(target);
+    ProtectedObject p2(retriever);
     // if this didn't parse, it's an illegal name
     // we also don't allow compound variables here because the source for
     // resolving the tail pieces is not defined.

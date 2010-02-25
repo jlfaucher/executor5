@@ -1,59 +1,14 @@
                              Open Object Rexx
 
                               Release Notes
-                              Version 4.0.0
+                              Version 4.0.1
 
-  Copyright 2005, 2009 Rexx Language Association.  All rights reserved.
-                            July 13, 2009
+  Copyright 2005-2010 Rexx Language Association.  All rights reserved.
+                               March 2010
 
 File List
 =========
 
-0readme.pdf
-Installation help and other relevant notes, prior to installation,
-
-oorexx-4.0.0-4912-rc2.i386.deb
-Installation package for any recent Debian-based distribution of 32-bit
-Linux that supports the Debian package manager
-
-ooRexx-4.0.0-4912-rc2.i386.exe
-Installation package for any supported Windows 32-bit OS
-
-ooRexx-4.0.0-4912-rc2.i386.rpm
-Installation package for any recent distribution of 32-bit Linux that
-supports rpm
-
-ooRexx-4.0.0-4912-rc2.i386-debuginfo.rpm
-Matching debuginfo package for ooRexx-4.0.0-4912-rc2.i386.rpm
-
-ooRexx-4.0.0-4912-rc2.i386.suse102.rpm
-Installation package for 32-bit SuSE 10.x or earlier Linux that supports
-rpm.
-
-ooRexx-4.0.0-4912-rc2.source.tar.gz
-Source code tree with unix line ending files
-
-ooRexx-4.0.0-4912-rc2.source.zip
-Source code tree with Windows line ending files and PDF doc files required
-to build Windows installation package
-
-ooRexx-4.0.0-4912-rc2.x86_64.deb
-Installation package for any recent Debian-based distribution of 64-bit
-Linux that supports the Debian package manager
-
-ooRexx-4.0.0-4912-rc2.x86_64.exe
-Installation package for any supported Windows 64-bit OS
-
-ooRexx-4.0.0-4912-rc2.x86_64.rpm
-Installation package for any recent distribution of 64-bit Linux that
-supports rpm
-
-ooRexx-4.0.0-4912-rc2.x86_64-debuginfo.rpm
-Matching debuginfo package for ooRexx-4.0.0-4912-rc2.x86_64.rpm
-
-ooRexx-4.0.0-4912-rc2.x86_64.suse102.rpm
-Installation package for 64-bit SuSE 10.x or earlier Linux that supports
-rpm.
 
 
 Installation and Configuration
@@ -102,8 +57,8 @@ Depending on resources, the ooRexx team may be able to build a specific
 package for that distribution.
 
 
-Changes in ooRexx 4.0.0
-=======================
+Changes in ooRexx 4.0.0 and 4.0.1
+=================================
 
 New platforms:
 --------------

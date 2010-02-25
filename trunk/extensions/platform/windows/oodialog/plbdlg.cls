@@ -944,8 +944,7 @@
    /* Adds 'data' (a string) to the list box 'id' */
 
 ::method AddListEntry unguarded
-   use arg id, data
-   if Arg(2,'o') = 1 | data = "DATA" then return -1
+   use strict arg id, data
    return self~BoxMessage(id, 0x00000180, 0, "T" || data) + 1
 
    /* Inserts 'data' (a string) into the list box 'id'. The new item */

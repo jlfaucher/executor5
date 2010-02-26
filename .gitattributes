@@ -110,6 +110,7 @@ trunk/samples/windows/oodialog/ooRexxTry/doc/Makefile.am -text
 trunk/samples/windows/oodialog/ooRexxTry/doc/ooRexxTry.pdf -text
 trunk/samples/windows/oodialog/ooRexxTry/ooRexxTry.rex -text
 trunk/samples/windows/oodialog/oophil.ico -text svneol=unset#applicatiion/octet-stream
+trunk/samples/windows/oodialog/rc/oodtreeNewItem.rc -text
 trunk/samples/windows/oodialog/tutorial/add.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/tutorial/logo.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/wav/byebye.wav -text svneol=unset#audio/x-wav

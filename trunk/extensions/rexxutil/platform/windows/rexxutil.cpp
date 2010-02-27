@@ -3414,12 +3414,12 @@ ULONG  show_flags[] =                  /* show window styles        */
 
   BUILDRXSTRING(retstr, NO_UTIL_ERROR);/* pass back result           */
 
-  // Should be 1 or 2 args.
-  if ( numargs < 1 || numargs > 2 || !RXVALIDSTRING(args[0]) ||
-       (numargs == 2 && !RXVALIDSTRING(args[1])) ||args[0].strlength > MAX_PATH )
-  {
-        return INVALID_ROUTINE;            /* Invalid call to routine    */
-  }
+    // Should be 1 or 2 args.
+    if ( numargs < 1 || numargs > 2 || !RXVALIDSTRING(args[0]) ||
+         (numargs == 2 && !RXVALIDSTRING(args[1])) || args[0].strlength > (32 * 1024) )
+    {
+        return INVALID_ROUTINE;
+    }
 
   CmdShow=0;                           /* initialize show flags      */
                                        /* validate arguments         */

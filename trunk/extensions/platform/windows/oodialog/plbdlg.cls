@@ -446,7 +446,8 @@
    /* push button has been pushed or ESC or Enter has been presed */
 
 ::method Run unguarded protected
-   use strict arg sleeptime = 0
+   use strict arg sleeptime = 1
+   if \ sleepTime~datatype('W') then sleepTime = 1
 
    do while self~finished = 0
       self~HandleMessages(sleeptime)
@@ -458,10 +459,9 @@
 
 ::method Execute unguarded
    expose DlgData.
-   use arg sh, icon = 0, sleeptime, nomodal
+   use strict arg sh = "NORMAL", icon = 0, sleeptime = 1, nomodal = 0
    icon = self~resolveIconId(icon)
-   if sleeptime~Datatype('N') = 0 then sleeptime = 0   /* default is no sleep for execute */
-   if Arg(4, 'o') = 1 then nomodal = 0
+   if \ sleeptime~Datatype('W') then sleeptime = 1
    if self~startit(icon, nomodal) \= 0 then
    do
       if self~UseStem = 1 then self~SetDataStem(DlgData.); else self~SetData
@@ -1203,19 +1203,19 @@
    /* This method will handle one dialog message synchronously */
 
 ::method HandleMessages unguarded protected
-   use arg sleeptime
+   use strict arg sleeptime = 1
    if self~Adm = 0 then do
        self~finished = 2
        return
    end
-   if Arg(1,'o') = 1 then sleeptime = 0
+   if \ sleeptime~dataType("W") then sleeptime = 1
    msg = GetDlgMsg(self~Adm)
    if msg~pos("1DLGDELETED1") > 0 then do
       if self~finished = 0 then self~finished = 2
    end
    else do
       if msg \= "" then interpret("self~"msg)
-      else if sleeptime \= 0 then call msSleep sleeptime
+      else call msSleep sleeptime
    end
 
    /* This method will clear all pending dialog messages */

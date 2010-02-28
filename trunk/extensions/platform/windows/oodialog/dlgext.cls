@@ -49,10 +49,9 @@
    /* dispatch of messages      */
 
 ::method ExecuteAsync unguarded
-   use arg sleeptime, sh, icon = 0, nomodal
-   if sleeptime~Datatype('N') = 0 then sleeptime = 10
-   if Arg(2,'o') = 1 then sh = "DEFAULT"
-   if Arg(4,'o') = 1 then nomodal = 0
+   use strict arg sleeptime = 10, sh = "NORMAL", icon = 0, nomodal = 0
+   if \ sleeptime~Datatype('W') then sleeptime = 10
+
    if self~startit(icon, nomodal) \= 0 then
    do
       if self~UseStem = 1 then self~SetDataStem(self~DlgData); else self~SetData
@@ -87,7 +86,8 @@
    /* This method is started asynchronously to handle dialog messages */
 
 ::method AsyncMessageHandling unguarded protected
-   use arg sleeptime
+   use strict arg sleeptime = 10
+   if \ sleepTime~datatype('W') then sleepTime = 10
    do while self~finished = 0 & self~Adm \= 0
       msg = GetDlgMsg(self~Adm)
       if msg~pos("1DLGDELETED1") > 0 then do
@@ -101,22 +101,20 @@
 
    /* Run a nonmodal dialog */
 ::method Popup
-   use arg sh, sleeptime, icon = 0
-   if Arg(1,'o') = 1 then sh = "DEFAULT"
-   if sleeptime~Datatype('N') = 0 then sleeptime = 10
+   use strict arg sh = "NORMAL", sleeptime = 10, icon = 0
+   if \ sleeptime~Datatype('W') then sleeptime = 10
    /* start Execute and return to caller */
    self~start("Execute", sh, icon, sleeptime, "NOTMODAL")
 
 
 ::method PopupAsChild
-   use arg parent, sh, sleeptime, icon = 0
+   use strict arg parent, sh = "NORMAL", sleeptime = 10, icon = 0
 
-   if Arg(1,'o') = 1 | parent = 0 then do
+   if \ parent~isA(.PlainBaseDialog) then do
        call errorDialog "No parent dialog specified!"
        return -1
    end
-   if Arg(2,'o') = 1 then sh = "DEFAULT"
-   if sleeptime~Datatype('N') = 0 then sleeptime = 10
+   if \ sleeptime~Datatype('W') then sleeptime = 10
    parent~ChildDialogs~insert(self)  /* add to the parents child list (last item) */
    self~ParentDlg = parent
 

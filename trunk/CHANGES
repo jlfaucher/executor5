@@ -3,35 +3,129 @@
 The following is the list of bug fixes added to ooRexx since the 4.0.0 release.
 
 
-All Platforms
+All Bugs
 =============
 
-  Bugs
-  ----
+ * 2958746 - addListEntry() won't accept 'DATA' for an entry
 
+ * 2958172 -  RPM Does Not Use lib64 on a 64 bit Install
 
-Windows
-=======
+ * 2958165 -  Update Dates and Version numbers
 
-  Bugs
-  ----
+ * 2956787 -  User string methods can cause problems if returning a number
 
-  * 2883908 - disablemenuitem doesn't
+ * 2949539 -  DIRECTORY function returns not null
 
-Unix/Linux
-==========
+ * 2949175 -  USE not mandating comma to delimit variables to assign to
 
-  Bugs
-  ----
+ * 2935183 -  REX0372E: Error 40.1: External routine "SYSSTEMINSERT" fail
 
+ * 2934013 -  Linux : rxqueue("create") returns an invalid queuename
 
+ * 2933583 -  routine and method reset address to system instead of defaul
 
-z/OS
-====
+ * 2926003 -  Typo in socket.cls
 
-  * 2017028 - z/OS EBCDIC patch
+ * 2898248 -  rxapi : assert error with terminatedThreads
 
+ * 2897421 -  No Large File Support on 32 bit Linux
+
+ * 2894336 -  possible bug in rxfuncdrop()
+
+ * 2893307 -  LISTCHOICE list truncated
+
+ * 2892639 -  Bug in Time BIF
+
+ * 2891974 -  rxapid init script is missing LSB tags
+
+ * 2883908 -  disablemenuitem doesn't
+
+ * 2883064 -  Deviant behaviour changestr-function regarding "00"X, ooRexx
+
+ * 2878683 -  SysFromUnicode does not work well again in the release 4.0.0
+
+ * 2877234 -  RxWinExec fails on long commands
+
+ * 2876047 -  MS Access sample
+
+ * 2875360 -  4.0 Linux install missing symlinks
+
+ * 2873359 -  .DateTime~fromISOUTCDate fails
+
+ * 2871956 -  Crash when GC happens during tracing
+
+ * 2870816 -  Memory leaks in ooRexx4.0 due to retainMessageData flag
+
+ * 2869039 -  ooDialog may fail under certain versions of XP
+
+ * 2866554 -  Multithreading problems, 3 ("run_90_testgroup.cmd")
+
+ * 2865707 -  Multithreading problems, 2
+
+ * 2864958 -  ::Routines cannot be called in mixed/lower case
+
+ * 2863643 -  Multithreading problems with ooRexx
+
+ * 2862333 -  Incorrect comment box in RXMATH.CPP
+
+ * 2859404 -  sample.rex Improvements
+
+ * 2857264 -  ooRexx may crash on exit when RegularExpression class is use
+
+ * 2853119 -  Error in oostdfct
+
+ * 2851871 -  oodtree pseudo-parent?
+
+ * 2850208 -  Quoted command name parsing error
+
+ * 2848529 -  Bug in CheckList class (ooDialog)
+
+ * 2848293 -  Incorrect file overlay
+
+ * 2846895 -  oograph improvement
+
+ * 2846075 -  Syntax error crashes Rexx
+
+ * 2846065 -  Calculator
+
+ * 2843451 -  Incorrect indention during trace
+
+ * 2842161 -  OOdialog pixel calculation wrong
+
+ * 2841530 -  bootstrap problems on Mac OS X Leopard
+
+ * 2841071 -  Trace string empty for Address w/expr
+
+ * 2840637 -  format(small,,2) cause error 93.941
+
+ * 2840151 -  SysAddRexxMacro Segmentation Fault
+
+ * 2838700 -  novalue(?) in asynch(?) uninit method(?) aborts Rexx.exe
+
+ * 2303747 -  CPU LOAD 100%
+
+ * 1842856 -  CPU 100% when ooDialog program started through explorer
+
+ * 1346379 -  RexxHide pegs the CPU
+
+ * 1118328 -  sysfiletree problem
 
 Documentation
 =============
 
+ * 2977049 -  circularqueue new class method requires size
+
+ * 2930620 -  Progress bar method setpos not working
+
+ * 2859410 -  Play Routine description
+
+ * 2856496 -  5.2.4.2 new
+
+ * 2853785 -  Ellipses
+
+ * 2849618 -  5.2.4.13. linein
+
+Patches
+=======
+
+ * 2966044 - socket.cls does not shutdown socket

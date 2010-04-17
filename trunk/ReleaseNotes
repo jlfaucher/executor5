@@ -24,11 +24,46 @@ Installation help in a text format.
 ReleaseNotes
 This file.
 
-ooRexx-4.0.1.i586.beta1.exe
+ooRexx-4.0.1.i586.rc1.exe
 Installation package for any supported Windows 32-bit OS
 
-ooRexx-4.0.0.x86_64.beta1.exe
+ooRexx-4.0.0.x86_64.rc1.exe
 Installation package for any supported Windows 64-bit OS
+
+ooRexx-4.0.1.i586.rc1.rpm
+Linux rpm installation package for any 32-bit OS (built on Fedora Core 10)
+
+ooRexx-4.0.1.x86_64.rc1.rpm
+Linux rpm installation package for any 64-bit OS (built on Fedora Core 10)
+
+ooRexx-4.0.1.i586.rc1.deb
+Linux installation package for any debian based 32-bit OS (built on Kubuntu 8.10)
+
+ooRexx-4.0.1.x86_64.rc1.deb
+Linux installation package for any debian based 64-bit OS (built on Kubuntu 8.10)
+
+ooRexx-4.0.1.i586.rc1.macosx.dmg
+Mac OS X 10.5 or 10.6 Intel 32-bit binary
+
+ooRexx-4.0.1.32.rte.rc1.bff
+AIX installation package for 32-bit AIX 5.2 / 5.3 and 6.1
+
+ooRexx-4.0.1.64.rte.rc1.bff
+AIX installation package for 64-bit AIX 5.2 / 5.3 and 6.1
+
+ooRexx-4.0.1.i586.rc1.debian50.deb
+Linux installation package for a Debian 5 32-bit OS
+(use if your system is Debian, not Kubuntu or Ubuntu)
+
+ooRexx-4.0.1.x86_64.rc1.debian50.deb
+Linux installation package for a Debian 5 64-bit OS
+(use if your system is Debian, not Kubuntu or Ubuntu)
+
+ooRexx-4.0.1.rc1.tar.gz
+Source files suitable for building ooRexx on any Unix-like system
+
+ooRexx.4.0.1.source.rc1.zip
+Source files suitable for building ooRexx on any supported Windows system
 
 
 Installation and Configuration
@@ -360,4 +395,6 @@ Incubator:
 A beta version of RexxGTK is available.  This is a portable GUI class for
 building ooRexx GUI programs.  It runs on any *nix system where GTK is
 available and on Windows with the proper GTK DLLs in place.
+
+
 

@@ -2,6 +2,7 @@
 /CONTRIBUTORS -text
 /Makefile.am -text
 /NOTICE -text
+extensions/csvStream/csvStream.cls -text
 extensions/platform/windows/oodialog/AppIcon.ico -text
 extensions/platform/windows/oodialog/AppIcon2.ico -text
 extensions/platform/windows/oodialog/oodBaseDialog.cpp -text

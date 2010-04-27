@@ -3,6 +3,12 @@
 /Makefile.am -text
 /NOTICE -text
 extensions/csvStream/csvStream.cls -text
+extensions/hostemu/cmdparse.cpp -text
+extensions/hostemu/cmdparse.y -text
+extensions/hostemu/hostemu.def -text
+extensions/hostemu/hostemu.h -text
+extensions/hostemu/platform/unix/hostemu.cpp -text
+extensions/hostemu/platform/windows/hostemu.cpp -text
 extensions/platform/windows/oodialog/AppIcon.ico -text
 extensions/platform/windows/oodialog/AppIcon2.ico -text
 extensions/platform/windows/oodialog/oodBaseDialog.cpp -text

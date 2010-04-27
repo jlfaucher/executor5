@@ -9,6 +9,7 @@ extensions/hostemu/hostemu.def -text
 extensions/hostemu/hostemu.h -text
 extensions/hostemu/platform/unix/hostemu.cpp -text
 extensions/hostemu/platform/windows/hostemu.cpp -text
+extensions/hostemu/readme.txt -text
 extensions/platform/windows/oodialog/AppIcon.ico -text
 extensions/platform/windows/oodialog/AppIcon2.ico -text
 extensions/platform/windows/oodialog/oodBaseDialog.cpp -text

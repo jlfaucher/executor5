@@ -4,7 +4,7 @@
 /NOTICE -text
 extensions/csvStream/csvStream.cls -text
 extensions/hostemu/cmdparse.cpp -text
-extensions/hostemu/cmdparse.y -text
+extensions/hostemu/cmdparse.ypp -text
 extensions/hostemu/hostemu.def -text
 extensions/hostemu/hostemu.h -text
 extensions/hostemu/platform/unix/hostemu.cpp -text

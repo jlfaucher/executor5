@@ -5,7 +5,6 @@
 extensions/csvStream/csvStream.cls -text
 extensions/hostemu/cmdparse.cpp -text
 extensions/hostemu/cmdparse.ypp -text
-extensions/hostemu/hostemu.def -text
 extensions/hostemu/hostemu.h -text
 extensions/hostemu/platform/unix/hostemu.cpp -text
 extensions/hostemu/platform/windows/hostemu.cpp -text
@@ -33,7 +32,6 @@ platform/unix/debian/postinst.in -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/postrm -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/prerm -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/rules -text svnc_snv_003aeol_002dstyle=native
-platform/windows/csvStream.mak -text
 platform/windows/hostemu.def -text
 platform/windows/hostemu.mak -text
 platform/windows/install/oorexx.nsi -text

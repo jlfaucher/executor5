@@ -32,6 +32,9 @@ platform/unix/debian/postinst.in -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/postrm -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/prerm -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/rules -text svnc_snv_003aeol_002dstyle=native
+platform/unix/macosx/org.rexxla.oorexx.rxapid.plist -text
+platform/unix/macosx/postflight -text
+platform/unix/macosx/preflight -text
 platform/windows/hostemu.def -text
 platform/windows/hostemu.mak -text
 platform/windows/install/oorexx.nsi -text

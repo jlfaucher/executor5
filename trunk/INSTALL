@@ -118,28 +118,8 @@ follows:
 Mac OSX
 -------
 
-Building ooRexx from source.
-
-1.  Run the bootstrap script.
-	./bootstrap
-2.  Run the configure script.
-	./configure
-3.  Run make to compile the binary programs.
-	make 
-4.  Run the preflight script to remove any previous versions of ooRexx.
-	sudo ./platform/unix/macosx/preflight
-5.  Run make install to install the binary programs.
-	sudo make install
-6.  Run the postflight script to create links and start rxapi daemon.
-	sudo ./platform/unix/macosx/postflight
-	
-Installing ooRexx from a binary package.
-The current binary package installs a 32bit Intel binary version that runs only on
-Mac OS X 10.5 (Leopard) or newer.
-1.  Double click .dmg file to mount disk image.
-2.  Double click on .pkg file to launch the installer.
-3.  Accept the software license.
-4.  Authenticate to install.
+There are .dmg install packages for both Intel and PowerPC based Mac OSX
+systems.  The commands to install a .dmg file are as follows:
 
 %
 

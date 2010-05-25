@@ -130,6 +130,7 @@ samples/windows/oodialog/examples/resources/Disabled.bmp -text svneol=unset#imag
 samples/windows/oodialog/examples/resources/Hot.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/examples/resources/Normal.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/examples/resources/Pushed.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/ooDraw.h -text
 samples/windows/oodialog/ooRexxTry/Makefile.am -text
 samples/windows/oodialog/ooRexxTry/doc/Makefile.am -text
 samples/windows/oodialog/ooRexxTry/doc/ooRexxTry.pdf -text

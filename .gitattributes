@@ -137,6 +137,7 @@ samples/windows/oodialog/ooRexxTry/doc/ooRexxTry.pdf -text
 samples/windows/oodialog/ooRexxTry/ooRexxTry.rex -text
 samples/windows/oodialog/oophil.ico -text svneol=unset#applicatiion/octet-stream
 samples/windows/oodialog/rc/oodtreeNewItem.rc -text
+samples/windows/oodialog/simple/ChangeFont.rex -text
 samples/windows/oodialog/simple/Makefile.am -text
 samples/windows/oodialog/simple/ReadMe.txt -text
 samples/windows/oodialog/simple/SimpleUpDown.rex -text

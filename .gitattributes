@@ -10,6 +10,7 @@ extensions/hostemu/platform/unix/hostemu.cpp -text
 extensions/hostemu/platform/windows/hostemu.cpp -text
 extensions/platform/windows/oodialog/AppIcon.ico -text
 extensions/platform/windows/oodialog/AppIcon2.ico -text
+extensions/platform/windows/oodialog/ControlDialog.cls -text
 extensions/platform/windows/oodialog/oodBaseDialog.cpp -text
 extensions/platform/windows/oodialog/oodCommon.hpp -text
 extensions/platform/windows/oodialog/oodControl.cpp -text

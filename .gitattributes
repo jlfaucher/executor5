@@ -18,7 +18,10 @@ extensions/platform/windows/oodialog/oodControl.hpp -text
 extensions/platform/windows/oodialog/oodData.hpp -text
 extensions/platform/windows/oodialog/oodDeviceGraphics.hpp -text
 extensions/platform/windows/oodialog/oodMessaging.hpp -text
+extensions/platform/windows/oodialog/oodPropertySheetDialog.cpp -text
+extensions/platform/windows/oodialog/oodPropertySheetDialog.hpp -text
 extensions/platform/windows/oodialog/oodRoutines.cpp -text
+extensions/platform/windows/oodialog/oodUser.hpp -text
 extensions/platform/windows/oodialog/oodUtilities.cpp -text
 extensions/platform/windows/oodialog/oodialog.ico -text svneol=unset#applicatiion/octet-stream
 interpreter/RexxClasses/Serializable.orx -text

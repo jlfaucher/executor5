@@ -55,6 +55,7 @@ samples/windows/api/rexxexit/testRexxExit -text
 samples/windows/ole/apps/oleUtils.frm -text
 samples/windows/ole/apps/samp06.mwp -text
 samples/windows/ole/oleinfo/icons.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/PropertySheetDemo.rex -text
 samples/windows/oodialog/bmp/bigpiece.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/blank.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/blanks.bmp -text svneol=unset#image/bmp
@@ -96,9 +97,9 @@ samples/windows/oodialog/bmp/philphil.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/philslep.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/philtest.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/philwait.bmp -text svneol=unset#image/bmp
-samples/windows/oodialog/bmp/psdemoTab.bmp -text svneol=unset#image/bmp
-samples/windows/oodialog/bmp/psdemolv.bmp -text svneol=unset#image/bmp
-samples/windows/oodialog/bmp/psdemotv.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/bmp/propertySheetDemoListView.bmp -text
+samples/windows/oodialog/bmp/propertySheetDemoTab.bmp -text
+samples/windows/oodialog/bmp/propertySheetDemoTreeView.bmp -text
 samples/windows/oodialog/bmp/rhinoce.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/s2anim.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/s2arch.bmp -text svneol=unset#image/bmp
@@ -140,6 +141,8 @@ samples/windows/oodialog/ooRexxTry/doc/Makefile.am -text
 samples/windows/oodialog/ooRexxTry/doc/ooRexxTry.pdf -text
 samples/windows/oodialog/ooRexxTry/ooRexxTry.rex -text
 samples/windows/oodialog/oophil.ico -text svneol=unset#applicatiion/octet-stream
+samples/windows/oodialog/rc/PropertySheetDemo.h -text
+samples/windows/oodialog/rc/PropertySheetDemo.rc -text
 samples/windows/oodialog/rc/oodtreeNewItem.rc -text
 samples/windows/oodialog/simple/ChangeFont.rex -text
 samples/windows/oodialog/simple/Makefile.am -text

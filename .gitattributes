@@ -85,7 +85,6 @@ samples/windows/oodialog/bmp/install.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/install2.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/kanguru.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/moose.bmp -text svneol=unset#image/bmp
-samples/windows/oodialog/bmp/movie.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/oodlist1.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/oodlist2.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/oodtree.bmp -text svneol=unset#image/bmp
@@ -115,7 +114,10 @@ samples/windows/oodialog/bmp/s2scroll.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/s2tree.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/s2walker.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/sealion.bmp -text svneol=unset#image/bmp
-samples/windows/oodialog/bmp/ticket.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/bmp/ticketWizardMovie.bmp -text
+samples/windows/oodialog/bmp/ticketWizardRexxLA.bmp -text
+samples/windows/oodialog/bmp/ticketWizardTheater.bmp -text
+samples/windows/oodialog/bmp/ticketWizardTicket.bmp -text
 samples/windows/oodialog/bmp/tiger.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/wlkfig1.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/wlkfig2.bmp -text svneol=unset#image/bmp
@@ -144,10 +146,13 @@ samples/windows/oodialog/oophil.ico -text svneol=unset#applicatiion/octet-stream
 samples/windows/oodialog/rc/PropertySheetDemo.h -text
 samples/windows/oodialog/rc/PropertySheetDemo.rc -text
 samples/windows/oodialog/rc/oodtreeNewItem.rc -text
+samples/windows/oodialog/rc/ticketWizard.h -text
+samples/windows/oodialog/rc/ticketWizard.rc -text
 samples/windows/oodialog/simple/ChangeFont.rex -text
 samples/windows/oodialog/simple/Makefile.am -text
 samples/windows/oodialog/simple/ReadMe.txt -text
 samples/windows/oodialog/simple/SimpleUpDown.rex -text
+samples/windows/oodialog/ticketWizard.rex -text
 samples/windows/oodialog/tutorial/add.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/tutorial/logo.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/wav/byebye.wav -text svneol=unset#audio/x-wav

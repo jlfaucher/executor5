@@ -37,8 +37,8 @@ platform/unix/debian/postinst.in -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/postrm -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/prerm -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/rules -text svnc_snv_003aeol_002dstyle=native
+platform/unix/macosx/MakeRexxPackage.in -text
 platform/unix/macosx/PackageInfo.in -text
-platform/unix/macosx/mkrexxpkg.in -text
 platform/unix/macosx/org.rexxla.oorexx.rxapid.plist -text
 platform/unix/macosx/postflight.in -text
 platform/unix/macosx/preflight.in -text

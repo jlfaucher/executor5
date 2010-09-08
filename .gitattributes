@@ -8,6 +8,8 @@ extensions/hostemu/cmdparse.ypp -text
 extensions/hostemu/hostemu.h -text
 extensions/hostemu/platform/unix/hostemu.cpp -text
 extensions/hostemu/platform/windows/hostemu.cpp -text
+extensions/platform/unix/rxunixsys/rxunixsys.cpp -text
+extensions/platform/unix/rxunixsys/rxunixsys.h -text
 extensions/platform/windows/oodialog/0_READ_ME_FIRST.txt -text
 extensions/platform/windows/oodialog/AppIcon.ico -text
 extensions/platform/windows/oodialog/AppIcon2.ico -text

@@ -2,7 +2,7 @@
                     ====================================
 
 Please read ALL of these notes, to be sure you understand your options,
-before building ooRexx.  These notes cover building the 3.x and 4.x versions
+before building ooRexx.  These notes cover building the 4.x versions
 of ooRexx.  (In this document the term "builder" is used to refer to the
 person building ooRexx from source.)
 
@@ -24,7 +24,7 @@ The 'interpreter' at the end of the command will be the root directory of
 the source tree.  This directory can be given any name.
 
 Release Source File Archive:  Download from SourceForge the archive desired,
-for instance, ooRexx-3.2.0.zip or ooRexx-4.0.0.zip, and unzip it in a work
+for instance, ooRexx-4.1.0.zip, and unzip it in a work
 directory.
 
 Build Requirements
@@ -253,16 +253,16 @@ Third option: <Location of documentation files>
 
 The third option can be used to point makeorx to the documentation files if
 they are not located in the source tree.  For example, say the PDF files are
-located in the C:\ooRexx.4.0.0.release.docs directory.  The following could
+located in the C:\ooRexx.4.1.0.release.docs directory.  The following could
 be used to build ooRexx and create the installer package without the need to
 copy the PDF files into the source tree:
 
-E:\work.ooRexx\makeorx NODEBUG PACKAGE C:\ooRexx.4.0.0.release.docs
+E:\work.ooRexx\makeorx NODEBUG PACKAGE C:\ooRexx.4.1.0.release.docs
 
 Rather than specify the doc location on the command line, an environment
 variable can be used.  The following is equivalent to the above command:
 
-E:\work.ooRexx\set DOC_LOCATION=C:\ooRexx.4.0.0.release.docs
+E:\work.ooRexx\set DOC_LOCATION=C:\ooRexx.4.1.0.release.docs
 E:\work.ooRexx\makeorx NODEBUG PACKAGE
 
 Miscellaneous details:

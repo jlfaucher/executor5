@@ -138,7 +138,7 @@ directory and then execute the following commands:
 To install the 32 bit version:
 
 root@box # inutoc ./
-root@box # installp -a -c -X -v -Y -V2 -g -d./ ooRexx.32.rte 4.0.0.1
+root@box # installp -a -c -X -v -Y -V2 -g -d./ ooRexx.32.rte 4.1.0.1
 
 To uninstall the 32 bit version:
 
@@ -147,7 +147,7 @@ root@box # installp -u ooRexx.32.rte
 To install the 64 bit version:
 
 root@box # inutoc ./
-root@box # installp -a -c -X -v -Y -V2 -g -d./ ooRexx.64.rte 4.0.0.1
+root@box # installp -a -c -X -v -Y -V2 -g -d./ ooRexx.64.rte 4.1.0.1
 
 To uninstall the 64 bit version:
 
@@ -189,9 +189,9 @@ follows, using the 4.x head as an example:
 
 E:\work>svn co https://oorexx.svn.sourceforge.net/svnroot/oorexx/main/trunk interpreter
 
-You can also check out the 4.0.0 release code:
+You can also check out the 4.1.0 release code:
 
-E:\work>svn co https://oorexx.svn.sourceforge.net/svnroot/oorexx/main/releases/4.0.0 interpreter
+E:\work>svn co https://oorexx.svn.sourceforge.net/svnroot/oorexx/main/releases/4.1.0 interpreter
 
 In this command, the last word of the command is the directory into which
 the source tree will be checked out.  The name of the directory can be any

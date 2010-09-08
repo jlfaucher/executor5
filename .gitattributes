@@ -2,6 +2,8 @@
 trunk/CONTRIBUTORS -text
 trunk/Makefile.am -text
 trunk/NOTICE -text
+trunk/extensions/platform/unix/rxunixsys/rxunixsys.cpp -text
+trunk/extensions/platform/unix/rxunixsys/rxunixsys.h -text
 trunk/extensions/platform/windows/oodialog/3dcheck.bmp -text svneol=unset#image/bmp
 trunk/extensions/platform/windows/oodialog/AppIcon.ico -text
 trunk/extensions/platform/windows/oodialog/AppIcon2.ico -text

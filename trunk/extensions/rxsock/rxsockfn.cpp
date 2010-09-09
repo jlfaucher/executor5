@@ -131,9 +131,16 @@ size_t RexxEntry SockPSock_Errno(const char *name, size_t argc, PCONSTRXSTRING a
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
 /*-\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/-*/
 
-/*------------------------------------------------------------------
+/*============------------------------------------------------------------------
  * accept()
- *------------------------------------------------------------------*/
+ *
+ * @remarks  The sockAddrToStem() function calls both htons() and inet_ntoa().
+ *           On Windows, one or both, of those functions sets errno back to 0.
+ *           This prevents the Rexx programmer from ever seeing the errno if
+ *           accept fails.  Because of this, we call cleanup() immediately after
+ *           the accept call in the belief that the Rexx programmer is more
+ *           interested in the result of accept().
+* ------------==========------------------------------------------------------*/
 size_t RexxEntry SockAccept(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
 {
     sockaddr_in  addr;
@@ -173,20 +180,18 @@ size_t RexxEntry SockAccept(const char *name, size_t argc, PCONSTRXSTRING argv, 
     rc = accept(sock,(struct sockaddr *)&addr,&nameLen);
 
     /*---------------------------------------------------------------
+     * set return code and errno information
+     *---------------------------------------------------------------*/
+    int2rxs(rc,retStr);
+    cleanup();
+
+    /*---------------------------------------------------------------
      * set addr, if asked for
      *---------------------------------------------------------------*/
     if (2 == argc)
     {
         sockaddr2stem(&addr,argv[1].strptr);
     }
-
-
-    /*---------------------------------------------------------------
-     * set return code
-     *---------------------------------------------------------------*/
-    int2rxs(rc,retStr);
-    // set the errno information
-    cleanup();
 
     return 0;
 }

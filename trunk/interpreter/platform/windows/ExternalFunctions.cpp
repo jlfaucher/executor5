@@ -52,6 +52,8 @@
 #include <stdlib.h>                         /* Get system, max_path etc...    */
 #include <process.h>
 #include <direct.h>
+#include <windows.h>
+#include <CommCtrl.h>
 
 #include "RexxCore.h"                         /* global REXX definitions        */
 #include "StringClass.hpp"
@@ -323,6 +325,11 @@ RexxRoutine4(int, sysMessageBox, CSTRING, text, OPTIONAL_CSTRING, title, OPTIONA
   ULONG       style;                   /* window style flags         */
   int         maxCnt;                  /* Max loop count             */
   int         index;                   /* table index                */
+
+  INITCOMMONCONTROLSEX ctrlex;
+  ctrlex.dwSize = sizeof(ctrlex);
+  ctrlex.dwICC = ICC_WIN95_CLASSES | ICC_DATE_CLASSES;
+  InitCommonControlsEx(&ctrlex);
 
   PSZ    Button_Styles[] =             /* message box button styles  */
     {"OK",

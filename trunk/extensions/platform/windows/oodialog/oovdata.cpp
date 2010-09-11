@@ -126,20 +126,31 @@ BOOL SetMultiListBoxSelections(HWND hW, ULONG id, const char * data)
         SendDlgItemMessage(hW, id, LB_SETSEL, (WPARAM) FALSE, (LPARAM) j);
     }
 
-    i = 0;
-    while ((p) && (*p))
+    // Now set the items passed to us as selected.  Note that the empty string
+    // results in no items selected.
+    while ( (p) && (*p) )
     {
         buffer[0] = '\0';
         size_t j = 0;
-        while (p && (j<NR_BUFFER) && (*p != ' ') && (*p != '\0')) buffer[j++] = *p++;
-        buffer[j] = '\0';
-        if (atoi(buffer) > 0)
+        while ( p && (j < NR_BUFFER) && (*p != ' ') && (*p != '\0') )
         {
-            i = SendDlgItemMessage(hW, id, LB_SETSEL, TRUE, (LPARAM)atoi(buffer)-1);
-            if (i == LB_ERR) return FALSE;
+            buffer[j++] = *p++;
         }
-        if (*p) p++;
+        buffer[j] = '\0';
+
+        if ( atoi(buffer) > 0 )
+        {
+            if ( SendDlgItemMessage(hDlg, id, LB_SETSEL, TRUE, (LPARAM)atoi(buffer) - 1) == LB_ERR )
+            {
+                return false;
+            }
+        }
+        if ( *p )
+        {
+            p++;
+        }
     }
+
     return TRUE;
 }
 

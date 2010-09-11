@@ -53,7 +53,9 @@
 
    /* arg style=[ "DROPDOWN" | "TOPLINE" | "NOBORDER" | "WIZARD"] */
 
-::method Catalog attribute protected   /* A directory that contains internal data */
+ -- A directory that contains internal data.  This should be private, but I'm not sure of the
+ -- consequences to existing programs if it is changed.  MM
+::attribute catalog unguarded protected
 ::method StaticID attribute protected  /*  */
 ::method CatX attribute private
 ::method CatY attribute private

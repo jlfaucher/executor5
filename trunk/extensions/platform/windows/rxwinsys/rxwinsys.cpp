@@ -436,7 +436,7 @@ RexxMethod2(uint32_t, WSRegistry_delete, OPTIONAL_CSTRING, hkParent, CSTRING, su
 {
     HKEY hk = getParentKeyHandle(context, hkParent);
 
-    if ( strcmp(c->GetMessageName(), "DELETEKEY") == 0 )
+    if ( strcmp(context->GetMessageName(), "DELETEKEY") == 0 )
     {
         return RegDeleteKey(hk, subKeyName);
     }

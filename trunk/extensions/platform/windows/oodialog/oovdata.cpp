@@ -140,7 +140,7 @@ BOOL SetMultiListBoxSelections(HWND hW, ULONG id, const char * data)
 
         if ( atoi(buffer) > 0 )
         {
-            if ( SendDlgItemMessage(hDlg, id, LB_SETSEL, TRUE, (LPARAM)atoi(buffer) - 1) == LB_ERR )
+            if ( SendDlgItemMessage(hW, id, LB_SETSEL, TRUE, (LPARAM)atoi(buffer) - 1) == LB_ERR )
             {
                 return false;
             }

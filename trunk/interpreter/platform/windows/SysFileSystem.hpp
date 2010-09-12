@@ -68,11 +68,12 @@ public:
     static const char *EOL_Marker;          // the end-of-line marker
     static const char PathDelimiter;        // directory path delimiter
 
-    static char *getTempFileName();
+    static const char *getTempFileName();
     static bool  searchFileName(const char * name, char *fullName);
     static void  qualifyStreamName(const char *unqualifiedName, char *qualifiedName, size_t bufferSize);
     static bool  fileExists(const char *name);
     static bool  hasExtension(const char *name);
+    static bool  hasDirectory(const char *name);
     static RexxString *extractDirectory(RexxString *file);
     static RexxString *extractExtension(RexxString *file);
     static RexxString *extractFile(RexxString *file);
@@ -82,6 +83,38 @@ public:
     static bool  searchPath(const char *name, const char *path, const char *extension, char *resolvedName);
     static void  getLongName(char *fullName, size_t size);
     static bool  findFirstFile(const char *name);
+    static bool  deleteFile(const char *name);
+    static bool  deleteDirectory(const char *name);
+    static bool  isDirectory(const char *name);
+    static bool  isReadOnly(const char *name);
+    static bool  isWriteOnly(const char *name);
+    static bool  isFile(const char *name);
+    static bool  exists(const char *name);
+    static int64_t getLastModifiedDate(const char *name);
+    static int64_t getFileLength(const char *name);
+    static bool  makeDirectory(const char *name);
+    static bool  moveFile(const char *oldName, const char *newName);
+    static bool  isHidden(const char *name);
+    static bool  setLastModifiedDate(const char *name, int64_t time);
+    static bool  setFileReadOnly(const char *name);
+    static bool  isCaseSensitive();
+    static int   getRoots(char *roots);
+    static const char *getSeparator();
+    static const char *getPathSeparator();
+};
+
+class SysFileIterator
+{
+public:
+    SysFileIterator(const char *pattern);
+    ~SysFileIterator();
+    void close();
+    bool hasNext();
+    void next(char *buffer);
+protected:
+    bool completed;       // the iteration completed flag
+    HANDLE handle;        // The handle for the FindFirst operation
+    WIN32_FIND_DATA findFileData;
 };
 
 #endif

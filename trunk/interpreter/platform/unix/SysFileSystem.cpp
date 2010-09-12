@@ -55,7 +55,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <utime.h>
 #include <pwd.h>
+#include <errno.h>
 #include "SysFileSystem.hpp"
 #include "Utilities.hpp"
 
@@ -163,7 +165,7 @@ bool SysFileSystem::searchFileName(
 /* DESCRIPTION : Returns a temp file name.                           */
 /*                                                                   */
 /*********************************************************************/
-char *SysFileSystem::getTempFileName()
+const char *SysFileSystem::getTempFileName()
 {
     return tmpnam(NULL);
 }
@@ -207,10 +209,10 @@ void SysFileSystem::qualifyStreamName(
  */
 bool SysFileSystem::fileExists(const char * fname)
 {
-    struct stat filestat;                // file attributes
+    struct stat64 filestat;                // file attributes
     int rc;                              // stat function return code
 
-    rc = stat(fname, &filestat);
+    rc = stat64(fname, &filestat);
     if (rc == 0)
     {
         if (S_ISREG(filestat.st_mode))
@@ -414,28 +416,37 @@ bool SysFileSystem::primitiveSearchName(const char *name, const char *path, cons
         strncat(tempName, extension, sizeof(tempName));
     }
 
-    // for each name, check in both the provided case and lower case.
-    for (int i = 0; i < 2; i++)
+    // only do the direct search if this is qualified enough that
+    // it should not be located on the path
+    if (hasDirectory(tempName))
+    {
+        for (int i = 0; i < 2; i++)
     {
         // check the file as is first
         if (checkCurrentFile(tempName, resolvedName))
         {
             return true;
         }
-
-        // we don't do path searches if there's directory information in the name
-        if (!hasDirectory(tempName))
+            // try again in lower case
+            Utilities::strlower(tempName);
+        }
+        return false;
+    }
+    else
+    {
+        // for each name, check in both the provided case and lower case.
+        for (int i = 0; i < 2; i++)
         {
             // go search along the path
             if (searchPath(tempName, path, resolvedName))
             {
                 return true;
             }
-        }
         // try again in lower case
         Utilities::strlower(tempName);
     }
     return false;
+}
 }
 
 
@@ -467,10 +478,10 @@ bool SysFileSystem::checkCurrentFile(const char *name, char *resolvedName)
         return false;
     }
 
-    struct stat dummy;                   /* structure for stat system calls   */
+    struct stat64 dummy;                   /* structure for stat system calls   */
 
     // ok, if this exists, life is good.  Return it.
-    if (stat(resolvedName, &dummy) == 0)             /* look for file              */
+    if (stat64(resolvedName, &dummy) == 0)             /* look for file              */
     {
         // this needs to be a regular file
         if (S_ISREG(dummy.st_mode))
@@ -522,8 +533,8 @@ bool SysFileSystem::searchPath(const char *name, const char *path, char *resolve
         // a failure here means an invalid name of some sort
         if (canonicalizeName(resolvedName))
         {
-            struct stat dummy;
-            if (stat(resolvedName, &dummy) == 0)     /* If file is found,          */
+            struct stat64 dummy;
+            if (stat64(resolvedName, &dummy) == 0)     /* If file is found,          */
             {
                 // this needs to be a regular file
                 if (S_ISREG(dummy.st_mode))
@@ -661,7 +672,7 @@ bool SysFileSystem::normalizePathName(const char *name, char *resolved)
     *dest = '/';
 
     // For each character in the path name, decide whether, and where, to copy.
-    for ( char *p = (char *)name; *p; p++ )
+    for ( const char *p = name; *p; p++ )
     {
         if ( *p == '/' )
         {
@@ -731,3 +742,378 @@ bool SysFileSystem::normalizePathName(const char *name, char *resolved)
     return true;
 }
 
+
+/**
+ * Delete a file from the file system.
+ *
+ * @param name   The fully qualified name of the file.
+ *
+ * @return The return code from the delete operation.
+ */
+bool SysFileSystem::deleteFile(const char *name)
+{
+    return unlink(name) == 0;
+}
+
+/**
+ * Delete a directory from the file system.
+ *
+ * @param name   The name of the target directory.
+ *
+ * @return The return code from the delete operation.
+ */
+bool SysFileSystem::deleteDirectory(const char *name)
+{
+    return remove(name) == 0;
+}
+
+
+/**
+ * Test if a given file name is for a directory.
+ *
+ * @param name   The target name.
+ *
+ * @return true if the file is a directory, false for any other
+ *         type of entity.
+ */
+bool SysFileSystem::isDirectory(const char *name)
+{
+    struct stat64 finfo;                 /* return buf for the finfo   */
+
+    int rc = stat64(name, &finfo);       /* read the info about it     */
+    return rc == 0 && S_ISDIR(finfo.st_mode);
+}
+
+
+/**
+ * Test is a file is read only.
+ *
+ * @param name   The target file name.
+ *
+ * @return true if the file is marked as read-only.
+ */
+bool SysFileSystem::isReadOnly(const char *name)
+{
+    return access(name, W_OK) != 0;
+}
+
+
+/**
+ * Test if a file is marked as write-only.
+ *
+ * @param name   The target file name.
+ *
+ * @return true if the file is only writeable.  false if read
+ *         operations are permitted.
+ */
+bool SysFileSystem::isWriteOnly(const char *name)
+{
+    return access(name, R_OK) != 0;
+}
+
+
+/**
+ * Test if a give file name is for a real file (not
+ * a directory).
+ *
+ * @param name   The target file name.
+ *
+ * @return true if the file is a real file, false if some other
+ *         filesystem entity.
+ */
+bool SysFileSystem::isFile(const char *name)
+{
+    struct stat64 finfo;                 /* return buf for the finfo   */
+
+    int rc = stat64(name, &finfo);       /* read the info about it     */
+    return rc == 0 && (S_ISREG(finfo.st_mode) || S_ISBLK(finfo.st_mode));
+}
+
+
+/**
+ * Test if a file exists using a fully qualified name.
+ *
+ * @param name   The target file name.
+ *
+ * @return True if the file exists, false if it is unknown.
+ */
+bool SysFileSystem::exists(const char *name)
+{
+    struct stat64 finfo;                 /* return buf for the finfo   */
+
+    int rc = stat64(name, &finfo);       /* read the info about it     */
+    return rc == 0;
+}
+
+
+/**
+ * Get the last modified file date as a file time value.
+ *
+ * @param name   The target name.
+ *
+ * @return the file time value for the modified date, or -1 for any
+ *         errors.  The time is returned in ticks units
+ */
+int64_t SysFileSystem::getLastModifiedDate(const char *name)
+{
+    struct stat64 st;
+    tzset ();
+
+    if (stat64(name, &st))
+    {
+        return -1;
+    }
+    return (int64_t)st.st_mtime;
+}
+
+
+/**
+ * Retrieve the size of a file.
+ *
+ * @param name   The name of the target file.
+ *
+ * @return the 64-bit file size.
+ */
+uint64_t SysFileSystem::getFileLength(const char *name)
+{
+    struct stat64 st;
+    if (stat64(name, &st) != 0)
+    {
+        return 0;
+    }
+    return st.st_size;
+}
+
+
+/**
+ * Create a directory in the file system.
+ *
+ * @param name   The target name.
+ *
+ * @return The success/failure flag.
+ */
+bool SysFileSystem::makeDirectory(const char *name)
+{
+    return mkdir(name, S_IRWXU | S_IRWXG | S_IRWXO) != -1;
+}
+
+
+/**
+ * Move (rename) a file.
+ *
+ * @param oldName The name of an existing file.
+ * @param newName The new file name.
+ *
+ * @return A success/failure flag.
+ */
+bool SysFileSystem::moveFile(const char *oldName, const char *newName)
+{
+    return rename(oldName, newName) == 0;
+}
+
+
+/**
+ * Test if a given file or directory is hidden.
+ *
+ * @param name   The target name.
+ *
+ * @return true if the file or directory is hidden, false otherwise.
+ */
+bool SysFileSystem::isHidden(const char *name)
+{
+    // it must exist
+    if (!exists(name))
+    {
+        return false;
+    }
+
+    size_t length = strlen(name);
+    for (size_t index = length - 1; index > 0; index--)
+    {
+        if (name[index] == '.' && (index > 0 && name[index - 1] == '/'))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+/**
+ * Set the last modified date for a file.
+ *
+ * @param name   The target name.
+ * @param time   The new file time (in ticks).
+ *
+ * @return true if the filedate was set correctly, false otherwise.
+ */
+bool SysFileSystem::setLastModifiedDate(const char *name, int64_t time)
+{
+    struct stat64 statbuf;
+    struct utimbuf timebuf;
+    if (stat64(name, &statbuf) != 0)
+    {
+        return false;
+    }
+
+    timebuf.actime = statbuf.st_atime;
+    timebuf.modtime = (time_t)time;
+    return utime(name, &timebuf) == 0;
+}
+
+
+
+/**
+ * Set the read-only attribute on a file or directory.
+ *
+ * @param name   The target name.
+ *
+ * @return true if the attribute was set, false otherwise.
+ */
+bool SysFileSystem::setFileReadOnly(const char *name)
+{
+    struct stat64 buffer;
+    if (stat64(name, &buffer) != 0)
+    {
+        return false;
+    }
+    mode_t mode = buffer.st_mode;
+    // this really turns off the write permissions
+    mode = mode & 07555;
+    return chmod(name, mode) == 0;
+}
+
+
+/**
+ * indicate whether the file system is case sensitive.
+ *
+ * @return For Unix systems, always returns true.
+ */
+bool SysFileSystem::isCaseSensitive()
+{
+    return true;
+}
+
+
+/**
+ * Retrieve the file system root elements.  On Windows,
+ * each of the drives is a root element.
+ *
+ * @return The number of roots located.
+ */
+int SysFileSystem::getRoots(char *roots)
+{
+    // just one root to return
+    strcpy(roots, "/");
+    return 1;
+}
+
+
+/**
+ * Return the separator used for separating path names.
+ *
+ * @return The ASCII-Z version of the path separator.
+ */
+const char *SysFileSystem::getSeparator()
+{
+    return "/";
+}
+
+
+/**
+ * Return the separator used for separating search path elements
+ *
+ * @return The ASCII-Z version of the path separator.
+ */
+const char *SysFileSystem::getPathSeparator()
+{
+    return ":";
+}
+
+
+/**
+ * Create a new SysFileIterator instance.
+ *
+ * @param p      The directory we're iterating over.
+ */
+SysFileIterator::SysFileIterator(const char *p)
+{
+    // this assumes we'll fail...if we find something,
+    // we'll flip this
+    completed = true;
+    handle = opendir(p);
+    // if didn't open, this either doesn't exist or
+    // isn't a directory
+    if (handle == NULL)
+    {
+        return;
+    }
+    entry = readdir(handle);
+    if (entry == NULL)
+    {
+        closedir(handle);
+        return;
+    }
+    // we have a value
+    completed = false;
+}
+
+/**
+ * Destructor for the iteration operation.
+ */
+SysFileIterator::~SysFileIterator()
+{
+    close();
+}
+
+
+/**
+ * close the iterator.
+ */
+void SysFileIterator::close()
+{
+    if (handle != 0)
+    {
+        closedir(handle);
+        handle = 0;
+    }
+}
+
+
+/**
+ * Check if the iterator has new results it can return.
+ *
+ * @return true if the iterator has another value to return, false if
+ *         the iteration is complete.
+ */
+bool SysFileIterator::hasNext()
+{
+    return !completed;
+}
+
+
+/**
+ * Retrieve the next iteration value.
+ *
+ * @param buffer The buffer used to return the value.
+ */
+void SysFileIterator::next(char *buffer)
+{
+    if (completed)
+    {
+        strcpy(buffer, "");
+    }
+    else
+    {
+        // copy our current result over
+        strcpy(buffer, entry->d_name);
+    }
+    entry = readdir(handle);
+    if (entry == NULL)
+    {
+        // we're done once we hit a failure
+        completed = true;
+        close();
+    }
+}

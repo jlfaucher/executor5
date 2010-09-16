@@ -6,6 +6,33 @@ The following is the list of bug fixes added to ooRexx since the 4.0.1 release.
 All Bugs
 =============
 
+ * 3054788  Amendment to socket.cls - select method
+
+ * 3046998  "Failure during initialization" on Linux
+
+ * 3045324  RxMessageBox broken on XP
+
+ * 3044222  ooDialog ListControl Value= bug
+
+ * 3041096  First linein on read-only file returns empty line
+
+ * 2981139  Error on GetEditControl for Category Dialog
+
+ * 2953752  REXX.EXE crashes at REXX script end  Pending
+
+ * 2842693  oodraw.rex sample has backwards logic  Pending
+
+ * 2821025  EWOULBLOCK not set in RxSock on 3.2.0  Pending
+
+ * 2790123  WindowsRegistry::open() access rights incomplete
+
+ * 2790115  WindowsRegistry::delete() incorrect  Pending
+
+ * 1880799  RegEx parse("[0-"||"7F"x||"]*") hangs
+
+ * 1849356  ftpGET returns 0 when out of space
+
+
 Documentation
 =============
 

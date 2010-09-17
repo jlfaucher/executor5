@@ -2,12 +2,19 @@
 trunk/CONTRIBUTORS -text
 trunk/Makefile.am -text
 trunk/NOTICE -text
+trunk/extensions/csvStream/csvStream.cls -text
+trunk/extensions/hostemu/cmdparse.cpp -text
+trunk/extensions/hostemu/cmdparse.ypp -text
+trunk/extensions/hostemu/hostemu.h -text
+trunk/extensions/hostemu/platform/unix/hostemu.cpp -text
+trunk/extensions/hostemu/platform/windows/hostemu.cpp -text
 trunk/extensions/platform/unix/rxunixsys/rxunixsys.cpp -text
 trunk/extensions/platform/unix/rxunixsys/rxunixsys.h -text
 trunk/extensions/platform/windows/oodialog/3dcheck.bmp -text svneol=unset#image/bmp
 trunk/extensions/platform/windows/oodialog/AppIcon.ico -text
 trunk/extensions/platform/windows/oodialog/AppIcon2.ico -text
 trunk/extensions/platform/windows/oodialog/oodialog.ico -text svneol=unset#applicatiion/octet-stream
+trunk/extensions/rxsock/streamsocket.cls -text
 trunk/interpreter/platform/unix/SysNativeMethods.h -text
 trunk/platform/unix/debian/changelog.in -text svnc_snv_003aeol_002dstyle=native
 trunk/platform/unix/debian/compat -text svnc_snv_003aeol_002dstyle=native

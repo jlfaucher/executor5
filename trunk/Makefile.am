@@ -546,8 +546,6 @@ classes_sources = $(build_classes_dir)/ArrayClass.cpp \
                   $(build_classes_dir)/TableClass.cpp \
                   $(build_classes_dir)/IdentityTableClass.cpp \
                   $(build_classes_dir)/WeakReferenceClass.cpp \
-                  $(build_classes_dir)/StackFrameClass.cpp \
-                  $(build_classes_dir)/ExceptionClass.cpp
 package_sources = $(build_package_dir)/LibraryPackage.cpp \
                   $(build_package_dir)/PackageManager.cpp
 memory_sources = $(build_memory_dir)/DeadObject.cpp \
@@ -575,7 +573,6 @@ behaviour_sources = $(build_behaviour_dir)/PrimitiveBehaviours.cpp \
                     $(build_behaviour_dir)/VirtualFunctionTable.cpp
 concurrency_sources = $(build_concurrency_dir)/ActivityDispatcher.cpp \
                       $(build_concurrency_dir)/ActivityManager.cpp \
-                      $(build_concurrency_dir)/ActivationFrame.cpp \
                       $(build_concurrency_dir)/CallbackDispatcher.cpp \
                       $(build_concurrency_dir)/TrappingDispatcher.cpp \
                       $(build_concurrency_dir)/ExitHandler.cpp \
@@ -690,8 +687,7 @@ librexx_la_SOURCES = $(classes_sources) \
                      $(runtime_sources) \
                      $(streamlibrary_sources)
 core_classes = $(build_rexxclasses_dir)/CoreClasses.orx \
-               $(build_rexxclasses_dir)/StreamClasses.orx \
-               $(build_rexxclasses_dir)/Serializable.orx
+               $(build_rexxclasses_dir)/StreamClasses.orx
 core_platform_classes = $(build_interpreter_platform_dir)/PlatformObjects.orx
 #
 # Preprocessor flags for librexx.so

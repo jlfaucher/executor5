@@ -1,11 +1,11 @@
 #/*----------------------------------------------------------------------------*/
 #/*                                                                            */
-#/* Copyright (c) 2005-2008 Rexx Language Association. All rights reserved.    */
+#/* Copyright (c) 2005-2010 Rexx Language Association. All rights reserved.    */
 #/*                                                                            */
 #/* This program and the accompanying materials are made available under       */
 #/* the terms of the Common Public License v1.0 which accompanies this         */
 #/* distribution. A copy is also available at the following address:           */
-#/* http://www.oorexx.org/license.html                          */
+#/* http://www.oorexx.org/license.html                                         */
 #/*                                                                            */
 #/* Redistribution and use in source and binary forms, with or                 */
 #/* without modification, are permitted provided that the following            */
@@ -201,9 +201,7 @@ classesHeaders = $(build_classes_dir)/ArrayClass.hpp \
                  $(build_classes_dir)/StringClass.hpp \
                  $(build_classes_dir)/SupplierClass.hpp \
                  $(build_classes_dir)/TableClass.hpp \
-                 $(build_classes_dir)/WeakReferenceClass.hpp \
-                 $(build_classes_dir)/StackFrameClass.hpp \
-                 $(build_classes_dir)/ExceptionClass.hpp
+                 $(build_classes_dir)/WeakReferenceClass.hpp
 classesSupportHeaders = $(build_classes_support_dir)/ProgramMetaData.hpp \
                         $(build_classes_support_dir)/RexxCollection.hpp \
                         $(build_classes_support_dir)/RexxCompoundElement.hpp \
@@ -214,7 +212,6 @@ classesSupportHeaders = $(build_classes_support_dir)/ProgramMetaData.hpp \
                         $(build_classes_support_dir)/RexxListTable.hpp \
                         $(build_classes_support_dir)/StringUtil.hpp
 concurrencyHeaders = $(build_concurrency_dir)/ActivationApiContexts.hpp \
-                     $(build_concurrency_dir)/ActivationFrame.hpp \
                      $(build_concurrency_dir)/ActivityDispatcher.hpp \
                      $(build_concurrency_dir)/ActivityManager.hpp \
                      $(build_concurrency_dir)/CallbackDispatcher.hpp \
@@ -545,7 +542,7 @@ classes_sources = $(build_classes_dir)/ArrayClass.cpp \
                   $(build_classes_dir)/SupplierClass.cpp \
                   $(build_classes_dir)/TableClass.cpp \
                   $(build_classes_dir)/IdentityTableClass.cpp \
-                  $(build_classes_dir)/WeakReferenceClass.cpp \
+                  $(build_classes_dir)/WeakReferenceClass.cpp
 package_sources = $(build_package_dir)/LibraryPackage.cpp \
                   $(build_package_dir)/PackageManager.cpp
 memory_sources = $(build_memory_dir)/DeadObject.cpp \
@@ -1103,13 +1100,15 @@ package:
 	./rexx $(build_os_platform_dir)/makepkg.rex @PACKAGETYPE@ $(ORX_MAJOR).$(ORX_MINOR).$(ORX_MOD_LVL) $(target) $(prefix) $(DESTDIR)
 
 rpm: dist
-	rm -fr $(top_srcdir)/rpm
-	mkdir rpm
-	mkdir rpm/BUILD
-	mkdir rpm/RPMS
-	mkdir rpm/SOURCES
-	mkdir rpm/SPECS
-	mkdir rpm/SRPMS
+	- mkdir ~/rpmbuild
+	- mkdir ~/rpmbuild/BUILD
+	- mkdir ~/rpmbuild/BUILDROOT
+	- mkdir ~/rpmbuild/RPMS
+	- mkdir ~/rpmbuild/SOURCES
+	- mkdir ~/rpmbuild/SPECS
+	- mkdir ~/rpmbuild/SRPMS
+	cp ooRexx*.tar.gz ~/rpmbuild/SOURCES
+	cp platform/unix/oorexx.spec ~/rpmbuild/SPECS
 	rpmbuild -ba $(build_os_platform_dir)/oorexx.spec < /dev/null;
 
 deb:

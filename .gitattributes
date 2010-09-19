@@ -28,10 +28,13 @@ trunk/platform/unix/debian/postinst.in -text svnc_snv_003aeol_002dstyle=native
 trunk/platform/unix/debian/postrm -text svnc_snv_003aeol_002dstyle=native
 trunk/platform/unix/debian/prerm -text svnc_snv_003aeol_002dstyle=native
 trunk/platform/unix/debian/rules -text svnc_snv_003aeol_002dstyle=native
+trunk/platform/windows/hostemu.def -text
+trunk/platform/windows/hostemu.mak -text
 trunk/platform/windows/install/oorexx.nsi -text
 trunk/platform/windows/install/orange-uninstall.bmp -text svneol=unset#image/bmp
 trunk/platform/windows/install/orange.bmp -text svneol=unset#image/bmp
 trunk/platform/windows/install/uninstall.ico -text svneol=unset#applicatiion/octet-stream
+trunk/platform/windows/misc.mak -text
 trunk/platform/windows/orxw.ico -text svneol=unset#applicatiion/octet-stream
 trunk/platform/windows/rexx.ico -text svneol=unset#applicatiion/octet-stream
 trunk/rexxapi/server/platform/windows/rxapi.ico -text

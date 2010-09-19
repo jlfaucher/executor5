@@ -1,7 +1,7 @@
 #/*----------------------------------------------------------------------------*/
 #/*                                                                            */
 #/* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-#/* Copyright (c) 2005-2006 Rexx Language Association. All rights reserved.    */
+#/* Copyright (c) 2009-2010 Rexx Language Association. All rights reserved.    */
 #/*                                                                            */
 #/* This program and the accompanying materials are made available under       */
 #/* the terms of the Common Public License v1.0 which accompanies this         */
@@ -36,24 +36,64 @@
 #/*                                                                            */
 #/*----------------------------------------------------------------------------*/
 #------------------------
-# REXXAPI.MAK make file
+# HOSTEMU.MAK make file
 #------------------------
-all: $(OR_OUTDIR)\rxftp.cls
+all: $(OR_OUTDIR)\hostemu.dll
     @ECHO .
-    @ECHO All done rxftp.cls
+    @ECHO All done hostemu.dll
     @ECHO .
 
 !include "$(OR_LIBSRC)\ORXWIN32.MAK"
 
-SOURCE_DIR = $(OR_EXTENSIONS)\rxftp
+!IFNDEF OR_HOSTEMUSRC
+!ERROR Build error, OR_REGEXPSRC not set
+!ENDIF
+
+OBJS   = $(OR_OUTDIR)\hostemu.obj $(OR_OUTDIR)\cmdparse.obj
+
+# Following for hostemu.DLL
+#
+# *** hostemu.LIB  : Creates .lib import library
+#                            .exp export library for use with this link
+#
+# Generate import library (.lib) and export library (.exp) from
+# module-definition (.dfw) file for a DLL
+$(OR_OUTDIR)\hostemu.lib : $(OBJS) $(OR_WINKERNELSRC)\hostemu.def
+        $(OR_IMPLIB) -machine:$(CPU) \
+        -def:$(OR_WINKERNELSRC)\hostemu.def               \
+        $(OBJS)               \
+        -out:$(OR_OUTDIR)\hostemu.lib
 
 #
-# Copy rxftp.cls to the build directory so the test suite can be run directly
-# from that location without doing an install.
+# *** hostemu.DLL
 #
-$(OR_OUTDIR)\rxftp.cls : $(SOURCE_DIR)\rxftp.cls
+# need import libraries and def files still
+$(OR_OUTDIR)\hostemu.dll : $(OBJS) $(OR_OUTDIR)\hostemu.lib \
+                          $(OR_WINKERNELSRC)\hostemu.def $(OR_OUTDIR)\hostemu.exp
+    $(OR_LINK) $(lflags_common) $(lflags_dll)  -out:$(OR_OUTDIR)\$(@B).dll \
+             $(OBJS) \
+             $(OR_OUTDIR)\verinfo.res \
+             $(OR_OUTDIR)\$(@B).exp \
+             $(OR_OUTDIR)\rexx.lib \
+             $(OR_OUTDIR)\rexxapi.lib
+
+#
+# *** cmdparse.obj
+#
+
+$(OR_OUTDIR)\cmdparse.obj:  $(OR_HOSTEMUSRC)\cmdparse.cpp
     @ECHO .
-    @ECHO Copying $(SOURCEDIR)\rxftp.cls
-    copy $(SOURCE_DIR)\rxftp.cls $(OR_OUTDIR)
+    @ECHO Compiling cmdparse.cpp
+    $(OR_CC) $(cflags_common) $(cflags_dll) /Fo$(OR_OUTDIR)\cmdparse.obj $(OR_ORYXINCL)  $(OR_HOSTEMUSRC)\cmdparse.cpp
+
+#
+# *** hostemu.obj
+#
+
+$(OR_OUTDIR)\hostemu.obj:  $(OR_HOSTEMUWINSRC)\hostemu.cpp
+    @ECHO .
+    @ECHO Compiling hostemu.cpp
+    $(OR_CC) $(cflags_common) $(cflags_dll) /Fo$(OR_OUTDIR)\hostemu.obj $(OR_ORYXINCL) $(OR_HOSTEMUWINSRC)\hostemu.cpp
+
 
 

@@ -2,6 +2,7 @@
 /CONTRIBUTORS -text
 /Makefile.am -text
 /NOTICE -text
+/RPM_build_notes.txt -text
 extensions/csvStream/csvStream.cls -text
 extensions/hostemu/cmdparse.cpp -text
 extensions/hostemu/cmdparse.ypp -text

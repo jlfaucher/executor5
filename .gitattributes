@@ -138,6 +138,7 @@ samples/windows/oodialog/controls/ReadMe.txt -text
 samples/windows/oodialog/controls/upDown.h -text
 samples/windows/oodialog/controls/upDown.rc -text
 samples/windows/oodialog/controls/upDown.rex -text
+samples/windows/oodialog/examples/columnClickListView.rex -text
 samples/windows/oodialog/examples/resources/Default.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/examples/resources/Disabled.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/examples/resources/Hot.bmp -text svneol=unset#image/bmp

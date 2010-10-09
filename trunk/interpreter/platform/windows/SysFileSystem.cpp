@@ -128,8 +128,7 @@ const char *SysFileSystem::getTempFileName()
  *                   The fully expanded and canonicalized file name.
  * @param bufferSize
  */
-void SysFileSystem::qualifyStreamName(
-  const char *unqualifiedName, char *qualifiedName, size_t bufferSize)
+void SysFileSystem::qualifyStreamName(const char *unqualifiedName, char *qualifiedName, size_t bufferSize)
 {
     LPTSTR  lpszLastNamePart;
     UINT errorMode;
@@ -888,7 +887,7 @@ SysFileIterator::SysFileIterator(const char *p)
 SysFileIterator::~SysFileIterator()
 {
     close();
-            }
+}
 
 
 /**
@@ -901,7 +900,7 @@ void SysFileIterator::close()
         FindClose(handle);
         handle = INVALID_HANDLE_VALUE;
     }
-    }
+}
 
 
 /**

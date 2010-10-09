@@ -209,7 +209,7 @@ void SysFileSystem::qualifyStreamName(
  */
 bool SysFileSystem::fileExists(const char * fname)
 {
-    struct stat64 filestat;                // file attributes
+    struct stat64 filestat;              // file attributes
     int rc;                              // stat function return code
 
     rc = stat64(fname, &filestat);
@@ -421,12 +421,12 @@ bool SysFileSystem::primitiveSearchName(const char *name, const char *path, cons
     if (hasDirectory(tempName))
     {
         for (int i = 0; i < 2; i++)
-    {
-        // check the file as is first
-        if (checkCurrentFile(tempName, resolvedName))
         {
-            return true;
-        }
+            // check the file as is first
+            if (checkCurrentFile(tempName, resolvedName))
+            {
+                return true;
+            }
             // try again in lower case
             Utilities::strlower(tempName);
         }
@@ -442,11 +442,11 @@ bool SysFileSystem::primitiveSearchName(const char *name, const char *path, cons
             {
                 return true;
             }
-        // try again in lower case
-        Utilities::strlower(tempName);
+            // try again in lower case
+            Utilities::strlower(tempName);
+        }
+        return false;
     }
-    return false;
-}
 }
 
 
@@ -478,10 +478,10 @@ bool SysFileSystem::checkCurrentFile(const char *name, char *resolvedName)
         return false;
     }
 
-    struct stat64 dummy;                   /* structure for stat system calls   */
+    struct stat64 dummy;                 /* structure for stat system calls   */
 
     // ok, if this exists, life is good.  Return it.
-    if (stat64(resolvedName, &dummy) == 0)             /* look for file              */
+    if (stat64(resolvedName, &dummy) == 0)           /* look for file         */
     {
         // this needs to be a regular file
         if (S_ISREG(dummy.st_mode))
@@ -534,7 +534,7 @@ bool SysFileSystem::searchPath(const char *name, const char *path, char *resolve
         if (canonicalizeName(resolvedName))
         {
             struct stat64 dummy;
-            if (stat64(resolvedName, &dummy) == 0)     /* If file is found,          */
+            if (stat64(resolvedName, &dummy) == 0)   /* If file is found,     */
             {
                 // this needs to be a regular file
                 if (S_ISREG(dummy.st_mode))

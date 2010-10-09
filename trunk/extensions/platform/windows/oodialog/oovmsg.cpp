@@ -119,6 +119,57 @@ CHAR * GetDlgMessage(DIALOGADMIN * addressedTo, CHAR * buffer, BOOL remove)
 ( ((tag & TAG_FOCUSCHANGED) && !(tag & TAG_SELECTCHANGED)) && (FocusDidChange(p)) )
 
 
+_inline bool isInReportView(HWND hList)
+{
+    uint32_t style = (uint32_t)GetWindowLong(hList, GWL_STYLE);
+    return ((style & LVS_TYPEMASK) == LVS_REPORT);
+}
+
+/**
+ * Helper function to deterimine a list view item's index using a hit test.
+ *
+ * @param hwnd  Handle of the list view.
+ * @param pIA   Pointer to an item activate structure.
+ *
+ * @remarks  This function should only be used when the list view is in report
+ *           mode.  If the subitem hit test does not produce an item index, we
+ *           only look for a y position that falls within the bounding rectangle
+ *           of the a visible item.
+ *
+ *           We start with the top visible index and look at each item on the
+ *           page.  The count per page only includes fully visible items, so we
+ *           also check for a last, partially visible item.
+ */
+static void getItemIndexFromHitPoint(LPNMITEMACTIVATE pIA, HWND hwnd)
+{
+    LVHITTESTINFO lvhti = {0};
+    lvhti.pt.x = pIA->ptAction.x;
+    lvhti.pt.y = pIA->ptAction.y;
+    lvhti.flags = LVHT_ONITEM;
+
+    ListView_SubItemHitTestEx(hwnd, &lvhti);
+    pIA->iItem = lvhti.iItem;
+
+    if ( pIA->iItem == -1 )
+    {
+        int topIndex = ListView_GetTopIndex(hwnd);
+        int count = ListView_GetCountPerPage(hwnd);
+        RECT r;
+
+        for ( int i = topIndex; i <= count; i++)
+        {
+            if ( ListView_GetItemRect(hwnd, i, &r, LVIR_BOUNDS) )
+            {
+                if ( lvhti.pt.y >= r.top && lvhti.pt.y < r.bottom )
+                {
+                    pIA->iItem = i;
+                    break;
+                }
+            }
+        }
+    }
+}
+
 BOOL SearchMessageTable(ULONG message, WPARAM param, LPARAM lparam, DIALOGADMIN * addressedTo)
 {
    register LONG i = 0;
@@ -168,6 +219,33 @@ BOOL SearchMessageTable(ULONG message, WPARAM param, LPARAM lparam, DIALOGADMIN 
                                 tmp[0] == '\0' ? strcpy(tmp, "ALT") : strcat(tmp, " ALT");
                         }
                         np = tmp;
+
+                        // The user can click on an item in a list view, or on the
+                        // background of the list view.  For report mode only, the user can
+                        // also click on a subitem of the item.  When the click is on the
+                        // background, the item index and column index will be sent to the
+                        // Rexx method as -1.
+                        //
+                        // In report mode, if the list view has the extended full row select
+                        // stylye, everything works as expected.  But, without that style,
+                        // if the user clicks anywhere on the row outside of the item icon
+                        // and item text, the OS does not report the item index.  This looks
+                        // odd to the user.  For this case we go to some extra trouble to
+                        // get the correct item index.
+                        if ( pIA->iItem == -1 && pIA->iSubItem != -1 )
+                        {
+                            HWND hwnd = pIA->hdr.hwndFrom;
+                            if ( isInReportView(hwnd)  )
+                            {
+                                getItemIndexFromHitPoint(pIA, hwnd);
+                            }
+                            else
+                            {
+                                // iSubItem is always 0 when not in report mode, but -1 is
+                                // more consistent.
+                                pIA->iSubItem = -1;
+                            }
+                        }
 
                         /* Don't drop through, use AddDialogMessage here and
                          * return because we need to send 4 args to ooRexx.

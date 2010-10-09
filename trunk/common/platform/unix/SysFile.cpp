@@ -1183,5 +1183,5 @@ bool SysFile::hasData()
 
     // we might have something buffered, but also check the
     // actual stream.
-    return atEof();
+    return !atEof();
 }

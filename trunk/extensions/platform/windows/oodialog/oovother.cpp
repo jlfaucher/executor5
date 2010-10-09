@@ -7404,6 +7404,93 @@ out:
 }
 
 
+/** Image::userIcon()  [class method]
+ *
+ *  Retrieves a user icon.  A user icon is added through
+ *  DynamicDialog::addIconResource(), either by the programmer, or when a *.rc
+ *  script file is parsed, if the file has icon resources.
+ *
+ *  @param  dlg    The UserDialog object that had the icon added.
+ *  @param  rxID   The resource ID of the icon, numeric or symbolic
+ *  @param  size   [optional]  A size object containing the desired size for the
+ *                 loaded icon.  The default if omitted is 0 x 0, which tells
+ *                 the OS to load the icon ...
+ *  @param  flags  [optional]
+ *
+ *  @return An image object, which may be a null image on error.
+ */
+RexxMethod4(RexxObjectPtr, image_userIcon_cls, RexxObjectPtr, dlg, RexxObjectPtr, rxID,
+            OPTIONAL_RexxObjectPtr, size, OPTIONAL_uint32_t, flags)
+{
+    RexxObjectPtr result = NULLOBJECT;
+    SIZE s = {0};
+    uint32_t defFlags = LR_LOADFROMFILE;
+
+    if ( ! requiredClass(context, dlg, "PlainBaseDialog", 1) )
+    {
+        goto out;
+    }
+
+    int32_t id = oodResolveSymbolicID(context, dlg, rxID, -1, 2);
+    if ( id == OOD_ID_EXCEPTION )
+    {
+        goto out;
+    }
+
+    DIALOGADMIN *adm = rxGetDlgAdm(context, dlg);
+    if ( adm == NULL )
+    {
+        goto out;
+    }
+
+    const char *fileName = NULL;
+    for ( int i = 0; i < adm->IT_size; i++ )
+    {
+        if ( adm->IconTab[i].iconID == id )
+        {
+            fileName = adm->IconTab[i].fileName;
+            break;
+        }
+    }
+    if ( fileName == NULL )
+    {
+        invalidTypeException(context, 2, " resource ID for a user icon");
+        goto out;
+    }
+
+    if ( argumentExists(3) )
+    {
+        SIZE *p = rxGetSize(context, size, 3);
+        if ( p == NULL )
+        {
+            goto out;
+        }
+        s.cx = p->cx;
+        s.cy = p->cy;
+    }
+
+    if ( argumentExists(4) )
+    {
+        // Make sure the user has compatible flags for this operation.
+        defFlags = (flags &  ~LR_SHARED) | LR_LOADFROMFILE;
+    }
+
+    HANDLE hImage = LoadImage(NULL, fileName, IMAGE_ICON, s.cx, s.cy, defFlags);
+    if ( hImage == NULL )
+    {
+        DWORD rc = GetLastError();
+        oodSetSysErrCode(context, rc);
+        result = rxNewEmptyImage(context, rc);
+        goto out;
+    }
+
+    result = rxNewValidImage(context, hImage, IMAGE_ICON, &s, defFlags, true);
+
+out:
+    return result;
+}
+
+
 RexxMethod4(RexxObjectPtr, image_fromFiles_cls, RexxArrayObject, files, OPTIONAL_uint8_t, type,
             OPTIONAL_RexxObjectPtr, size, OPTIONAL_uint32_t, flags)
 {

@@ -2116,6 +2116,7 @@ REXX_METHOD_PROTOTYPE(ri_getImages);
 
 REXX_METHOD_PROTOTYPE(image_toID_cls);
 REXX_METHOD_PROTOTYPE(image_getImage_cls);
+REXX_METHOD_PROTOTYPE(image_userIcon_cls);
 REXX_METHOD_PROTOTYPE(image_fromFiles_cls);
 REXX_METHOD_PROTOTYPE(image_fromIDs_cls);
 REXX_METHOD_PROTOTYPE(image_colorRef_cls);
@@ -2269,6 +2270,7 @@ RexxMethodEntry oodialog_methods[] = {
 
     REXX_METHOD(image_toID_cls,              image_toID_cls),
     REXX_METHOD(image_getImage_cls,          image_getImage_cls),
+    REXX_METHOD(image_userIcon_cls,          image_userIcon_cls),
     REXX_METHOD(image_fromFiles_cls,         image_fromFiles_cls),
     REXX_METHOD(image_fromIDs_cls,           image_fromIDs_cls),
     REXX_METHOD(image_colorRef_cls,          image_colorRef_cls),

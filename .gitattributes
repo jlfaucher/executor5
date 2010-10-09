@@ -114,6 +114,7 @@ trunk/samples/windows/oodialog/bmp/wlkfig5.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/wlkfig6.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/wlkfig7.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/wlkfig8.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/examples/columnClickListView.rex -text
 trunk/samples/windows/oodialog/examples/resources/Default.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/examples/resources/Disabled.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/examples/resources/Hot.bmp -text svneol=unset#image/bmp

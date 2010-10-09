@@ -37,6 +37,7 @@
 /*----------------------------------------------------------------------------*/
 /* OODialog\Samples\rc\ldvideo.rc      Video archive                  */
 /*--------------------------------------------------------------------*/
+#include <windows.h>
 
 101 DIALOG 67, 32, 288, 251
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU

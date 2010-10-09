@@ -44,6 +44,7 @@ produced by IBM Object REXX Resource Workshop
 
 
 *****************************************************************************/
+#include <windows.h>
 
 #define DIALOG_1	1
 

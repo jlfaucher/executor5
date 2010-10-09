@@ -37,6 +37,7 @@
 /*----------------------------------------------------------------------------*/
 /* OODialog\Samples\rc\ticket.rc       Let's go to the movies         */
 /*--------------------------------------------------------------------*/
+#include <windows.h>
 
 40 DIALOG 6, 13, 196, 143
 STYLE WS_CHILD | WS_VISIBLE | WS_BORDER

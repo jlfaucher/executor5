@@ -37,6 +37,7 @@
 /*----------------------------------------------------------------------------*/
 /* OODialog\Samples\rc\sample.rc       OODialog Samples Main          */
 /*--------------------------------------------------------------------*/
+#include <windows.h>
 
 100 DIALOG 4, 32, 465, 281
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU

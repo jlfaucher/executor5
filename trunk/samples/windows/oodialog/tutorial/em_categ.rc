@@ -44,6 +44,7 @@ produced by VisualAge Resource Workshop
 
 
 *****************************************************************************/
+#include <windows.h>
 
 100 DIALOG 6, 15, 271, 123
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU

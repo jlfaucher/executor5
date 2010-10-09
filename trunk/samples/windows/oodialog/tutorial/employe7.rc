@@ -44,6 +44,7 @@ produced by VisualAge Resource Workshop
 
 
 *****************************************************************************/
+#include <windows.h>
 
 #define MENU_1	1
 100 DIALOG 6, 15, 242, 151

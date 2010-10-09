@@ -37,6 +37,7 @@
 /*----------------------------------------------------------------------------*/
 /* OODialog\Samples\rc\movies.rc       Let's go to the movies         */
 /*--------------------------------------------------------------------*/
+#include <windows.h>
 
 #define IDD_FONT_PICKER                         101
 #define IDC_COMBO_SIZE                          1004

@@ -43,6 +43,7 @@ produced by IBM Object REXX Resource Workshop
 
 
 *****************************************************************************/
+#include <windows.h>
 
 #define DIALOG_1    100
 #define BNo1        101

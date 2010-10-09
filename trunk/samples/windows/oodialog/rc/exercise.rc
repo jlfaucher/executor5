@@ -42,6 +42,7 @@ exercise.rc
 produced by IBM Resource Workshop
 
 ***********************************************************************/
+#include <windows.h>
 
 #define DIALOG_1        1
 

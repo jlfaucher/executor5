@@ -76,8 +76,6 @@
 #include "ActivityManager.hpp"
 #include "ProtectedObject.hpp"
 
-#include <deque>
-
 
 // singleton class instance
 RexxClass *RexxArray::classInstance = OREF_NULL;
@@ -2118,19 +2116,18 @@ void *RexxArray::operator new(size_t size, RexxObject **args, size_t argCount, R
  * two sections, mergesort each partition, then merge the two
  * partitions together.
  *
- * @param comparator The comparator object used for the compares.
- * @param working    The working array (same size as the sorted array).
- * @param left       The left bound of the partition.
- * @param right      The right bounds of the parition.
+ * @param working The working array (same size as the sorted array).
+ * @param left    The left bound of the partition.
+ * @param right   The right bounds of the parition.
  */
-void RexxArray::mergeSort(BaseSortComparator &comparator, RexxArray *working, size_t left, size_t right)
+void RexxArray::mergeSort(RexxArray *working, size_t left, size_t right)
 {
     if (right > left)
     {
         size_t mid = (right + left) / 2;
-        mergeSort(comparator, working, left, mid);
-        mergeSort(comparator, working, mid + 1, right);
-        merge(comparator, working, left, mid + 1, right);
+        mergeSort(working, left, mid);
+        mergeSort(working, mid + 1, right);
+        merge(working, left, mid + 1, right);
     }
 }
 
@@ -2138,14 +2135,13 @@ void RexxArray::mergeSort(BaseSortComparator &comparator, RexxArray *working, si
 /**
  * Perform the merge operation on two partitions.
  *
- * @param comparator The comparator used to produce the ordering.
- * @param working    The temporary working storage.
- * @param left       The left bound of the range.
- * @param mid        The midpoint of the range.  This merges the two partitions
- *                   (left, mid - 1) and (mid, right).
- * @param right      The right bound of the array.
+ * @param working The temporary working storage.
+ * @param left    The left bound of the range.
+ * @param mid     The midpoint of the range.  This merges the two partitions
+ *                (left, mid - 1) and (mid, right).
+ * @param right   The right bound of the array.
  */
-void RexxArray::merge(BaseSortComparator &comparator, RexxArray *working, size_t left, size_t mid, size_t right)
+void RexxArray::merge(RexxArray *working, size_t left, size_t mid, size_t right)
 {
     size_t leftEnd = mid - 1;
     size_t elements = right - left + 1;
@@ -2155,7 +2151,7 @@ void RexxArray::merge(BaseSortComparator &comparator, RexxArray *working, size_t
     {
         RexxObject *leftItem = get(left);
         RexxObject *midItem = get(mid);
-        if (comparator.compare(leftItem, midItem) <= 0)
+        if (leftItem->compareTo(midItem) <= 0)
         {
             working->put(leftItem, mergePosition);
             mergePosition++;
@@ -2196,107 +2192,88 @@ void RexxArray::merge(BaseSortComparator &comparator, RexxArray *working, size_t
     }
 }
 
-/**
- * Interchange two items in an array.
- *
- * @param i1     The first index to swap.
- * @param i2     The second index to swap.
- */
-void RexxArray::interchange(size_t i1, size_t i2)
-{
-    RexxObject *temp = get(i1);
-    put(get(i2), i1);
-    put(temp, i2);
-}
-
 
 /**
- * Perform an insertion sort one a section of an array.
+ * The merge sort routine.  This will partition the data in to
+ * two sections, mergesort each partition, then merge the two
+ * partitions together.
  *
- * @param comparator The comparator used for comparing two array items.
- * @param bounds     The bounds of the partition to be sorted.
+ * @param comparator The comparator object used for the compares.
+ * @param working    The working array (same size as the sorted array).
+ * @param left       The left bound of the partition.
+ * @param right      The right bounds of the parition.
  */
-void RexxArray::insertionSort(BaseSortComparator &comparator, PartitionBounds &bounds)
+void RexxArray::mergeSort(RexxObject *comparator, RexxArray *working, size_t left, size_t right)
 {
-    for (size_t i = bounds.left; i <= bounds.right; i++) {
-        // get an item to insert
-        RexxObject *current = get(i);
-        // and a new position to scan through
-        size_t scan = i;
-        while ((scan > bounds.left) && comparator.compare(get(scan - 1), current) > 0) {
-            put(get(scan - 1), scan);
-            scan--;
-        }
-        put(current, scan);
+    if (right > left)
+    {
+        size_t mid = (right + left) / 2;
+        mergeSort(comparator, working, left, mid);
+        mergeSort(comparator, working, mid + 1, right);
+        merge(comparator, working, left, mid + 1, right);
     }
 }
 
 
 /**
- * Split a partition into sections.
+ * Perform the merge operation on two partitions.
  *
- * @param comparator The comparator used to comparing items.
- * @param bounds     The current partition bounds for the spli.
- *
- * @return The split position for the partition.
+ * @param comparator The comparator used to produce the ordering.
+ * @param working    The temporary working storage.
+ * @param left       The left bound of the range.
+ * @param mid        The midpoint of the range.  This merges the two partitions
+ *                   (left, mid - 1) and (mid, right).
+ * @param right      The right bound of the array.
  */
-size_t RexxArray::split(BaseSortComparator &comparator, PartitionBounds &bounds)
+void RexxArray::merge(RexxObject *comparator, RexxArray *working, size_t left, size_t mid, size_t right)
 {
-    size_t s;
-    size_t g;
-    size_t x;
+    size_t leftEnd = mid - 1;
+    size_t elements = right - left + 1;
+    size_t mergePosition = left;
 
-    PartitionBounds mid;
-
-    // here, atleast three elements are needed
-    if (comparator.compare(get(bounds.left), get(bounds.midPoint())) < 0)
+    while ((left <= leftEnd) && (mid <= right))
     {
-        s = bounds.left;
-        g = bounds.midPoint();
-    }
-    else
-    {
-        g = bounds.left;
-        s = bounds.midPoint();
-    }
-
-    if (comparator.compare(get(bounds.right), get(s)) <= 0)
-    {
-        x = s;
-    }
-    if (comparator.compare(get(bounds.right), get(g)) <= 0)
-    {
-        x = bounds.right;
-    }
-    else {
-        x = g;
-    }
-
-    // swap the split-point element
-    // with the first
-    interchange(x, bounds.left);
-
-    // this is our pivot element
-    RexxObject *pivot = get(bounds.left);
-    // set the scanning points
-    size_t i = bounds.left;
-    size_t j = bounds.right + 1;
-    // now find the pivot point
-    while (i < j)
-    {
-        do {                                 // find j
-            j--;
+        RexxObject *leftItem = get(left);
+        RexxObject *midItem = get(mid);
+        if (sortCompare(comparator, leftItem, midItem) <= 0)
+        {
+            working->put(leftItem, mergePosition);
+            mergePosition++;
+            left++;
         }
-        while (comparator.compare(get(j), pivot) > 0);
-        do {
-            i++;                             // find i
-        } while (comparator.compare(get(i), pivot) < 0);
-        interchange(i, j);
+        else
+        {
+            working->put(midItem, mergePosition);
+            mergePosition++;
+            mid++;
+        }
     }
-    interchange(i, j);                       // undo the extra swap
-    interchange(bounds.left, j);             // bring the split-point
-                                             // element to the first
-    return j;                                // this is our new pivot point
+
+    // now we have to copy any remainders in the segments
+    while (left <= leftEnd)
+    {
+        RexxObject *item = get(left);
+        working->put(item, mergePosition);
+        left++;
+        mergePosition++;
+    }
+
+    while (mid <= right)
+    {
+        RexxObject *item = get(mid);
+        working->put(item, mergePosition);
+        mid++;
+        mergePosition++;
+    }
+
+    // we've not modified the right position, so we can use that now to copy the
+    // merged elements back into the original array in reverse order
+    for (size_t i = 1; i <= elements; i++)
+    {
+        RexxObject *item = working->get(right);
+        put(item, right);
+        right--;
+    }
 }
 
 
@@ -2306,46 +2283,151 @@ size_t RexxArray::split(BaseSortComparator &comparator, PartitionBounds &bounds)
  * @param left   The left bound of the partition.
  * @param right  The right bound of the partition.
  */
-void RexxArray::quickSort(BaseSortComparator &comparator, size_t left, size_t right)
+void RexxArray::quickSort(size_t left, size_t right)
 {
-    std::deque<PartitionBounds>stack;  // stack for non-recursive quick sort
-    PartitionBounds bounds(left, right);    // initial bounds
+    size_t old_left = left;
+    size_t old_right = right;
 
-    stack.push_front(bounds);          // push the initial bounds
+    RexxObject *pivot = get(left);     // get the pivot value
 
-    // keep processing until the stack dries up
-    while (!stack.empty())
+    // now find the new partitioning
+    while (left < right)
     {
-        // get the top stack frame
-        bounds = stack.front();
-        stack.pop_front();
-        for (;;)
+        // fix the right end
+        while (get(right)->compareTo(pivot) >= 0 && (left < right))
         {
-            // if this is a larger range, then we need to partition
-            if (!bounds.isSmall())
-            {
-                // go find the new pivot point
-                size_t splitpoint = split(comparator, bounds);
-                // push the smaller list
-                if (bounds.right - splitpoint < splitpoint - bounds.left)
-                {
-                    stack.push_front(PartitionBounds(bounds.left, splitpoint - 1));
-                    bounds.left = splitpoint + 1;
-                }
-                else
-                {
-                    stack.push_front(PartitionBounds(splitpoint + 1, bounds.right));
-                    bounds.right = splitpoint - 1;
-                }
-            }
-            else {
-                // sort the smaller partitions via insertion sort
-                insertionSort(comparator, bounds);
-                // we break out of this once we find a small section we can sort
-                break;
-            }
+            right--;
+        }
+        // did we find a mismatch while testing?  then pull things in from the left too
+        if (left != right)
+        {
+            // swap these and pull the left in
+            put(get(right), left);
+            left++;
+        }
+        // now compare from the left
+        while (get(left)->compareTo(pivot) <= 0 && (left < right))
+        {
+            left++;
+        }
+        // still not done?
+        if (left != right)
+        {
+            // swap these two and continue
+            put(get(left), right);
+            right--;
         }
     }
+
+    // store the pivot value in the current left position
+    put(pivot, left);
+    // this is the new pivot point
+    size_t pivotPoint = left;
+    // restore the old end points
+    left = old_left;
+    right = old_right;
+    // something to the left of the pivot?
+    if (left < pivotPoint)
+    {
+        // sort the left partition
+        quickSort(left, pivotPoint - 1);
+    }
+    // and also the right partition if we have one
+    if (right > pivotPoint)
+    {
+        quickSort(pivotPoint + 1, right);
+    }
+}
+
+
+/**
+ * Recursive quick sort routine for sorting a partition.
+ *
+ * @param left   The left bound of the partition.
+ * @param right  The right bound of the partition.
+ */
+void RexxArray::quickSort(RexxObject *comparator, size_t left, size_t right)
+{
+    size_t old_left = left;
+    size_t old_right = right;
+
+    RexxObject *pivot = get(left);     // get the pivot value
+
+    // now find the new partitioning
+    while (left < right)
+    {
+        // fix the right end
+        while (sortCompare(comparator, get(right), pivot) >= 0 && (left < right))
+        {
+            right--;
+        }
+        // did we find a mismatch while testing?  then pull things in from the left too
+        if (left != right)
+        {
+            // swap these and pull the left in
+            put(get(right), left);
+            left++;
+        }
+        // now compare from the left
+        while (sortCompare(comparator, get(left), pivot) <= 0 && (left < right))
+        {
+            left++;
+        }
+        // still not done?
+        if (left != right)
+        {
+            // swap these two and continue
+            put(get(left), right);
+            right--;
+        }
+    }
+
+    // store the pivot value in the current left position
+    put(pivot, left);
+    // this is the new pivot point
+    size_t pivotPoint = left;
+    // restore the old end points
+    left = old_left;
+    right = old_right;
+    // something to the left of the pivot?
+    if (left < pivotPoint)
+    {
+        // sort the left partition
+        quickSort(comparator, left, pivotPoint - 1);
+    }
+    // and also the right partition if we have one
+    if (right > pivotPoint)
+    {
+        quickSort(comparator, pivotPoint + 1, right);
+    }
+}
+
+
+/**
+ * Utility method for calling the sort comparators during a sort
+ * operation.
+ *
+ * @param comparator The comparator object.
+ * @param left       The left object to compare.
+ * @param right      The right object to compare.
+ *
+ * @return -1, 0, 1 depending on the compare results.
+ */
+wholenumber_t RexxArray::sortCompare(RexxObject *comparator, RexxObject *left, RexxObject *right)
+{
+    ProtectedObject result;
+    comparator->sendMessage(OREF_COMPARE, left, right, result);
+    if ((RexxObject *)result == OREF_NULL)
+    {
+        reportException(Error_No_result_object_message, OREF_COMPARE);
+    }
+
+    wholenumber_t comparison;
+    if (!((RexxObject *)result)->numberValue(comparison, Numerics::DEFAULT_DIGITS))
+    {
+        reportException(Error_Invalid_whole_number_compare, (RexxObject *)result);
+    }
+    return comparison;
 }
 
 
@@ -2372,10 +2454,8 @@ RexxArray *RexxArray::sortRexx()
         }
     }
 
-    BaseSortComparator comparator;
-
     // go do the quick sort
-    quickSort(comparator, 1, count);
+    quickSort(1, count);
     return this;
 }
 
@@ -2405,10 +2485,8 @@ RexxArray *RexxArray::sortWithRexx(RexxObject *comparator)
         }
     }
 
-    WithSortComparator c(comparator);
-
     // go do the quick sort
-    quickSort(c, 1, count);
+    quickSort(comparator, 1, count);
     return this;
 }
 
@@ -2440,10 +2518,8 @@ RexxArray *RexxArray::stableSortRexx()
     RexxArray *working = new_array(count);
     ProtectedObject p(working);
 
-    BaseSortComparator comparator;
-
     // go do the quick sort
-    mergeSort(comparator, working, 1, count);
+    mergeSort(working, 1, count);
     return this;
 }
 
@@ -2477,10 +2553,8 @@ RexxArray *RexxArray::stableSortWithRexx(RexxObject *comparator)
     RexxArray *working = new_array(count);
     ProtectedObject p(working);
 
-    WithSortComparator c(comparator);
-
     // go do the quick sort
-    mergeSort(c, working, 1, count);
+    mergeSort(comparator, working, 1, count);
     return this;
 }
 
@@ -2638,28 +2712,4 @@ RexxObject  *RexxArray::of(RexxObject **args, size_t argCount)
         return newArray;
     }
 
-}
-
-
-wholenumber_t BaseSortComparator::compare(RexxObject *first, RexxObject *second)
-{
-    return first->compareTo(second);
-}
-
-
-wholenumber_t WithSortComparator::compare(RexxObject *first, RexxObject *second)
-{
-    ProtectedObject result;
-    comparator->sendMessage(OREF_COMPARE, first, second, result);
-    if ((RexxObject *)result == OREF_NULL)
-    {
-        reportException(Error_No_result_object_message, OREF_COMPARE);
-    }
-
-    wholenumber_t comparison;
-    if (!((RexxObject *)result)->numberValue(comparison, Numerics::DEFAULT_DIGITS))
-    {
-        reportException(Error_Invalid_whole_number_compare, (RexxObject *)result);
-    }
-    return comparison;
 }

@@ -315,7 +315,7 @@ class ActivationSettings
    RexxObject       *novalueHandler(RexxString *);
    RexxVariableBase *retriever(RexxString *);
    RexxVariableBase *directRetriever(RexxString *);
-   RexxObject       *handleNovalueEvent(RexxString *name, RexxVariable *variable);
+   RexxObject       *handleNovalueEvent(RexxString *name, RexxObject *defaultValue, RexxVariable *variable);
    RexxSource       *getSourceObject() { return sourceObject; }
    inline RexxSource *getEffectiveSourceObject() {
        return isInterpret() ? executable->getSourceObject() : sourceObject;

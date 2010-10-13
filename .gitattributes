@@ -2,6 +2,7 @@
 trunk/CONTRIBUTORS -text
 trunk/Makefile.am -text
 trunk/NOTICE -text
+trunk/RPM_build_notes.txt -text
 trunk/extensions/csvStream/csvStream.cls -text
 trunk/extensions/hostemu/cmdparse.cpp -text
 trunk/extensions/hostemu/cmdparse.ypp -text

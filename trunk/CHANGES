@@ -18,15 +18,15 @@ All Bugs
 
  * 2981139  Error on GetEditControl for Category Dialog
 
- * 2953752  REXX.EXE crashes at REXX script end  Pending
+ * 2953752  REXX.EXE crashes at REXX script end
 
- * 2842693  oodraw.rex sample has backwards logic  Pending
+ * 2842693  oodraw.rex sample has backwards logic
 
- * 2821025  EWOULBLOCK not set in RxSock on 3.2.0  Pending
+ * 2821025  EWOULBLOCK not set in RxSock on 3.2.0
 
  * 2790123  WindowsRegistry::open() access rights incomplete
 
- * 2790115  WindowsRegistry::delete() incorrect  Pending
+ * 2790115  WindowsRegistry::delete() incorrect
 
  * 1880799  RegEx parse("[0-"||"7F"x||"]*") hangs
 

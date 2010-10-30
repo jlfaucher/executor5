@@ -6,6 +6,18 @@ The following is the list of bug fixes added to ooRexx since the 4.0.1 release.
 All Bugs
 =============
 
+ * 3083953	 ooDialog - odd behavior for list view connect click event
+ 
+ * 3080931  Possible memory leak in Stream Object
+ 
+ * 3080519  RXQUEUE accepts only 4096 bytes, not 64K as per documentatio
+ 
+ * 3070409  Missing definition of WORKAREARECORD
+ 
+ * 3067519  NOVALUE condition can report wrong compound variable name
+ 
+ * 3061474  Arg length limitation
+
  * 3054788  Amendment to socket.cls - select method
 
  * 3046998  "Failure during initialization" on Linux
@@ -14,13 +26,33 @@ All Bugs
 
  * 3044222  ooDialog ListControl Value= bug
 
+ * 3041121  Hostemu (execio) can't read read-only file in windows 7
+
  * 3041096  First linein on read-only file returns empty line
 
+ * 3028787  Online Ref ::options formatted wrong
+ 
+ * 3028786  Online Ref missing example for :requires
+ 
+ * 3019826  RexxUtil Not Loading
+ 
+ * 3017541  lines() returns 0 prematurely for pipes on unix
+ 
+ * 2991134  4.0.1 rev. 5804, 5766 don't build with gcc 4.5-5.2
+
  * 2981139  Error on GetEditControl for Category Dialog
+
+ * 2978925  External search path: skips "same" takes "current" directory
+ 
+ * 2975571  Interpreter does not provide STDIN in pipeline
+ 
+ * 2973684  Back button does not save state on RxAPI dialog
 
  * 2953752  REXX.EXE crashes at REXX script end
 
  * 2842693  oodraw.rex sample has backwards logic
+
+ * 2842643  rxapi service does not start
 
  * 2821025  EWOULBLOCK not set in RxSock on 3.2.0
 
@@ -28,6 +60,8 @@ All Bugs
 
  * 2790115  WindowsRegistry::delete() incorrect
 
+ * 1890332  Writing to full disk causes abend on Linux
+ 
  * 1880799  RegEx parse("[0-"||"7F"x||"]*") hangs
 
  * 1849356  ftpGET returns 0 when out of space
@@ -35,6 +69,14 @@ All Bugs
 
 Documentation
 =============
+
+ * 2978849  Compiled works differently than uncompiled
+ 
+ * 2977049  circularqueue new class method requires size
+ 
+ * 2930620  Progress bar method setpos not working
+ 
+ * 1856698  RexxRegisterFunctionDLL returns undocumented error code
 
 
 Patches

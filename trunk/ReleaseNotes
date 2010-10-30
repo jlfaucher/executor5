@@ -107,21 +107,157 @@ New platforms:
 All platforms:
 ==============
 
+New subcommand environment
+--------------------------
+hostemu (partially emulates a TSO/CMS environment)
 
-New samples are included in the distribution:
----------------------------------------------
+New extensions classes :
+-----------------------
+csvstream.cls
+mime.cls
+smtp.cls
+streamsocket.cls
+
+New documentation :
+-------------------
+doc\rexxextensions.pdf
+doc\unixextensions.pdf
+
+New samples :
+-------------
+samples\oodialog\examples\columnclicklistview.rex
 
 
 Unix platform:
 ==============
 
+New builtin functions :
+-----------------------
+SysAccess
+SysChmod
+SysChown
+SysChroot
+SysCrypt
+SysEuidaccess
+SysGetdirlist
+SysGetegid
+SysGeterrno
+SysGeterrnomsg
+SysGeteuid
+SysGetgid
+SysGetgrgid
+SysGetgrnam
+SysGethostname
+SysGetpgrp
+SysGetpid
+SysGetppid
+SysGetpwnam
+SysGetpwuid
+SysGetservbyname
+SysGetservbyport
+SysGetsid
+SysGetsizeofptr
+SysGettid
+SysGettzname1
+SysGettzname2
+SysGetuid
+SysGetxattr
+SysLchown
+SysLink
+SysListxattr
+SysMkdir
+SysRemovexattr
+SysRmdir
+SysSetegid
+SysSeteuid
+SysSetgid
+SysSetpgid
+SysSetpgrp
+SysSetsid
+SysSetuid
+SysSetxattr
+SysSignal
+SysStat
+SysSymlink
+SysUmask
+SysUname
+SysWordexp
+
 
 Windows platform:
 =================
 
+oodialog :
+----------
+New method on class Image : 
+userIcon
+
 
 Windows Installation:
 =====================
+
+Major changes
+-------------
+
+1.)  There is a new 'type' of install ('upgrade'). The upgrade installation
+is only active if there is a previous version of ooRexx installed.
+
+An upgrade removes only the files from the previous version and
+installs the files for the current version.  It does not change any of
+the existing registry or environment settings.  They stay exactly the
+same.
+
+Since the uninstaller is written at the time of installation, the
+upgrade install is only available if the version of the uninstaller is
+4.1.0 or later.  What this means in practice is, the first time you
+install a 4.1.0 ooRexx, the upgrade install will not be available
+because the previous installation wrote an uninstaller that does not
+understand the upgrade type.
+
+When you do an upgrade install you can not change any of the settings
+from the previous install.  I.e., if you installed in
+C:\MyCrummyDirectory\ooRexx then the upgrade also installs in that
+directory.  If you installed rxapi as a service in the previous
+install, then it remains installed as a service.  Etc., etc..
+
+2.)  The installation lets associate file extensions with the ooRexx
+executables. Default values are :
+Executable      Extension      ftype (File type)
+rexx.exe        .rex           RexxScript
+rexxhide.exe    .rexg          RexxHide
+rexxpaws        .rexp          RexxPaws
+
+A 'Send To' item can be defined for rexx.exe, rexxhide.exe and
+rexxpaws.exe.
+
+An editor for the edit context menu can be defined (the same editor
+is used for all ooRexx file types).
+
+Minor changes
+-------------
+
+1.) Rather than put up a message box about stopping rxapi, a page
+is displayed. That way there is more room to explain why rxapi needs 
+to be stopped. If the user elects to not stop rxapi, the installer quits.
+
+2.) The message box popup with the question about uninstalling the
+previous version is turned into a page.  This makes it easier to
+insist that the user uninstall the previous version and explain that
+if she chooses not to uninstall the previous version it is likely to
+cause problems and that we won't support that.  It is made more
+difficult for the user to not uninstall a previous version, there is a
+second check box that has to be manually checked.
+
+3.) During the uninstall, the user is given the option of uninstalling
+by simply deleting the installation directory or only deleting the
+files placed there by the installer using the log file.  Using the log
+file is the default.  Uninstalling by deleting the whole installation 
+directory is generally faster than using the install log.
+
+4.) The installation user interface is meant to be more modern, meant
+to explain better to some one new to the install of ooRexx on Windows
+what they should do and why, and meant to allow some one used to
+installing a quicker uninstall / install cycle.
 
 
 Some possible differences in program behavior:
@@ -141,12 +277,41 @@ Class library:
 
 New classes:
 ------------
-
+File
+    absoluteFile
+    absolutePath
+    canRead
+    canWrite
+    compareTo
+    createPath
+    delete
+    deleteDir
+    deleteFile
+    exists
+    isCaseSensitive
+    isDirectory
+    isFile
+    isHidden
+    lastModified
+    lastModified=
+    length
+    list
+    listFiles
+    makeDir
+    makeDirs
+    name
+    normalizePathSyntax
+    parent
+    parentFile
+    path
+    pathSeparator
+    qualifiedPath
+    renameTo
+    separator
+    setReadonly
 
 
 New methods on DateTime:
 ------------------------
-
-
-
+toLocalTime
 

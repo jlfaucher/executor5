@@ -100,10 +100,6 @@ package for that distribution.
 Changes in ooRexx 4.1.0
 =================================
 
-New platforms:
---------------
-
-
 All platforms:
 ==============
 
@@ -260,24 +256,21 @@ what they should do and why, and meant to allow some one used to
 installing a quicker uninstall / install cycle.
 
 
-Some possible differences in program behavior:
-==============================================
-
-
-Miscellaneous Enhancements:
-===========================
-
-
-Builtin functions:
-==================
-
-
 Class library:
 ==============
 
 New classes:
 ------------
 File
+    Class methods
+    -------------
+    isCaseSensitive
+    listRoots
+    pathSeparator
+    separator
+    
+    Instance methods
+    ----------------
     absoluteFile
     absolutePath
     canRead
@@ -288,6 +281,8 @@ File
     deleteDir
     deleteFile
     exists
+    hashCode
+    init
     isCaseSensitive
     isDirectory
     isFile
@@ -309,6 +304,7 @@ File
     renameTo
     separator
     setReadonly
+    string
 
 
 New methods on DateTime:

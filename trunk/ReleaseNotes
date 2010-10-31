@@ -276,10 +276,7 @@ File
     canRead
     canWrite
     compareTo
-    createPath
     delete
-    deleteDir
-    deleteFile
     exists
     hashCode
     init
@@ -295,7 +292,6 @@ File
     makeDir
     makeDirs
     name
-    normalizePathSyntax
     parent
     parentFile
     path

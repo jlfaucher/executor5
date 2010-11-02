@@ -103,6 +103,57 @@ Changes in ooRexx 4.1.0
 All platforms:
 ==============
 
+Builtin Classes:
+----------------
+
+New class:
+------------
+File
+    Class methods
+    -------------
+    isCaseSensitive
+    listRoots
+    pathSeparator
+    separator
+
+    Instance methods
+    ----------------
+    absoluteFile
+    absolutePath
+    canRead
+    canWrite
+    compareTo
+    delete
+    exists
+    hashCode
+    init
+    isCaseSensitive
+    isDirectory
+    isFile
+    isHidden
+    lastModified
+    lastModified=
+    length
+    list
+    listFiles
+    makeDir
+    makeDirs
+    name
+    parent
+    parentFile
+    path
+    pathSeparator
+    qualifiedPath
+    renameTo
+    separator
+    setReadonly
+    string
+
+
+New methods on DateTime:
+------------------------
+toLocalTime
+
 New subcommand environment
 --------------------------
 hostemu (partially emulates a TSO/CMS environment)
@@ -119,65 +170,64 @@ New documentation :
 doc\rexxextensions.pdf
 doc\unixextensions.pdf
 
-New samples :
--------------
-samples\oodialog\examples\columnclicklistview.rex
-
 
 Unix platform:
 ==============
 
-New builtin functions :
------------------------
-SysAccess
-SysChmod
-SysChown
-SysChroot
-SysCrypt
-SysEuidaccess
-SysGetdirlist
-SysGetegid
-SysGeterrno
-SysGeterrnomsg
-SysGeteuid
-SysGetgid
-SysGetgrgid
-SysGetgrnam
-SysGethostname
-SysGetpgrp
-SysGetpid
-SysGetppid
-SysGetpwnam
-SysGetpwuid
-SysGetservbyname
-SysGetservbyport
-SysGetsid
-SysGetsizeofptr
-SysGettid
-SysGettzname1
-SysGettzname2
-SysGetuid
-SysGetxattr
-SysLchown
-SysLink
-SysListxattr
-SysMkdir
-SysRemovexattr
-SysRmdir
-SysSetegid
-SysSeteuid
-SysSetgid
-SysSetpgid
-SysSetpgrp
-SysSetsid
-SysSetuid
-SysSetxattr
-SysSignal
-SysStat
-SysSymlink
-SysUmask
-SysUname
-SysWordexp
+New extension library:
+----------------------
+rxunixsys
+  Functions:
+  ----------
+    SysAccess
+    SysChmod
+    SysChown
+    SysChroot
+    SysCrypt
+    SysEuidaccess
+    SysGetdirlist
+    SysGetegid
+    SysGeterrno
+    SysGeterrnomsg
+    SysGeteuid
+    SysGetgid
+    SysGetgrgid
+    SysGetgrnam
+    SysGethostname
+    SysGetpgrp
+    SysGetpid
+    SysGetppid
+    SysGetpwnam
+    SysGetpwuid
+    SysGetservbyname
+    SysGetservbyport
+    SysGetsid
+    SysGetsizeofptr
+    SysGettid
+    SysGettzname1
+    SysGettzname2
+    SysGetuid
+    SysGetxattr
+    SysLchown
+    SysLink
+    SysListxattr
+    SysMkdir
+    SysRemovexattr
+    SysRmdir
+    SysSetegid
+    SysSeteuid
+    SysSetgid
+    SysSetpgid
+    SysSetpgrp
+    SysSetsid
+    SysSetuid
+    SysSetxattr
+    SysSignal
+    SysStat
+    SysSymlink
+    SysUmask
+    SysUname
+    SysWordexp
 
 
 Windows platform:
@@ -185,8 +235,11 @@ Windows platform:
 
 oodialog :
 ----------
-New method on class Image : 
+New method on class Image :
 userIcon
+
+New sample :
+samples\oodialog\examples\columnclicklistview.rex
 
 
 Windows Installation:
@@ -233,7 +286,7 @@ Minor changes
 -------------
 
 1.) Rather than put up a message box about stopping rxapi, a page
-is displayed. That way there is more room to explain why rxapi needs 
+is displayed. That way there is more room to explain why rxapi needs
 to be stopped. If the user elects to not stop rxapi, the installer quits.
 
 2.) The message box popup with the question about uninstalling the
@@ -247,7 +300,7 @@ second check box that has to be manually checked.
 3.) During the uninstall, the user is given the option of uninstalling
 by simply deleting the installation directory or only deleting the
 files placed there by the installer using the log file.  Using the log
-file is the default.  Uninstalling by deleting the whole installation 
+file is the default.  Uninstalling by deleting the whole installation
 directory is generally faster than using the install log.
 
 4.) The installation user interface is meant to be more modern, meant
@@ -255,55 +308,4 @@ to explain better to some one new to the install of ooRexx on Windows
 what they should do and why, and meant to allow some one used to
 installing a quicker uninstall / install cycle.
 
-
-Class library:
-==============
-
-New classes:
-------------
-File
-    Class methods
-    -------------
-    isCaseSensitive
-    listRoots
-    pathSeparator
-    separator
-    
-    Instance methods
-    ----------------
-    absoluteFile
-    absolutePath
-    canRead
-    canWrite
-    compareTo
-    delete
-    exists
-    hashCode
-    init
-    isCaseSensitive
-    isDirectory
-    isFile
-    isHidden
-    lastModified
-    lastModified=
-    length
-    list
-    listFiles
-    makeDir
-    makeDirs
-    name
-    parent
-    parentFile
-    path
-    pathSeparator
-    qualifiedPath
-    renameTo
-    separator
-    setReadonly
-    string
-
-
-New methods on DateTime:
-------------------------
-toLocalTime
 

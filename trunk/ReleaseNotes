@@ -6,11 +6,24 @@
   Copyright 2005-2010 Rexx Language Association.  All rights reserved.
                                November 2010
 
-Note ==== ooRexx 4.1.0 is a bug fix and enhancement release.  The new
+Note
+====
+ooRexx 4.1.0 is a bug fix and enhancement release.  The new
 features and enhancements are listed below.
 
-File List     TODO correct file list with actual files at release
+File List
 =========
+Linux rpm and deb packages contain the distribution name and version of
+the system they were built on.  For instance,
+ooRexx-4.1.0-beta1.opensuse1110.x86_64.rpm was built on OpenSuSE 11.1.
+
+Pick the package closest to the system you intend to install on.  If the
+package is not an exact match and will not install, or the interpreter
+will not run because of a conflict with the C / C++ libraries, it may be
+possible to get one of the developers to build a package for your system
+by opening up a support request in the tracker system.  Note that
+developer resources are constrained and this is neither a commitment nor
+a promise.
 
 0readme.pdf
 Installation help and other relevant notes, prior to installation,
@@ -21,45 +34,64 @@ Installation help in a text format.
 ReleaseNotes
 This file.
 
-ooRexx-4.1.0.i586.rc1.exe
+ooRexx-4.1.0-beta1.i586.exe
 Installation package for any supported Windows 32-bit OS
 
-ooRexx-4.1.0.x86_64.rc1.exe
+ooRexx-4.1.0-beta1.x86_64.exe
 Installation package for any supported Windows 64-bit OS
 
-ooRexx-4.1.0.i586.rc1.rpm
-Linux rpm installation package for any 32-bit OS (built on Fedora Core 10)
+ooRexx-4.1.0-beta1.fedora13.i686.rpm
+Linux rpm installation package for any 32-bit OS (built on Fedora Core 13)
 
-ooRexx-4.1.0.x86_64.rc1.rpm
-Linux rpm installation package for any 64-bit OS (built on Fedora Core 10)
+ooRexx-4.1.0-beta1.fedora13.x86_64.rpm
+Linux rpm installation package for any 64-bit OS (built on Fedora Core 13)
 
-ooRexx-4.1.0.i586.rc1.deb
-Linux installation package for any debian based 32-bit OS (built on Kubuntu 8.10)
+ooRexx-4.1.0-beta1.ubuntu1004.i386.deb
+Linux installation package for any debian based 32-bit OS (built on Ubuntu 10.04)
 
-ooRexx-4.1.0.x86_64.rc1.deb
-Linux installation package for any debian based 64-bit OS (built on Kubuntu 8.10)
+ooRexx-4.1.0-beta1.ubuntu1004.amd64.deb
+Linux installation package for any debian based 64-bit OS (built on Ubuntu 10.04)
 
-ooRexx-4.1.0.i586.rc1.macosx.dmg
+ooRexx-4.1.0-beta1.ubuntu1010.i386.deb
+Linux installation package for any debian based 32-bit OS (built on Ubuntu 10.10)
+
+ooRexx-4.1.0-beta1.ubuntu1010.amd64.deb
+Linux installation package for any debian based 64-bit OS (built on Ubuntu 10.10)
+
+ooRexx-4.1.0-beta1.opensuse113.i586.rpm
+Linux rpm installation package for any 32-bit OS (built on OpenSuSE 11.3)
+
+ooRexx-4.1.0-beta1.opensuse113.x86_64.rpm
+Linux rpm installation package for any 64-bit OS (built on OpenSuSE 11.3)
+
+ooRexx-4.1.0-beta1.opensuse1110.x86_64.rpm
+Linux rpm installation package for any 64-bit OS (built on OpenSuSE 11.1)
+
+ooRexx-4.1.0-beta1.rhel55.i386.rpm
+Linux rpm installation package for any 64-bit OS (built on RHEL 5.5)
+
+ooRexx-4.1.0-beta1.rhel55.x86_64.rpm
+Linux rpm installation package for any 64-bit OS (built on RHEL 5.5)
+
+ooRexx-4.1.0-beta1.sles1010.s390x.rpm
+Linux rpm installation package for s390
+
+* It is anticipated that the following files will also be available shortly
+  after the beta starts.
+
+ooRexx-4.1.0-beta1.macosx.dmg
 Mac OS X 10.5 or 10.6 Intel 32-bit binary
 
-ooRexx-4.1.0.32.rte.rc1.bff
+ooRexx-4.1.0.32.rte-beta1.bff
 AIX installation package for 32-bit AIX 5.2 / 5.3 and 6.1
 
-ooRexx-4.1.0.64.rte.rc1.bff
+ooRexx-4.1.0.64.rte-beta1.bff
 AIX installation package for 64-bit AIX 5.2 / 5.3 and 6.1
 
-ooRexx-4.1.0.i586.rc1.debian50.deb
-Linux installation package for a Debian 5 32-bit OS
-(use if your system is Debian, not Kubuntu or Ubuntu)
-
-ooRexx-4.1.0.x86_64.rc1.debian50.deb
-Linux installation package for a Debian 5 64-bit OS
-(use if your system is Debian, not Kubuntu or Ubuntu)
-
-ooRexx-4.1.0.rc1.tar.gz
+ooRexx-4.1.0.beta01.tar.gz
 Source files suitable for building ooRexx on any Unix-like system
 
-ooRexx.4.1.0.source.rc1.zip
+ooRexx.4.1.0.source.beta01.zip
 Source files suitable for building ooRexx on any supported Windows system
 
 

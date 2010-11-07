@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2006 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2010 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -37,13 +37,11 @@
 /*----------------------------------------------------------------------------*/
 /****************************************************************************/
 /* Name: sysinfo.rex                                                        */
-/* Type: Object REXX Script using OODialog and OLE                          */
+/* Type: Open Object REXX Script using ooDialog and OLE                     */
 /* Resource: sysinfo.rc                                                     */
 /*                                                                          */
 /* Description:                                                             */
 /* Demo application for inspecting some system properties using WMI         */
-/*                                                                          */
-/* Attention: You need the IBM Object REXX Development Edition to run this. */
 /*                                                                          */
 /* Note:                                                                    */
 /* Windows 2000 has WMI pre-installed, on WinNT/98 it has to be installed   */
@@ -62,12 +60,9 @@ end
 exit
 
 
+::requires "ooDialog.cls"
 
-::requires "OODIALOG.CLS"    /* This file contains the OODIALOG classes */
-::requires "OODWIN32.CLS"    /* advanced Controls */
-::requires "OREXXOLE.CLS"    /* OLE interface */
-
-::class SystemClass subclass UserDialog inherit AdvancedControls MessageExtensions
+::class SystemClass subclass UserDialog
 
 ::method Init
   forward class (super) continue /* call parent constructor */
@@ -79,15 +74,13 @@ exit
   end
 
   /* Connect dialog control items to class methods */
-  self~ConnectButton(1,"Ok")
-
-  self~ConnectComboBoxNotify(100,"SELCHANGE",selectionChange)
+  self~connectComboBoxEvent(100,"SELCHANGE",selectionChange)
 
   /* Add your initialization code here */
   return InitRet
 
 ::method InitDialog
-  cb = self~GetComboBox(100)
+  cb = self~newComboBox(100)
   if cb \= .nil then do
     cb~add("Win32_BootConfiguration")
     cb~add("Win32_ComputerSystem")
@@ -109,10 +102,10 @@ exit
   return resOK
 
 ::method selectionChange
-  lc = self~GetListBox(101)
+  lc = self~newListBox(101)
   if lc = .nil then return
   lc~DeleteAll
-  component = self~GetComboBox(100)~title
+  component = self~newComboBox(100)~title
 -- Gather data on the current size and position of the dialog
   parse value lc~getPos() with siX siY
   parse value lc~getSize() with siW siH

@@ -49,7 +49,7 @@
  */
 
 ::requires 'winsystm.cls'
-::requires 'oodwin32.cls'
+::requires "ooDialog.cls"
 
 /** findTheWindow()
  * Uses the WindowsManager to create a WindowObject representing a top-level
@@ -418,7 +418,7 @@ return .false
  * @note For an example of how to use this class see the showWindowTree()
  *       public routine in this framework.
  */
-::class 'WindowTreeDlg' public subclass RcDialog inherit AdvancedControls MessageExtensions
+::class 'WindowTreeDlg' public subclass RcDialog
 
 /** useTree()
  * Sets the window tree structure for this dialog.  The structure must be set
@@ -459,7 +459,7 @@ return .false
 
   -- Get the tree-view control object and then invoke the addNode() recursive
   -- method to add all the items to the control.
-  tree = self~getTreeControl(IDC_TREE_WINDOWS)
+  tree = self~newTreeView(IDC_TREE_WINDOWS)
   rootNode = self~addNode(tree, "Root", windowTree)
 
   -- Set the title of this dialog, which will contain the window handle for the
@@ -535,7 +535,7 @@ return newRoot
  * ooDialog part is only used in the display() method which produces a graphical
  * dislpay of the menu tree.
  */
-::class 'MenuDetailer' public subclass RcDialog inherit AdvancedControls MessageExtensions
+::class 'MenuDetailer' public subclass RcDialog
 
 ::method init
   use strict arg wnd
@@ -829,7 +829,7 @@ return populatedMenubar
   -- comment if needed.
 
   -- Get the tree-view object, set the first item, expand it.
-  tree = self~getTreeControl(IDC_TREE_MENUS)
+  tree = self~newTreeView(IDC_TREE_MENUS)
 
   if menubar~itemCount == -1 then do
     rootText = rootText "[window does not have a menu]"

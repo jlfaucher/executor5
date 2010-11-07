@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2008 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2010 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -37,13 +37,11 @@
 /*----------------------------------------------------------------------------*/
 /****************************************************************************/
 /* Name: OLEINFO.REX                                                        */
-/* Type: Object REXX Script using OODialog                                  */
+/* Type: Open Object Rexx Script using ooDialog                             */
 /* Resource: OLEINFO.RC                                                     */
 /*                                                                          */
 /* Description:                                                             */
 /* A "small" browser for OLE objects                                        */
-/*                                                                          */
-/* Attention: You need the IBM Object REXX OODialog to run this.            */
 /*                                                                          */
 /****************************************************************************/
 
@@ -56,9 +54,7 @@ end
 
 exit   /* leave program */
 
-::requires "OREXXOLE.CLS"    /* OLE Automation support class            */
-::requires "OODIALOG.CLS"    /* This file contains the OODIALOG classes */
-::requires "OODWIN32.CLS"    /* contains advanced controls              */
+::requires "ooDialog.cls"    /* contains the ooDialog classes           */
 ::requires "WINSYSTM.CLS"    /* used for registry lookup                */
 
 /*****************************************/
@@ -102,7 +98,7 @@ callFailed:
 /**************************/
 /* Main Dialog of OLEINFO */
 /**************************/
-::class OLEINFO subclass UserDialog inherit AdvancedControls MessageExtensions
+::class OLEINFO subclass UserDialog
 
 ::method Init
   expose cache
@@ -117,25 +113,24 @@ callFailed:
   end
 
   /* Connect dialog control items to class methods */
-  self~ConnectButton(200,"MyOk")
-  self~ConnectButton(9,"Help")
-  self~ConnectButton(103,"Lookup")
+  self~connectButtonEvent(200, "CLICKED", "MyOk")
+  self~connectButtonEvent(103, "CLICKED", "Lookup")
 
-  self~ConnectComboBoxNotify(100,"SELCHANGE","Ok")
-  self~ConnectListNotify(104,"ACTIVATE","selectDoubleClick")
-  self~ConnectListNotify(104,"CHANGED","selectionChange")
+  self~connectComboBoxEvent(100,"SELCHANGE","Ok")
+  self~connectListViewEvent(104,"ACTIVATE","selectDoubleClick")
+  self~connectListViewEvent(104,"CHANGED","selectionChange")
 
-  self~ConnectButton(107,"selectionChange")
-  self~ConnectButton(108,"selectionChange")
-  self~ConnectButton(109,"selectionChange")
+  self~connectButtonEvent(107, "CLICKED", "selectionChange")
+  self~connectButtonEvent(108, "CLICKED", "selectionChange")
+  self~connectButtonEvent(109, "CLICKED", "selectionChange")
 
   self~currentObject = .nil
   self~currentObjectName = ""
   return InitRet
 
 ::method InitDialog
-  self~GetListControl(104)~setImageList(self~getImages, .Image~toID(LVSIL_SMALL))
-  cb = self~GetComboBox(100)
+  self~newListView(104)~setImageList(self~getImages, .Image~toID(LVSIL_SMALL))
+  cb = self~newComboBox(100)
   default = .array~of("InternetExplorer.Application","Excel.Application","Freelance.Application",,
                       "Notes.NotesSession","Lotus123.Workbook","Outlook.Application",,
                       "Word.Application","WordPro.Application","Access.Application")
@@ -145,9 +140,9 @@ callFailed:
 
   /* Method Ok will be called if enter is pressed in dialog */
 ::method Ok
-  entryLine = self~GetComboBox(100)
-  if entryLine \= .nil then do
-    OLEID = entryLine~Title          /* get ProgID or ClassID of OLE Object */
+  cb = self~newComboBox(100)
+  if cb \= .nil then do
+    OLEID = cb~Title          /* get ProgID or ClassID of OLE Object */
     if OLEID \= self~currentObjectName then do
       call createObject self, OLEID
       if self~currentObject \= .nil then do
@@ -156,7 +151,7 @@ callFailed:
       end
       else do
         call RxMessageBox "Could not create OLE object", "Error", "OK", "EXCLAMATION"
-        entryLine~title = self~currentObjectName
+        cb~title = self~currentObjectName
       end
     end
   end
@@ -186,7 +181,7 @@ callFailed:
 
   self~Cursor_Wait
 
-  progressBar = self~GetProgressBar(110)
+  progressBar = self~newProgressBar(110)
   if cache == .nil then do
     cache = .list~new
     registry = .WindowsRegistry~new
@@ -218,21 +213,25 @@ callFailed:
   self~Cursor_Arrow
 
 
+  picked = ""
   temp = .RegistryDialog~new(,cache)
   if temp~InitCode = 0 then do
     rc = temp~execute("SHOWTOP")
     if rc =1 then do
-      self~GetEditControl(100)~title=temp~data200
+      combo = self~newComboBox(100)
+      combo~title = temp~data200
+      picked = combo~title
       self~ok
     end
     temp~deinstall
   end
-  cb = self~GetComboBox(100)
+  cb = self~newComboBox(100)
   if cb \= .nil then do
     cb~DeleteAll
     do i over cache
       cb~add(i)
     end
+    if picked \== "" then cb~title = picked
   end
 
   /* extract ProgID from registry */
@@ -274,7 +273,7 @@ callFailed:
   /* update the list of methods and events */
 ::method updateView
   expose indexStem. methods. events.
-  lc = self~GetListControl(104)
+  lc = self~newListView(104)
   if lc \= .nil then do
     methods. = self~currentObject~GetKnownMethods   /* retrieve info on methods   */
     if methods. = .nil then do
@@ -287,19 +286,19 @@ callFailed:
 
     lc~DeleteAll                                    /* remove all items from list */
     if var("methods.!LIBNAME") = 1 then
-      self~GetEditControl(101)~title = methods.!LIBNAME
+      self~newEdit(101)~title = methods.!LIBNAME
     else
-      self~GetEditControl(101)~title = "unavailable"
+      self~newEdit(101)~title = "unavailable"
     if var("methods.!LIBDOC") = 1 then
-      self~GetEditControl(102)~title = methods.!LIBDOC
+      self~newEdit(102)~title = methods.!LIBDOC
     else
-      self~GetEditControl(102)~title = "unavailable"
+      self~newEdit(102)~title = "unavailable"
 
     /* collect the indices of the info stem ordered according to their method names */
     indexStem.0 = 0
 
     self~Cursor_Wait
-    pbc = self~GetProgressBar(110)
+    pbc = self~newProgressBar(110)
     if pbc \= .nil then do
       pbc~SetStep(1)
       pbc~SetRange(0,methods.0 + events.0)
@@ -340,14 +339,14 @@ callFailed:
 ::method selectionChange
   expose indexStem. methods. events.
 
-  listbox=self~GetListControl(104)
+  listbox=self~newListView(104)
 
   j = 1 + listbox~Selected
   if j < 1 then return                              /* return if nothing was selected */
   i = indexStem.j
 
-  types = self~GetCheckBox(107)
-  flags = self~GetCheckBox(108)
+  types = self~getCheckBoxData(107)
+  flags = self~getCheckBoxData(108)
 
   if i > methods.0 then do
     workstem. = events.
@@ -356,7 +355,7 @@ callFailed:
   end
   else do
     workstem. = methods.
-    memberID = self~GetCheckBox(109)
+    memberID = self~getCheckBoxData(109)
     /* show member ID? */
     if memberID \= 0 then
       infostring = "['"||workstem.i.!MEMID||"'x] "
@@ -390,10 +389,10 @@ callFailed:
   end
 
   /* set string to dialog */
-  signature = self~GetEditControl(105)
+  signature = self~newEdit(105)
   if signature \= .nil then
     signature~title = infostring
-  desc = self~GetEditControl(106)
+  desc = self~newEdit(106)
   /* show documentation if available */
   if desc \= .nil then do
     interpret 'exists = var("workstem.'i'.!DOC")'
@@ -407,7 +406,7 @@ callFailed:
 ::method selectDoubleClick
   expose indexStem. methods.
 
-  listbox=self~GetListControl(104)
+  listbox=self~newListView(104)
 
   j = 1 + listbox~Selected
   i = indexStem.j
@@ -470,7 +469,7 @@ callFailed:
         if temp~useoleobject \= .nil then do
            self~currentObject = temp~useOLEobject
            self~currentObjectName = "??? (from execution)"
-           self~GetComboBox(100)~title = self~currentObjectName
+           self~newComboBox(100)~title = self~currentObjectName
            self~updateView
         end
         temp~deinstall
@@ -496,7 +495,7 @@ callFailed:
 /*************************************/
 /* Dialog for invoking an OLE method */
 /*************************************/
-::CLASS invokeDialog SUBCLASS UserDialog INHERIT AdvancedControls
+::CLASS invokeDialog SUBCLASS UserDialog
 
 ::METHOD resultObject ATTRIBUTE     /* takes the result of the invocation */
 
@@ -511,10 +510,10 @@ callFailed:
   self~DefineDialog:super
 
   do i = 1 to params.0
-    self~AddEntryLine(300+i,"Param"i,64,-5+(13*i),128,11, "AUTOSCROLLH")
-    self~AddText(8,-5+(13*i),56,11,params.i.!NAME)
+    self~createEdit(300+i, 64, -5+(13*i), 128, 11, "AUTOSCROLLH", "Param"i)
+    self~createStaticText(-1, 8, -5+(13*i), 56, 11, , params.i.!NAME)
   end
-  self~addOkCancelRightBottom
+  self~createOkCancelRightBottom
 
 ::METHOD InitDialog
   expose params.
@@ -523,7 +522,7 @@ callFailed:
     /* plain out parameters can not be edited */
     if params.i.!FLAGS = "[out]" then do
       interpret "self~Param"i"='.NIL'"
-      self~GetEditControl(300+i)~disable
+      self~newEdit(300+i)~disable
     end
     /* set .true if BOOL expected */
     if params.i.!TYPE = "VT_BOOL" then interpret "self~param"i"='.TRUE'"
@@ -544,7 +543,7 @@ callFailed:
 /*******************************************************/
 /* Dialog that shows the result of a method invocation */
 /*******************************************************/
-::class ResultDialog subclass UserDialog inherit AdvancedControls
+::class ResultDialog subclass UserDialog
 
 ::method Init
   expose outarray
@@ -556,8 +555,6 @@ callFailed:
      return 1
   end
 
-  self~ConnectButton(1,"Ok")
-
   self~data400=rvalue~string
   if self~data400 = "an OLEOBJECT" then self~useOLEobject = rvalue
   else self~useOLEobject = .nil
@@ -566,7 +563,7 @@ callFailed:
 ::method InitDialog
   expose outarray
 
-  lc = self~GetListBox(401)
+  lc = self~newListBox(401)
 
   if outarray \= .nil then do
     if lc \= .nil then do
@@ -600,7 +597,7 @@ callFailed:
 /********************************************************/
 /* Dialog that shows all ProgIDs obtained from Registry */
 /********************************************************/
-::class RegistryDialog subclass UserDialog inherit AdvancedControls
+::class RegistryDialog subclass UserDialog
 
 ::method Init
   expose cache
@@ -612,8 +609,8 @@ callFailed:
      self~InitCode = 1
      return 1
   end
-  self~ConnectListLeftDoubleClick(200,"selectDoubleClick")
-  self~ConnectButton(201,"search")
+  self~connectListBoxEvent(200, "DBLCLK", "selectDoubleClick")
+  self~connectButtonEvent(201, "CLICKED", "search")
 
   return InitRet
 
@@ -623,7 +620,7 @@ callFailed:
 
 ::method InitDialog
   expose cache
-  lc = self~GetListBox(200)
+  lc = self~newListBox(200)
   if lc \= .nil then do
     do item over cache
       lc~add(item)
@@ -643,7 +640,7 @@ callFailed:
   value = dlg~Execute
   drop dlg
 
-  lb = self~GetListBox(200)
+  lb = self~newListBox(200)
   startindex = lb~selectedindex
   lb~selectindex(lb~find(value,startindex,0))
 

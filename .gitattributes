@@ -70,9 +70,9 @@ samples/windows/api/callrxnt/callrxnt.ico -text svneol=unset#applicatiion/octet-
 samples/windows/api/callrxwn/callrxwn.ico -text svneol=unset#applicatiion/octet-stream
 samples/windows/api/rexxexit/rexxexit.ico -text svneol=unset#applicatiion/octet-stream
 samples/windows/api/rexxexit/testRexxExit -text
+samples/windows/ole/ReadMe.first -text
 samples/windows/ole/apps/oleUtils.frm -text
 samples/windows/ole/apps/samp06.mwp -text
-samples/windows/ole/oleinfo/icons.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/PropertySheetDemo.rex -text
 samples/windows/oodialog/bmp/bigpiece.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/blank.bmp -text svneol=unset#image/bmp
@@ -156,6 +156,7 @@ samples/windows/oodialog/examples/resources/Disabled.bmp -text svneol=unset#imag
 samples/windows/oodialog/examples/resources/Hot.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/examples/resources/Normal.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/examples/resources/Pushed.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/oleinfo/icons.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/ooDraw.h -text
 samples/windows/oodialog/ooRexxTry/Makefile.am -text
 samples/windows/oodialog/ooRexxTry/doc/Makefile.am -text
@@ -203,5 +204,5 @@ samples/windows/oodialog/wav/take.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/tiger.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/whistle.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/yourgood.wav -text svneol=unset#audio/x-wav
-samples/windows/winsystem/windowsSystem.frm -text
+samples/windows/oodialog/winsystem/windowsSystem.frm -text
 utilities/rexx/platform/windows/rexx.mak -text

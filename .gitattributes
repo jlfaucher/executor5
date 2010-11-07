@@ -54,6 +54,18 @@ platform/windows/install/uninstall.ico -text svneol=unset#applicatiion/octet-str
 platform/windows/orxw.ico -text svneol=unset#applicatiion/octet-stream
 platform/windows/rexx.ico -text svneol=unset#applicatiion/octet-stream
 rexxapi/server/platform/windows/rxapi.ico -text
+samples/native.api/Makefile.am -text
+samples/native.api/ReadMe.txt -text
+samples/native.api/call.example/HelloWorld.rex -text
+samples/native.api/call.example/Makefile.am -text
+samples/native.api/call.example/Makefile.linux -text
+samples/native.api/call.example/Makefile.windows -text
+samples/native.api/call.example/ReadMe.txt -text
+samples/native.api/call.example/backward.fnc -text
+samples/native.api/call.example/runRexxProgram.cpp -text
+samples/native.api/call.example/stackOverflow.cpp -text
+samples/native.api/call.example/tooRecursiveTrapped.rex -text
+samples/native.api/call.example/tooRecursiveUnhandled.rex -text
 samples/windows/api/callrxnt/callrxnt.ico -text svneol=unset#applicatiion/octet-stream
 samples/windows/api/callrxwn/callrxwn.ico -text svneol=unset#applicatiion/octet-stream
 samples/windows/api/rexxexit/rexxexit.ico -text svneol=unset#applicatiion/octet-stream

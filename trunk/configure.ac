@@ -420,8 +420,6 @@ AC_CONFIG_FILES([
 	platform/unix/debian/postinst
 	rexxapi/server/platform/unix/rxapid
         samples/Makefile
-        samples/native.api/Makefile
-        samples/native.api/call.example/Makefile
         samples/unix/Makefile
         samples/unix/api/Makefile
         samples/unix/api/callrexx/Makefile

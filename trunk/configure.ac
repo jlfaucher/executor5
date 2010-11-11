@@ -420,6 +420,8 @@ AC_CONFIG_FILES([
 	platform/unix/debian/postinst
 	rexxapi/server/platform/unix/rxapid
         samples/Makefile
+        samples/native.api/Makefile
+        samples/native.api/call.example/Makefile
         samples/unix/Makefile
         samples/unix/api/Makefile
         samples/unix/api/callrexx/Makefile
@@ -447,12 +449,15 @@ AC_CONFIG_FILES([
         samples/windows/oodialog/bmp/Makefile
         samples/windows/oodialog/examples/Makefile
         samples/windows/oodialog/examples/resources/Makefile
+        samples/windows/oodialog/oleinfo/Makefile
         samples/windows/oodialog/ooRexxTry/Makefile
         samples/windows/oodialog/ooRexxTry/doc/Makefile
         samples/windows/oodialog/rc/Makefile
         samples/windows/oodialog/res/Makefile
+        samples/windows/oodialog/sysinfo/Makefile
         samples/windows/oodialog/tutorial/Makefile
         samples/windows/oodialog/wav/Makefile
+        samples/windows/oodialog/winsystem/Makefile
         samples/windows/rexutils/Makefile
         samples/windows/winsystem/Makefile
         samples/windows/wsh/Makefile

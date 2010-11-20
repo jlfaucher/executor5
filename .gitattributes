@@ -66,6 +66,7 @@ samples/native.api/call.example/runRexxProgram.cpp -text
 samples/native.api/call.example/stackOverflow.cpp -text
 samples/native.api/call.example/tooRecursiveTrapped.rex -text
 samples/native.api/call.example/tooRecursiveUnhandled.rex -text
+samples/windows/0ReadMe.first -text
 samples/windows/api/callrxnt/callrxnt.ico -text svneol=unset#applicatiion/octet-stream
 samples/windows/api/callrxwn/callrxwn.ico -text svneol=unset#applicatiion/octet-stream
 samples/windows/api/rexxexit/rexxexit.ico -text svneol=unset#applicatiion/octet-stream

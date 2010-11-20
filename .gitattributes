@@ -39,6 +39,7 @@ trunk/platform/windows/misc.mak -text
 trunk/platform/windows/orxw.ico -text svneol=unset#applicatiion/octet-stream
 trunk/platform/windows/rexx.ico -text svneol=unset#applicatiion/octet-stream
 trunk/rexxapi/server/platform/windows/rxapi.ico -text
+trunk/samples/windows/0ReadMe.first -text
 trunk/samples/windows/api/callrxnt/callrxnt.ico -text svneol=unset#applicatiion/octet-stream
 trunk/samples/windows/api/callrxwn/callrxwn.ico -text svneol=unset#applicatiion/octet-stream
 trunk/samples/windows/api/rexxexit/rexxexit.ico -text svneol=unset#applicatiion/octet-stream

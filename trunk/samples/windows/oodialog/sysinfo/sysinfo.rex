@@ -60,9 +60,8 @@ end
 exit
 
 
-::requires "ooDialog.cls"
-
-::class SystemClass subclass UserDialog
+::requires "OODWIN32.CLS"    /* advanced Controls */
+::class SystemClass subclass UserDialog inherit AdvancedControls MessageExtensions
 
 ::method Init
   forward class (super) continue /* call parent constructor */
@@ -74,13 +73,13 @@ exit
   end
 
   /* Connect dialog control items to class methods */
-  self~connectComboBoxEvent(100,"SELCHANGE",selectionChange)
+  self~ConnectComboBoxNotify(100,"SELCHANGE",selectionChange)
 
   /* Add your initialization code here */
   return InitRet
 
 ::method InitDialog
-  cb = self~newComboBox(100)
+  cb = self~GetComboBox(100)
   if cb \= .nil then do
     cb~add("Win32_BootConfiguration")
     cb~add("Win32_ComputerSystem")
@@ -102,10 +101,10 @@ exit
   return resOK
 
 ::method selectionChange
-  lc = self~newListBox(101)
+  lc = self~GetListBox(101)
   if lc = .nil then return
   lc~DeleteAll
-  component = self~newComboBox(100)~title
+  component = self~GetComboBox(100)~title
 -- Gather data on the current size and position of the dialog
   parse value lc~getPos() with siX siY
   parse value lc~getSize() with siW siH

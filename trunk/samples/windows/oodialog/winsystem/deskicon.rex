@@ -92,4 +92,4 @@ if rc then call errorDialog "Error.  Could not create the 'My Notepad 2' shortcu
 return 0
 
 ::requires "winsystm.cls"
-::requires "ooDialog.cls"
+::requires "oodplain.cls"  -- For errorDialog() / askDialog()

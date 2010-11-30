@@ -29,6 +29,11 @@ trunk/platform/unix/debian/postinst.in -text svnc_snv_003aeol_002dstyle=native
 trunk/platform/unix/debian/postrm -text svnc_snv_003aeol_002dstyle=native
 trunk/platform/unix/debian/prerm -text svnc_snv_003aeol_002dstyle=native
 trunk/platform/unix/debian/rules -text svnc_snv_003aeol_002dstyle=native
+trunk/platform/unix/macosx/MakeRexxPackage.in -text
+trunk/platform/unix/macosx/PackageInfo.in -text
+trunk/platform/unix/macosx/org.rexxla.oorexx.rxapid.plist -text
+trunk/platform/unix/macosx/postflight.in -text
+trunk/platform/unix/macosx/preflight.in -text
 trunk/platform/windows/hostemu.def -text
 trunk/platform/windows/hostemu.mak -text
 trunk/platform/windows/install/oorexx.nsi -text

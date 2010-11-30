@@ -67,11 +67,17 @@
 
 // For testing purposes comment out the following line to force RXAPI to
 // run as a foreground process.
+// Also used to creat non-daemon server for Mac OS X.
+#if !defined(__APPLE__) &&  !defined(__MACH__)
 #define RUN_AS_DAEMON
+#endif
 
 #ifdef RUN_AS_DAEMON
 #define OOREXX_PIDFILE "/var/run/ooRexx.pid"
 bool run_as_daemon = true;
+#elif defined(__APPLE__) && defined(__MACH__)
+#define OOREXX_PIDFILE "/var/run/ooRexx.pid"
+bool run_as_daemon = false;
 #else
 #define OOREXX_PIDFILE "/tmp/ooRexx.pid"
 bool run_as_daemon = false;

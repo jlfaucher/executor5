@@ -941,7 +941,7 @@ RexxRoutine2(int,
 }
 
 
-#if !defined (AIX)
+#if !defined (AIX) && !defined (__APPLE__)
 /**
  * Method:        SysEuidaccess
  *

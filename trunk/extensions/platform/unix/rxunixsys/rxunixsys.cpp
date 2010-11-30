@@ -1374,7 +1374,7 @@ RexxRoutine2(int,
  *
  * Get the errno value.
  *
- * @return        hostname.
+ * @return        errno.
  */
 RexxRoutine0(int,
              SysGeterrno)

@@ -6,7 +6,7 @@ The following is the list of bug fixes added to ooRexx since the 4.0.1 release.
 All Bugs
 =============
 
- * 3083953	 ooDialog - odd behavior for list view connect click event
+ * 3083953  ooDialog - odd behavior for list view connect click event
  
  * 3080931  Possible memory leak in Stream Object
  

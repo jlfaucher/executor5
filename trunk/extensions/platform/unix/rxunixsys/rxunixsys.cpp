@@ -1709,7 +1709,7 @@ RexxRoutineEntry orxnixclib_routines[] = {
     REXX_TYPED_ROUTINE(SysGetgrgid, SysGetgrgid),
     REXX_TYPED_ROUTINE(SysStat, SysStat),
     REXX_TYPED_ROUTINE(SysAccess, SysAccess),
-#if !defined (AIX)
+#if !defined (AIX) && !defined (__APPLE__)
     REXX_TYPED_ROUTINE(SysEuidaccess, SysEuidaccess),
 #endif
     REXX_TYPED_ROUTINE(SysGetservbyname, SysGetservbyname),

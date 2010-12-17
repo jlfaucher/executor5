@@ -75,6 +75,7 @@ samples/windows/ole/ReadMe.first -text
 samples/windows/ole/apps/oleUtils.frm -text
 samples/windows/ole/apps/samp06.mwp -text
 samples/windows/oodialog/PropertySheetDemo.rex -text
+samples/windows/oodialog/TabDemo.rex -text
 samples/windows/oodialog/bmp/bigpiece.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/blank.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/blanks.bmp -text svneol=unset#image/bmp
@@ -166,6 +167,7 @@ samples/windows/oodialog/ooRexxTry/ooRexxTry.rex -text
 samples/windows/oodialog/oophil.ico -text svneol=unset#applicatiion/octet-stream
 samples/windows/oodialog/rc/PropertySheetDemo.h -text
 samples/windows/oodialog/rc/PropertySheetDemo.rc -text
+samples/windows/oodialog/rc/TabDemo.h -text
 samples/windows/oodialog/rc/oodtreeNewItem.rc -text
 samples/windows/oodialog/rc/ticketWizard.h -text
 samples/windows/oodialog/rc/ticketWizard.rc -text

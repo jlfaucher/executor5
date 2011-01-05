@@ -173,8 +173,11 @@ samples/windows/oodialog/rc/ticketWizard.h -text
 samples/windows/oodialog/rc/ticketWizard.rc -text
 samples/windows/oodialog/simple/ChangeFont.rex -text
 samples/windows/oodialog/simple/Makefile.am -text
+samples/windows/oodialog/simple/PaidHolidays.rex -text
 samples/windows/oodialog/simple/ReadMe.txt -text
 samples/windows/oodialog/simple/SimpleUpDown.rex -text
+samples/windows/oodialog/simple/paidHolidays.h -text
+samples/windows/oodialog/simple/paidHolidays.rc -text
 samples/windows/oodialog/ticketWizard.rex -text
 samples/windows/oodialog/tutorial/add.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/tutorial/logo.bmp -text svneol=unset#image/bmp

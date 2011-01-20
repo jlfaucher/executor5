@@ -21,6 +21,7 @@ extensions/platform/windows/oodialog/oodControl.cpp -text
 extensions/platform/windows/oodialog/oodControl.hpp -text
 extensions/platform/windows/oodialog/oodData.hpp -text
 extensions/platform/windows/oodialog/oodDeviceGraphics.hpp -text
+extensions/platform/windows/oodialog/oodKeyNames.hpp -text
 extensions/platform/windows/oodialog/oodMessaging.hpp -text
 extensions/platform/windows/oodialog/oodPropertySheetDialog.cpp -text
 extensions/platform/windows/oodialog/oodPropertySheetDialog.hpp -text

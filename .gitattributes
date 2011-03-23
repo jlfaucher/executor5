@@ -160,11 +160,25 @@ samples/windows/oodialog/dlgAreaUDemo.h -text
 samples/windows/oodialog/dlgAreaUDemoThree.rex -text
 samples/windows/oodialog/dlgAreaUDemoTwo.rex -text
 samples/windows/oodialog/examples/columnClickListView.rex -text
+samples/windows/oodialog/examples/resources/CheckIn.bmp -text
+samples/windows/oodialog/examples/resources/ClosePalette.bmp -text
+samples/windows/oodialog/examples/resources/CodeReview.bmp -text
 samples/windows/oodialog/examples/resources/Default.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/examples/resources/Disabled.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/examples/resources/Hot.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/examples/resources/LinkToWeb.bmp -text
+samples/windows/oodialog/examples/resources/LockModule.bmp -text
+samples/windows/oodialog/examples/resources/LockProject.bmp -text
 samples/windows/oodialog/examples/resources/Normal.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/examples/resources/ProjectReview.bmp -text
 samples/windows/oodialog/examples/resources/Pushed.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/examples/resources/SaveAll.bmp -text
+samples/windows/oodialog/examples/resources/SaveModule.bmp -text
+samples/windows/oodialog/examples/resources/SaveProject.bmp -text
+samples/windows/oodialog/examples/resources/SplitModule.bmp -text
+samples/windows/oodialog/examples/resources/Update.bmp -text
+samples/windows/oodialog/examples/resources/useTools.h -text
+samples/windows/oodialog/examples/useTools.rex -text
 samples/windows/oodialog/oleinfo/icons.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/ooDraw.h -text
 samples/windows/oodialog/ooRexxTry/Makefile.am -text

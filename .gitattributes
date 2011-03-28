@@ -179,6 +179,11 @@ samples/windows/oodialog/examples/resources/SplitModule.bmp -text
 samples/windows/oodialog/examples/resources/Update.bmp -text
 samples/windows/oodialog/examples/resources/useTools.h -text
 samples/windows/oodialog/examples/useTools.rex -text
+samples/windows/oodialog/menus/Makefile.am -text
+samples/windows/oodialog/menus/simpleMenuBar.rex -text
+samples/windows/oodialog/menus/simpleMenuBarDialogs.h -text
+samples/windows/oodialog/menus/simpleMenuBarDialogs.rc -text
+samples/windows/oodialog/menus/simpleMenuBarOORexx.bmp -text
 samples/windows/oodialog/oleinfo/icons.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/ooDraw.h -text
 samples/windows/oodialog/ooRexxTry/Makefile.am -text

@@ -209,13 +209,6 @@ samples/windows/oodialog/sysinfo/sysInfo.h -text
 samples/windows/oodialog/ticketWizard.rex -text
 samples/windows/oodialog/tutorial/add.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/tutorial/logo.bmp -text svneol=unset#image/bmp
-samples/windows/oodialog/userGuide/exercises/Exercise01.rex -text
-samples/windows/oodialog/userGuide/exercises/Exercise02a.rex -text
-samples/windows/oodialog/userGuide/exercises/Exercise02b.rex -text
-samples/windows/oodialog/userGuide/exercises/Exercise03b-app.rex -text
-samples/windows/oodialog/userGuide/exercises/Exercise03b-bus.rex -text
-samples/windows/oodialog/userGuide/exercises/Exercise03b-dat.rex -text
-samples/windows/oodialog/userGuide/exercises/Exercise03b-gui.rex -text
 samples/windows/oodialog/wav/byebye.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/cancel.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/clap.wav -text svneol=unset#audio/x-wav

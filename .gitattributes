@@ -209,10 +209,23 @@ samples/windows/oodialog/sysinfo/sysInfo.h -text
 samples/windows/oodialog/ticketWizard.rex -text
 samples/windows/oodialog/tutorial/add.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/tutorial/logo.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/userGuide/appendix/DlgData/Makefile.am -text
+samples/windows/oodialog/userGuide/appendix/DlgData/res/Makefile.am -text
+samples/windows/oodialog/userGuide/appendix/DlgData/res/res.mak -text
+samples/windows/oodialog/userGuide/appendix/Makefile.am -text
+samples/windows/oodialog/userGuide/appendix/ReadMe.txt -text
 samples/windows/oodialog/userGuide/exercises/Exercise04/CustomerView.h -text
 samples/windows/oodialog/userGuide/exercises/Exercise04/CustomerView.rc -text
 samples/windows/oodialog/userGuide/exercises/Exercise04/CustomerView.rex -text
 samples/windows/oodialog/userGuide/exercises/Exercise04/Startup.rex -text
+samples/windows/oodialog/userGuide/exercises/Exercise05/Makefile.am -text
+samples/windows/oodialog/userGuide/exercises/Exercise05/ProductModelData.rex -text
+samples/windows/oodialog/userGuide/exercises/Exercise05/ProductView.h -text
+samples/windows/oodialog/userGuide/exercises/Exercise05/ProductView.rc -text
+samples/windows/oodialog/userGuide/exercises/Exercise05/ProductView.rex -text
+samples/windows/oodialog/userGuide/exercises/Exercise05/Startup.rex -text
+samples/windows/oodialog/userGuide/exercises/Exercise05/res/ProductIcon.bmp -text
+samples/windows/oodialog/userGuide/exercises/Exercise05/res/res.mak -text
 samples/windows/oodialog/wav/byebye.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/cancel.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/clap.wav -text svneol=unset#audio/x-wav

@@ -211,6 +211,7 @@ samples/windows/oodialog/tutorial/add.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/tutorial/logo.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/userGuide/exercises/Exercise02/Makefile.am -text
 samples/windows/oodialog/userGuide/exercises/Exercise03/Makefile.am -text
+samples/windows/oodialog/userGuide/exercises/Exercise04/CustomerModelData.rex -text
 samples/windows/oodialog/userGuide/exercises/Exercise04/CustomerView.h -text
 samples/windows/oodialog/userGuide/exercises/Exercise04/CustomerView.rc -text
 samples/windows/oodialog/userGuide/exercises/Exercise04/CustomerView.rex -text

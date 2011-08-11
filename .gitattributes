@@ -214,6 +214,11 @@ samples/windows/oodialog/userGuide/exercises/Exercise02/Makefile.am -text
 samples/windows/oodialog/userGuide/exercises/Exercise02/WoW.rex -text
 samples/windows/oodialog/userGuide/exercises/Exercise02/WoW2.rex -text
 samples/windows/oodialog/userGuide/exercises/Exercise03/Makefile.am -text
+samples/windows/oodialog/userGuide/exercises/Exercise03/Startup.rex -text
+samples/windows/oodialog/userGuide/exercises/Exercise03/Wow3.rex -text
+samples/windows/oodialog/userGuide/exercises/Exercise03/WowData.rex -text
+samples/windows/oodialog/userGuide/exercises/Exercise03/WowModel.rex -text
+samples/windows/oodialog/userGuide/exercises/Exercise03/WowView.rex -text
 samples/windows/oodialog/userGuide/exercises/Exercise04/CustomerModelData.rex -text
 samples/windows/oodialog/userGuide/exercises/Exercise04/CustomerView.h -text
 samples/windows/oodialog/userGuide/exercises/Exercise04/CustomerView.rc -text

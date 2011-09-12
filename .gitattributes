@@ -194,7 +194,6 @@ samples/windows/oodialog/ooRexxTry/ooRexxTry.rex -text
 samples/windows/oodialog/oophil.ico -text svneol=unset#applicatiion/octet-stream
 samples/windows/oodialog/rc/PropertySheetDemo.h -text
 samples/windows/oodialog/rc/PropertySheetDemo.rc -text
-samples/windows/oodialog/rc/TabDemo.h -text
 samples/windows/oodialog/rc/oodtreeNewItem.rc -text
 samples/windows/oodialog/rc/ticketWizard.h -text
 samples/windows/oodialog/rc/ticketWizard.rc -text

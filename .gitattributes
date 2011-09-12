@@ -240,6 +240,8 @@ samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/CustomerModelDa
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/CustomerView.h -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/CustomerView.rc -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/CustomerView.rex -text
+samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/StartupCustomer.rex -text
+samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/StartupCustomerList.rex -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp svnc_bugtraq_003anumber=true
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp/CustList.BMP -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp/CustList.ico -text
@@ -249,6 +251,7 @@ samples/windows/oodialog/userGuide/exercises/Exercise06/Order svnc_bugtraq_003an
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/OrderFormView.h -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/OrderFormView.rc -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/OrderFormView.rex -text
+samples/windows/oodialog/userGuide/exercises/Exercise06/Order/StartupOrderForm.rex -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp svnc_bugtraq_003anumber=true
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderForm.BMP -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderForm.ico -text
@@ -267,6 +270,8 @@ samples/windows/oodialog/userGuide/exercises/Exercise06/Product/ProductModelData
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/ProductView.h -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/ProductView.rc -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/ProductView.rex -text
+samples/windows/oodialog/userGuide/exercises/Exercise06/Product/StartupProduct.rex -text
+samples/windows/oodialog/userGuide/exercises/Exercise06/Product/StartupProductList.rex -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res svnc_bugtraq_003anumber=true
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProdList.BMP -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProdList.ico -text
@@ -275,11 +280,6 @@ samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProductIcon.
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProductView.dll -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/Thumbs.db -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Startup.rex -text
-samples/windows/oodialog/userGuide/exercises/Exercise06/StartupCustomer.rex -text
-samples/windows/oodialog/userGuide/exercises/Exercise06/StartupCustomerList.rex -text
-samples/windows/oodialog/userGuide/exercises/Exercise06/StartupOrderForm.rex -text
-samples/windows/oodialog/userGuide/exercises/Exercise06/StartupProduct.rex -text
-samples/windows/oodialog/userGuide/exercises/Exercise06/StartupProductList.rex -text
 samples/windows/oodialog/userGuide/exercises/Samples/DlgData/Makefile.am -text
 samples/windows/oodialog/userGuide/exercises/Samples/DlgData/res/Makefile.am -text
 samples/windows/oodialog/userGuide/exercises/Samples/DlgData/res/res.mak -text

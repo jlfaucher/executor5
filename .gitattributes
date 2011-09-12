@@ -246,7 +246,6 @@ samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp svnc_bugtra
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp/CustList.BMP -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp/CustList.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp/Customer.ico -text
-samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp/Thumbs.db -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order svnc_bugtraq_003anumber=true
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/OrderFormView.h -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/OrderFormView.rc -text
@@ -255,7 +254,6 @@ samples/windows/oodialog/userGuide/exercises/Exercise06/Order/StartupOrderForm.r
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp svnc_bugtraq_003anumber=true
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderForm.BMP -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderForm.ico -text
-samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/Thumbs.db -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/OrderMgmt svnc_bugtraq_003anumber=true
 samples/windows/oodialog/userGuide/exercises/Exercise06/OrderMgmt/OrderMgmtBaseView.h -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/OrderMgmt/OrderMgmtBaseView.rc -text
@@ -278,7 +276,6 @@ samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProdList.ico
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/Product1.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProductIcon.bmp -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProductView.dll -text
-samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/Thumbs.db -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Startup.rex -text
 samples/windows/oodialog/userGuide/exercises/Samples/DlgData/Makefile.am -text
 samples/windows/oodialog/userGuide/exercises/Samples/DlgData/res/Makefile.am -text

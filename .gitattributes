@@ -289,6 +289,8 @@ samples/windows/oodialog/userGuide/exercises/Samples/DlgData/Makefile.am -text
 samples/windows/oodialog/userGuide/exercises/Samples/DlgData/res/Makefile.am -text
 samples/windows/oodialog/userGuide/exercises/Samples/DlgData/res/res.mak -text
 samples/windows/oodialog/userGuide/exercises/Samples/Makefile.am -text
+samples/windows/oodialog/userGuide/exercises/Samples/PopupTesting svnc_bugtraq_003anumber=true
+samples/windows/oodialog/userGuide/exercises/Samples/PopupTesting/TestPopups.rex -text
 samples/windows/oodialog/userGuide/exercises/Samples/ReadMe.txt -text
 samples/windows/oodialog/wav/byebye.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/cancel.wav -text svneol=unset#audio/x-wav

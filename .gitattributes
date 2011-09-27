@@ -244,7 +244,7 @@ samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/Makefile.am -te
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/StartupCustomer.rex -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/StartupCustomerList.rex -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp svnc_bugtraq_003anumber=true
-samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp/CustList.BMP -text
+samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp/CustList.bmp -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp/CustList.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp/Customer.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp/Makefile.am -text
@@ -262,7 +262,7 @@ samples/windows/oodialog/userGuide/exercises/Exercise06/Order/StartupOrder.rex -
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/StartupOrderList.rex -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp svnc_bugtraq_003anumber=true
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/Makefile.am -text
-samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderForm.BMP -text
+samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderForm.bmp -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderForm.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderList.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/OrderMgmt svnc_bugtraq_003anumber=true
@@ -285,7 +285,7 @@ samples/windows/oodialog/userGuide/exercises/Exercise06/Product/StartupProduct.r
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/StartupProductList.rex -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res svnc_bugtraq_003anumber=true
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/Makefile.am -text
-samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProdList.BMP -text
+samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProdList.bmp -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProdList.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/Product.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProductIcon.bmp -text

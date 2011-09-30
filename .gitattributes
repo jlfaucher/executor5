@@ -264,6 +264,7 @@ samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp svnc_bugtraq_0
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/Makefile.am -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderForm.bmp -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderForm.ico -text
+samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderList.bmp -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderList.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/OrderMgmt svnc_bugtraq_003anumber=true
 samples/windows/oodialog/userGuide/exercises/Exercise06/OrderMgmt/Makefile.am -text

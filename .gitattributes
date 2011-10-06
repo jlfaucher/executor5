@@ -77,6 +77,9 @@ samples/windows/ole/apps/oleUtils.frm -text
 samples/windows/ole/apps/samp06.mwp -text
 samples/windows/oodialog/PropertySheetDemo.rex -text
 samples/windows/oodialog/TabDemo.rex -text
+samples/windows/oodialog/bmp/TabOwnerDemoListView.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/bmp/TabOwnerDemoTab.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/bmp/TabOwnerDemoTreeView.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/bigpiece.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/blank.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/blanks.bmp -text svneol=unset#image/bmp

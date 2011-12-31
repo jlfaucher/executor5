@@ -188,6 +188,7 @@ samples/windows/oodialog/menus/UserMenuBar.bmp -text
 samples/windows/oodialog/menus/UserMenuBar.h -text
 samples/windows/oodialog/menus/UserMenuBar.rc -text
 samples/windows/oodialog/menus/UserMenuBar.rex -text
+samples/windows/oodialog/mouse/dragging.cur -text
 samples/windows/oodialog/oleinfo/icons.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/ooDraw.h -text
 samples/windows/oodialog/ooRexxTry/Makefile.am -text

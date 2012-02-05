@@ -63,12 +63,15 @@
 ::Attribute originalRawHeaders    private -- for comparison
 ::Attribute headerLineAbsent      private -- headersexist but absent
 ::Attribute OpenArgs              private -- args to open method
+::Attribute CSVStreamOpen?        private -- is the stream open?
+::Attribute CSVState              private -- if not nil overrides stream state
 ::Attribute values                        -- table for headered i/o
 ::Attribute rawText                       -- copy of last line read
 ::Attribute skipHeaders                   -- switch can be set before open
 ::Attribute lineEnd                       -- string used for line terminations
 ::Attribute Delimiter                     -- separates CSV fields              /*{1.02}*/
 ::Attribute Qualifier                     -- Surrounds literals                /*{1.02}*/
+::Attribute LastDataError                 -- if bad data detected, what where
 ::Attribute StripOption get               -- optional stripping on lineIn      /*{1.07}*/
 ::Attribute StripOption set                                                    /*{1.07}*/
    expose stripOption                                                          /*{1.07}*/
@@ -94,6 +97,9 @@ self~qualifier          = '"'     /* surrounds literal fields                *//
 self~openArgs           = .nil                                                 /*{1.05}*/
 self~stripOption        = 'N'                                                  /*{1.07}*/
 self~stripChar          = ' '                                                  /*{1.07}*/
+self~CSVStreamOpen?     = .false
+self~lastDataError      = .nil
+self~CSVState           = .nil
 
 self~init:super(parms)                        /* let stream class initialise */
 
@@ -136,6 +142,7 @@ then do
 end /* DO */
 
 forward class (super) continue                              /* open the file */
+self~CSVStreamOpen? = .true
 
 if   (args~word(1)~translate \= 'WRITE') , /* move read pointer past headers */
 &    (self~fileHasHeaders     = .true  ) ,
@@ -180,13 +187,26 @@ do until (inLiteral  = .false) ,
    i = 0                                                                       /*{1.05}*/
    do forever                                                                  /*{1.05}*/
       i = i + 1                                                                /*{1.05}*/
-      if i > textLength then leave                                             /*{1.05}*/
+      if i > textLength
+      then do
+         if fieldText \= ''
+         then do  
+            self~csvState = 'ERROR'
+            self~LastDataError = 'Bad CSV data field' fieldno '- unmatched qualifier ('||blip||')'
+         end /* DO */
+         leave                                                                 /*{1.05}*/
+      end
                                                                                /*{1.05}*/
       select
          when text~matchChar(i,qualifier)                                      /*{1.05}*/
             then do
                inLiteral = \inLiteral                                          /*{1.05}*/
                fieldText = fieldText || qualifier                              /*{1.05}*/
+               if \fieldText~matchChar(1,qualifier)
+               then do
+                  self~csvState = 'ERROR'
+                  self~LastDataError = 'Bad CSV data field' fieldno '- qualifier ('||blip||') present but is not first character'
+               end
             end /* DO */
 
          when (text~matchchar(i,delimiter) ,                                   /*{1.05}*/
@@ -205,6 +225,12 @@ do until (inLiteral  = .false) ,
                   fieldText = fieldText~substr(2, fieldText~length - 2)
                   literalFields~put(fieldNo)
                end /* Do */
+
+               if fieldText~countstr(blip) // 2 \= 0
+               then do 
+                  self~csvState = 'ERROR'
+                  self~LastDataError = 'Bad CSV data field' fieldno '- unmatched qualifier ('||blip||') found'
+               end /* DO */
 
                /* '"' are represented in text as '""' */
                fieldText = fieldText~changeStr(blipBlip,blip)                  /*{1.02}*/
@@ -261,6 +287,8 @@ then do
    self~close
    return
 end /* DO */
+else if self~openArgs = .nil
+     then self~open                                                            /*{1.05}*/
 
 parse upper value data~class~string with . dataCollectionType .                /*{1.04}*/
 
@@ -350,6 +378,8 @@ return self~lineout(text)
 
 self~close:super
 
+self~CSVStreamOpen? = .false    /* let uninit know it does not need to close */
+
 if self~fileHasHeaders
 then do                                               /* maintain headers    */
    headerText = ''                                    /* prepare header line */
@@ -381,6 +411,23 @@ then do                                               /* maintain headers    */
 end /* DO */
 
 /* ------------------------------------------------------------------------- */
+::method state
+/* ------------------------------------------------------------------------- */
+/* the CSVStream can contribute towards this stream having an error condition*/
+
+  if self~csvState = .nil
+  then Return self~state:super
+  else Return self~csvState
+
+/* ------------------------------------------------------------------------- */
+::method description
+/* ------------------------------------------------------------------------- */
+
+  if self~csvState = .nil
+  then Return self~description:super
+  else return self~csvState||':'||self~lastDataError
+
+/* ------------------------------------------------------------------------- */
 ::method getHeaders
 /* ------------------------------------------------------------------------- */
 return self~Headers~copy
@@ -394,6 +441,13 @@ if newHeaders~class~string \= 'The CSVSTREAMHEADER class'
 then raise syntax 93.948 array (1, "CsvStreamHeader")
 
 self~Headers = newHeaders~copy
+
+/* ------------------------------------------------------------------------- */
+::method uninit
+/* ------------------------------------------------------------------------- */
+/* if the CSVstream has not been closed - close it                           */
+
+if self~CSVStreamOpen? then self~close
 
 /* ========================================================================= */
 ::class CsvStreamHeader

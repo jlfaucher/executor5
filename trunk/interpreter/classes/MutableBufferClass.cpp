@@ -418,16 +418,29 @@ RexxMutableBuffer *RexxMutableBuffer::replaceAt(RexxObject *str, RexxObject *pos
     char padChar = optionalPadArgument(pad, ' ', ARG_FOUR);
     size_t finalLength;
 
-    // will this extend beyond the end of the string, we require
-    // space for the position + the replacement string length
-    if (begin + newLength > dataLength)
+    // if replaceLength extends beyond the end of the string
+    //    then we cut it.
+    if (begin > dataLength)
     {
-        finalLength = begin + newLength;
+       replaceLength = 0;
+    }
+    else if (begin + replaceLength > dataLength)
+    {
+       replaceLength = dataLength - begin;
+    }
+
+    // We need to add the delta between the excised string and the inserted
+    // replacement string.
+    //
+    // If this extends beyond the end of the string, then we require space for
+    // the position + the replacement string length.  Else we find the required
+    // size (may be smaller than before)
+    if (begin > dataLength)
+    {
+        finalLength = begin - replaceLength + newLength;
     }
     else
     {
-        // we need to add the delta between the excised string and the inserted
-        // replacement string
         finalLength = dataLength - replaceLength + newLength;
     }
 
@@ -440,21 +453,21 @@ RexxMutableBuffer *RexxMutableBuffer::replaceAt(RexxObject *str, RexxObject *pos
     if (begin > dataLength)
     {
         // add padding to the gap
-        data->setData(dataLength, padChar, begin - dataLength);
+        setData(dataLength, padChar, begin - dataLength);
         // now overlay the string data
-        data->copyData(begin, string->getStringData(), newLength);
+        copyData(begin, string->getStringData(), newLength);
     }
     else
     {
         // if the strings are of different lengths, we need to adjust the size
-        // of the gap we're copying into
-        if (replaceLength != newLength)
+        // of the gap we're copying into.  Only adjust if there is a real gap
+        if (replaceLength != newLength && begin + replaceLength < dataLength)
         {
             // snip out the original string
-            data->adjustGap(begin, replaceLength, newLength);
+            adjustGap(begin, replaceLength, newLength);
         }
         // now overlay the string data
-        data->copyData(begin, string->getStringData(), newLength);
+        copyData(begin, string->getStringData(), newLength);
     }
 
     // and finally adjust the length

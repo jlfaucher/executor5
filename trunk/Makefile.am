@@ -491,7 +491,7 @@ librexxapi_la_CXXFLAGS  = $(COMMON_CPPFLAGS) \
                           -I$(build_common_dir) \
                           -I$(build_common_platform_dir)
 
-librexxapi_la_LDFLAGS = $(VERSION_INFO)
+librexxapi_la_LDFLAGS = $(VERSION_INFO) @ORX_LDFLAGS_OS_EXTRA@
 
 #################### librexx.so ##########################
 # Sources for librexx.so
@@ -896,7 +896,7 @@ librxsock_la_CXXFLAGS = $(COMMON_CPPFLAGS) \
 #
 # Extra libraries for librxsock.so (maybe)
 #
-librxsock_la_LIBADD  = @ORX_LIBADD_LIBRARY@
+librxsock_la_LIBADD  = @ORX_LIBADD_LIBRARY@ @ORX_LDFLAGS_OS_EXTRA@
 librxsock_la_LDFLAGS = $(VERSION_INFO) @ORX_LDFLAGS_LIBRARY@
 
 #################### librxregexp.so ################

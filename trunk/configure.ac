@@ -108,6 +108,7 @@ ORX_LDADD_EXECUTABLE="-ldl -lpthread"
 ORX_LIBADD_LIBRARY=""
 ORX_LDFLAGS_EXECUTABLE=""
 ORX_LDFLAGS_LIBRARY=""
+ORX_LDFLAGS_OS_EXTRA=""
 ORX_LDFLAGS_PACKAGE="-Xcompiler -nostartfiles"
 ORX_PLATFORM="unix"
 ORX_INIT_LDFLAGS=""
@@ -148,6 +149,9 @@ dnl         AC_MSG_ERROR("Compiler $CXX is not supported on this platform")
       esac
       PACKAGETYPE="sun"
       ORX_SYS_STR="SUNOS"
+      ORX_LDFLAGS_EXECUTABLE="-lnsl -lresolv -lsocket"
+      ORX_LDFLAGS_OS_EXTRA="-lresolv"
+      ORX_PLATFORM_SPEC_DIR="linux"
       case "$target" in
          *solaris2.8)
             SPECIFIC_DEFINES="-DLIMITED_SOLARIS_SEMS"
@@ -160,6 +164,8 @@ dnl         AC_MSG_ERROR("Compiler $CXX is not supported on this platform")
       ;;
    sparc*sunos*)
       ORX_SYS_STR="SUNOS"
+      ORX_LDFLAGS_EXECUTABLE="-lnsl -lresolv -lsocket"
+      ORX_LDFLAGS_OS_EXTRA="-lresolv"
       ;;
    i*86-*linux*)
       CC_WARNINGS="$GCC_WARNINGS"

@@ -186,13 +186,27 @@ help:                                          /* Request for online help.  */
          contain blanks */
       say '  Online Help started'
       'start "Rexx Online Documentation"' '"'||value("REXX_HOME",,"ENVIRONMENT")||"\doc\rexxref.pdf"||'"'
-    end                                        /* ... for Unix, no docs     */
-    /* when sysrx = AIX | sysrx = LINUX | sysrx = 'SUNOS' then do
-      say '  Online Help started using Acroread .../rexxref.pdf'
-      'acroread /opt/ooRexx/doc/rexxref.pdf&'
-    end */  -- Docs are not installed on unixes at this time, could be added.
-    otherwise say '  'sysrx' has no online help for REXX.'
-      rc = 'Sorry!'                            /* No help available         */
+    end                                        /* ... for Unix              */
+    when sysrx = AIX | sysrx = LINUX | sysrx = 'SUNOS' then do
+      say '  Online help is not installed on' sysrx
+      rc = 'Sorry!'
+
+      /* If you wish to install your own help, comment out the above and
+       * uncomment the below, filling in the correct path to the doc and the
+       * proper pdf reader.
+       */
+      /*
+      pdfReader = 'x'
+      docDir = 'dir'
+      doc = docDir'/rexxref.pdf'
+      say '  Online Help started using' pdfReader doc
+      pdfReader doc'&'
+      */
+    end
+    otherwise do
+      say '  'sysrx' has no online help for REXX.'
+      rc = 'Sorry!'
+    end
   end
   call border
   return result                                /* Preserve result contents. */

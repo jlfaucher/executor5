@@ -5679,140 +5679,41 @@ size_t RexxEntry SysStemDelete(const char *name, size_t numargs, CONSTRXSTRING a
 *            -1 - insert failed                                          *
 *************************************************************************/
 
-size_t RexxEntry SysStemInsert(const char *name, size_t numargs, CONSTRXSTRING args[], const char *queuename, PRXSTRING retstr)
+RexxRoutine3(int, SysStemInsert, RexxStemObject, toStem, stringsize_t, position, RexxObjectPtr, newValue)
 {
-  RexxReturnCode        rc;
-  CHAR          szStemName[255];
-  PSZ           pszStemIdx;
-  CHAR          szValue[255];
-  SHVBLOCK      shvb;
-  ULONG         ulIdx;
-  ULONG         ulPosition;
-  ULONG         ulCount;
-  bool          fOk = true;
+    stringsize_t count;
 
-  if ( (numargs != 3) ||  /* validate arguments       */
-      !RXVALIDSTRING(args[0]) || !RXVALIDSTRING(args[1]) ||
-      RXNULLSTRING(args[2]) )
-    return INVALID_ROUTINE;
-
-  /* remember stem name */
-  memset(szStemName, 0, sizeof(szStemName));
-  strcpy(szStemName, args[0].strptr);
-  if (szStemName[args[0].strlength-1] != '.')
-    szStemName[args[0].strlength] = '.';
-  pszStemIdx = &(szStemName[strlen(szStemName)]);
-
-  /* get new item index */
-  if (sscanf(args[1].strptr, "%ld", &ulPosition) != 1)
-     return INVALID_ROUTINE;
-
-  /* retrieve the number of elements in stem */
-  strcpy(pszStemIdx, "0");
-  shvb.shvnext = NULL;
-  shvb.shvname.strptr = szStemName;
-  shvb.shvname.strlength = strlen((const char *)szStemName);
-  shvb.shvvalue.strptr = szValue;
-  shvb.shvvalue.strlength = sizeof(szValue);
-  shvb.shvnamelen = shvb.shvname.strlength;
-  shvb.shvvaluelen = shvb.shvvalue.strlength;
-  shvb.shvcode = RXSHV_SYFET;
-  shvb.shvret = 0;
-  if (RexxVariablePool(&shvb) == RXSHV_OK)
-  {
-    /* index retrieved fine */
-    if (sscanf(shvb.shvvalue.strptr, "%ld", &ulCount) != 1)
-      return INVALID_ROUTINE;
+    RexxObjectPtr temp = context->GetStemArrayElement(toStem, 0);
+    if (temp == NULLOBJECT || !context->StringSize(temp, &count))
+    {
+        context->InvalidRoutine();
+        return 0;
+    }
 
     /* check wether new position is within limits */
-    if ((ulPosition == 0) || (ulPosition > ulCount + 1))
-      return INVALID_ROUTINE;
-
-    /* make room for new item by moving all items to the end */
-    for (ulIdx = ulCount; ulIdx >= ulPosition; ulIdx--)
+    if (position == 0 || (position > count + 1))
     {
-      /* get element to relocate */
-      sprintf(pszStemIdx, "%ld", ulIdx);
-      shvb.shvnext = NULL;
-      shvb.shvname.strptr = szStemName;
-      shvb.shvname.strlength = strlen((const char *)szStemName);
-      shvb.shvvalue.strptr = NULL;
-      shvb.shvvalue.strlength = 0;
-      shvb.shvnamelen = shvb.shvname.strlength;
-      shvb.shvvaluelen = shvb.shvvalue.strlength;
-      shvb.shvcode = RXSHV_SYFET;
-      shvb.shvret = 0;
+        context->InvalidRoutine();
+        return 0;
+    }
 
-      if (RexxVariablePool(&shvb) == RXSHV_OK)
-      {
-        sprintf(pszStemIdx, "%ld", ulIdx + 1);
-        shvb.shvnext = NULL;
-        shvb.shvname.strptr = szStemName;
-        shvb.shvname.strlength = strlen((const char *)szStemName);
-        shvb.shvnamelen = shvb.shvname.strlength;
-        shvb.shvvaluelen = shvb.shvvalue.strlength;
-        shvb.shvcode = RXSHV_SYSET;
-        shvb.shvret = 0;
-        rc = RexxVariablePool(&shvb);
-        if ((rc != RXSHV_OK) && (rc != RXSHV_NEWV))
-          fOk = false;
-
-        /* free memory allocated by REXX */
-        RexxFreeMemory(shvb.shvvalue.strptr);
-      }
-      else
-        fOk = false;
-
-      if (!fOk)
-        break;
-    } /* endfor */
-
-    if (fOk)
+    for (size_t index = count; index >= position; index--)
     {
-      /* set the new item value */
-      sprintf(pszStemIdx, "%ld", ulPosition);
-      shvb.shvnext = NULL;
-      shvb.shvname.strptr = szStemName;
-      shvb.shvname.strlength = strlen(szStemName);
-      shvb.shvvalue.strptr = const_cast<char *>(args[2].strptr);
-      shvb.shvvalue.strlength = args[2].strlength;
-      shvb.shvnamelen = shvb.shvname.strlength;
-      shvb.shvvaluelen = shvb.shvvalue.strlength;
-      shvb.shvcode = RXSHV_SYSET;
-      shvb.shvret = 0;
-      rc = RexxVariablePool(&shvb);
-      if ((rc != RXSHV_OK) && (rc != RXSHV_NEWV))
-        fOk = false;
-    } /* endif */
+        // copy from the old index to the new index
+        RexxObjectPtr value = context->GetStemArrayElement(toStem, index);
+        // is this a sparse array?
+        if (value == NULLOBJECT)
+        {
+            // return this as a failure
+            return -1;
+        }
+        context->SetStemArrayElement(toStem, index + 1, value);
+    }
 
-    if (fOk)
-    {
-      /* set the new number of items in the stem array */
-      strcpy(pszStemIdx, "0");
-      sprintf(szValue, "%ld", ulCount + 1);
-      shvb.shvnext = NULL;
-      shvb.shvname.strptr = szStemName;
-      shvb.shvname.strlength = strlen((const char *)szStemName);
-      shvb.shvvalue.strptr = szValue;
-      shvb.shvvalue.strlength = strlen(szValue);
-      shvb.shvnamelen = shvb.shvname.strlength;
-      shvb.shvvaluelen = shvb.shvvalue.strlength;
-      shvb.shvcode = RXSHV_SYSET;
-      shvb.shvret = 0;
-      rc = RexxVariablePool(&shvb);
-      if ((rc != RXSHV_OK) && (rc != RXSHV_NEWV))
-        fOk = false;
-    } /* endif */
-  }
-  else
-  {
-    fOk = false;
-  } /* endif */
-
-  if (fOk)
-    RETVAL(0)
-  else
-    RETVAL(-1)
+    // now set the new value and increase the count at stem.0
+    context->SetStemArrayElement(toStem, position, newValue);
+    context->SetStemArrayElement(toStem, 0, context->WholeNumber(count + 1));
+    return 0;
 }
 
 
@@ -7177,7 +7078,6 @@ RexxRoutineEntry rexxutil_routines[] =
     REXX_CLASSIC_ROUTINE(SysGetFileDateTime,          SysGetFileDateTime),
     REXX_CLASSIC_ROUTINE(SysStemSort,                 SysStemSort),
     REXX_CLASSIC_ROUTINE(SysStemDelete,               SysStemDelete),
-    REXX_CLASSIC_ROUTINE(SysStemInsert,               SysStemInsert),
     REXX_CLASSIC_ROUTINE(SysStemCopy,                 SysStemCopy),
     REXX_CLASSIC_ROUTINE(SysUtilVersion,              SysUtilVersion),
     REXX_CLASSIC_ROUTINE(RxWinExec,                   RxWinExec),
@@ -7200,7 +7100,8 @@ RexxRoutineEntry rexxutil_routines[] =
     REXX_TYPED_ROUTINE(SysIsFileSparse,               SysIsFileSparse),
     REXX_TYPED_ROUTINE(SysIsFileTemporary,            SysIsFileTemporary),
     REXX_TYPED_ROUTINE(SysFileExists,                 SysFileExists),
-    REXX_TYPED_ROUTINE(SysFromUniCode,              SysFromUniCode),
+    REXX_TYPED_ROUTINE(SysFromUniCode,                SysFromUniCode),
+    REXX_TYPED_ROUTINE(SysStemInsert,                 SysStemInsert),
     REXX_LAST_ROUTINE()
 };
 

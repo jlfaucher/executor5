@@ -240,14 +240,9 @@ samples/windows/oodialog/userGuide/exercises/Exercise06 svnc_bugtraq_003anumber=
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer svnc_bugtraq_003anumber=true
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/CustomerListView.h -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/CustomerListView.rc -text
-samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/CustomerListView.rex -text
-samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/CustomerModelData.rex -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/CustomerView.h -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/CustomerView.rc -text
-samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/CustomerView.rex -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/Makefile.am -text
-samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/StartupCustomer.rex -text
-samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/StartupCustomerList.rex -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp svnc_bugtraq_003anumber=true
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp/CustList.bmp -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp/CustList.ico -text

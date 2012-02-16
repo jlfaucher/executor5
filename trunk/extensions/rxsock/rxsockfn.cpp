@@ -331,7 +331,7 @@ size_t RexxEntry SockGetHostByAddr(const char *name, size_t argc, PCONSTRXSTRING
 
     struct hostent *pHostEnt;
     int             domain;
-    long            addr;
+    in_addr         addr;
     int             rc;
     const char *    pszStem;
 
@@ -355,7 +355,7 @@ size_t RexxEntry SockGetHostByAddr(const char *name, size_t argc, PCONSTRXSTRING
         return 40;
     }
 
-    addr = inet_addr(argv[0].strptr);
+    addr.s_addr = inet_addr(argv[0].strptr);
 
     pszStem = argv[1].strptr;
 

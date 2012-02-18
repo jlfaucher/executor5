@@ -1,15 +1,18 @@
                              Open Object Rexx
 
                               Release Notes
-                              Version 4.1.0
+                              Version 4.1.1
 
-  Copyright 2005-2010 Rexx Language Association.  All rights reserved.
-                               November 2010
+  Copyright 2005-2012 Rexx Language Association.  All rights reserved.
+                               March 2012
 
 Note
 ====
-ooRexx 4.1.0 is a bug fix and enhancement release.  The new
-features and enhancements are listed below.
+ooRexx 4.1.1 is a bug fix only release.  There are no new features or
+enhancements in this release.  This, mostly empty, file is left as a
+template for future release.
+
+Fixed bugs are listed in the CHANGES document.
 
 File List
 =========
@@ -18,15 +21,15 @@ the system they were built on.  For instance,
 ooRexx-4.1.0-beta1.opensuse1110.x86_64.rpm was built on OpenSuSE 11.1.
 
 Pick the package closest to the system you intend to install on.  If the
-package is not an exact match and will not install, or the interpreter
-will not run because of a conflict with the C / C++ libraries, it may be
-possible to get one of the developers to build a package for your system
-by opening up a support request in the tracker system.  Note that
-developer resources are constrained and this is neither a commitment nor
-a promise.
+package is not an exact match and will not install, or the interpreter will
+not run because of a conflict with the C / C++ libraries, it may be possible
+to get one of the developers to build a package for your system by opening
+up a support request in the tracker system.  Note that developer resources
+are constrained and this is neither a commitment nor a promise.
 
-0readme.pdf
-Installation help and other relevant notes, prior to installation,
+Readme.pdf
+Installation help and other relevant notes that should be read prior to
+installation.
 
 INSTALL
 Installation help in a text format.
@@ -34,65 +37,12 @@ Installation help in a text format.
 ReleaseNotes
 This file.
 
-ooRexx-4.1.0-beta1.i586.exe
-Installation package for any supported Windows 32-bit OS
+ReadMe.txt
+A copy of this file because SourceForge will display the contents of a
+readme file in the file download section.
 
-ooRexx-4.1.0-beta1.x86_64.exe
-Installation package for any supported Windows 64-bit OS
-
-ooRexx-4.1.0-beta1.fedora13.i686.rpm
-Linux rpm installation package for any 32-bit OS (built on Fedora Core 13)
-
-ooRexx-4.1.0-beta1.fedora13.x86_64.rpm
-Linux rpm installation package for any 64-bit OS (built on Fedora Core 13)
-
-ooRexx-4.1.0-beta1.ubuntu1004.i386.deb
-Linux installation package for any debian based 32-bit OS (built on Ubuntu 10.04)
-
-ooRexx-4.1.0-beta1.ubuntu1004.amd64.deb
-Linux installation package for any debian based 64-bit OS (built on Ubuntu 10.04)
-
-ooRexx-4.1.0-beta1.ubuntu1010.i386.deb
-Linux installation package for any debian based 32-bit OS (built on Ubuntu 10.10)
-
-ooRexx-4.1.0-beta1.ubuntu1010.amd64.deb
-Linux installation package for any debian based 64-bit OS (built on Ubuntu 10.10)
-
-ooRexx-4.1.0-beta1.opensuse113.i586.rpm
-Linux rpm installation package for any 32-bit OS (built on OpenSuSE 11.3)
-
-ooRexx-4.1.0-beta1.opensuse113.x86_64.rpm
-Linux rpm installation package for any 64-bit OS (built on OpenSuSE 11.3)
-
-ooRexx-4.1.0-beta1.opensuse1110.x86_64.rpm
-Linux rpm installation package for any 64-bit OS (built on OpenSuSE 11.1)
-
-ooRexx-4.1.0-beta1.rhel55.i386.rpm
-Linux rpm installation package for any 64-bit OS (built on RHEL 5.5)
-
-ooRexx-4.1.0-beta1.rhel55.x86_64.rpm
-Linux rpm installation package for any 64-bit OS (built on RHEL 5.5)
-
-ooRexx-4.1.0-beta1.sles1010.s390x.rpm
-Linux rpm installation package for s390
-
-* It is anticipated that the following files will also be available shortly
-  after the beta starts.
-
-ooRexx-4.1.0-beta1.macosx.dmg
-Mac OS X 10.5 or 10.6 Intel 32-bit binary
-
-ooRexx-4.1.0.32.rte-beta1.bff
-AIX installation package for 32-bit AIX 5.3/6.1 and 7.1
-
-ooRexx-4.1.0.64.rte-beta1.bff
-AIX installation package for 64-bit AIX 5.3/6.1 and 7.1
-
-ooRexx-4.1.0.beta01.tar.gz
-Source files suitable for building ooRexx on any Unix-like system
-
-ooRexx.4.1.0.source.beta01.zip
-Source files suitable for building ooRexx on any supported Windows system
+ooRexx-4.1.1*
+The installation packages for various operating systems.
 
 
 Installation and Configuration
@@ -101,22 +51,21 @@ Installation and Configuration
 Prior to Installation:
 ----------------------
 
-Important:  An "upgrade" type of installation is neither tested nor
-supported on any platform.  Please completely uninstall a prior version of
-ooRexx before installing a new version.  Installing over the top of an
-existing installation is likely to produce unpredictable results.
+Important: An "upgrade" type of installation is neither tested nor supported
+on any platform.  Please completely uninstall a prior version of ooRexx
+before installing a new version.  Installing over the top of an existing
+installation is likely to produce unpredictable results.
 
 For installation help and other relevant notes, prior to installation,
-please read the "0ReadMe.pdf" PDF file which is placed with the
-downloadable files for this release on SourceForge.
+please read the "ReadMe.pdf" PDF file which is placed with the downloadable
+files for this release on SourceForge.
 
 A Note on Linux packages:
 -------------------------
 
-The generically named rpm packages should install on any modern
-distribution that uses RPM as a package manager.  Likewise, the
-generically named deb packages will install on any modern debian-based
-systems.
+The generically named rpm packages should install on any modern distribution
+that uses RPM as a package manager.  Likewise, the generically named deb
+packages will install on any modern debian-based systems.
 
 When it is known that the generic package has problems on a distribution,
 the ooRexx team may build an additional package for that specific
@@ -129,7 +78,7 @@ Depending on resources, the ooRexx team may be able to build a specific
 package for that distribution.
 
 
-Changes in ooRexx 4.1.0
+Changes in ooRexx 4.1.1
 =================================
 
 All platforms:
@@ -140,67 +89,23 @@ Builtin Classes:
 
 New class:
 ------------
-File
+
     Class methods
     -------------
-    isCaseSensitive
-    listRoots
-    pathSeparator
-    separator
 
     Instance methods
     ----------------
-    absoluteFile
-    absolutePath
-    canRead
-    canWrite
-    compareTo
-    delete
-    exists
-    hashCode
-    init
-    isCaseSensitive
-    isDirectory
-    isFile
-    isHidden
-    lastModified
-    lastModified=
-    length
-    list
-    listFiles
-    makeDir
-    makeDirs
-    name
-    parent
-    parentFile
-    path
-    pathSeparator
-    qualifiedPath
-    renameTo
-    separator
-    setReadonly
-    string
 
 
-New methods on DateTime:
+New methods on x:
 ------------------------
-toLocalTime
 
-New subcommand environment
---------------------------
-hostemu (partially emulates a TSO/CMS environment)
 
-New extensions classes :
+New extensions classes:
 -----------------------
-csvstream.cls
-mime.cls
-smtp.cls
-streamsocket.cls
 
-New documentation :
+New documentation:
 -------------------
-doc\rexxextensions.pdf
-doc\unixextensions.pdf
 
 
 Unix platform:
@@ -208,70 +113,18 @@ Unix platform:
 
 New extension library:
 ----------------------
-rxunixsys
+
   Functions:
   ----------
-    SysAccess
-    SysChmod
-    SysChown
-    SysChroot
-    SysCrypt
-    SysEuidaccess
-    SysGetdirlist
-    SysGetegid
-    SysGeterrno
-    SysGeterrnomsg
-    SysGeteuid
-    SysGetgid
-    SysGetgrgid
-    SysGetgrnam
-    SysGethostname
-    SysGetpgrp
-    SysGetpid
-    SysGetppid
-    SysGetpwnam
-    SysGetpwuid
-    SysGetservbyname
-    SysGetservbyport
-    SysGetsid
-    SysGetsizeofptr
-    SysGettid
-    SysGettzname1
-    SysGettzname2
-    SysGetuid
-    SysGetxattr
-    SysLchown
-    SysLink
-    SysListxattr
-    SysMkdir
-    SysRemovexattr
-    SysRmdir
-    SysSetegid
-    SysSeteuid
-    SysSetgid
-    SysSetpgid
-    SysSetpgrp
-    SysSetsid
-    SysSetuid
-    SysSetxattr
-    SysSignal
-    SysStat
-    SysSymlink
-    SysUmask
-    SysUname
-    SysWordexp
 
 
 Windows platform:
 =================
 
-oodialog :
+ooDialog :
 ----------
-New method on class Image :
-userIcon
 
-New sample :
-samples\oodialog\examples\columnclicklistview.rex
+New samples :
 
 
 Windows Installation:
@@ -280,64 +133,6 @@ Windows Installation:
 Major changes
 -------------
 
-1.)  There is a new 'type' of install ('upgrade'). The upgrade installation
-is only active if there is a previous version of ooRexx installed.
-
-An upgrade removes only the files from the previous version and
-installs the files for the current version.  It does not change any of
-the existing registry or environment settings.  They stay exactly the
-same.
-
-Since the uninstaller is written at the time of installation, the
-upgrade install is only available if the version of the uninstaller is
-4.1.0 or later.  What this means in practice is, the first time you
-install a 4.1.0 ooRexx, the upgrade install will not be available
-because the previous installation wrote an uninstaller that does not
-understand the upgrade type.
-
-When you do an upgrade install you can not change any of the settings
-from the previous install.  I.e., if you installed in
-C:\MyCrummyDirectory\ooRexx then the upgrade also installs in that
-directory.  If you installed rxapi as a service in the previous
-install, then it remains installed as a service.  Etc., etc..
-
-2.)  The installation lets associate file extensions with the ooRexx
-executables. Default values are :
-Executable      Extension      ftype (File type)
-rexx.exe        .rex           RexxScript
-rexxhide.exe    .rexg          RexxHide
-rexxpaws        .rexp          RexxPaws
-
-A 'Send To' item can be defined for rexx.exe, rexxhide.exe and
-rexxpaws.exe.
-
-An editor for the edit context menu can be defined (the same editor
-is used for all ooRexx file types).
-
 Minor changes
 -------------
-
-1.) Rather than put up a message box about stopping rxapi, a page
-is displayed. That way there is more room to explain why rxapi needs
-to be stopped. If the user elects to not stop rxapi, the installer quits.
-
-2.) The message box popup with the question about uninstalling the
-previous version is turned into a page.  This makes it easier to
-insist that the user uninstall the previous version and explain that
-if she chooses not to uninstall the previous version it is likely to
-cause problems and that we won't support that.  It is made more
-difficult for the user to not uninstall a previous version, there is a
-second check box that has to be manually checked.
-
-3.) During the uninstall, the user is given the option of uninstalling
-by simply deleting the installation directory or only deleting the
-files placed there by the installer using the log file.  Using the log
-file is the default.  Uninstalling by deleting the whole installation
-directory is generally faster than using the install log.
-
-4.) The installation user interface is meant to be more modern, meant
-to explain better to some one new to the install of ooRexx on Windows
-what they should do and why, and meant to allow some one used to
-installing a quicker uninstall / install cycle.
-
 

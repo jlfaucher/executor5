@@ -5514,155 +5514,53 @@ size_t RexxEntry SysStemSort(const char *name, size_t numargs, CONSTRXSTRING arg
 *            -1 - delete failed                                          *
 *************************************************************************/
 
-size_t RexxEntry SysStemDelete(const char *name, size_t numargs, CONSTRXSTRING args[], const char *queuename, PRXSTRING retstr)
+RexxRoutine3(int, SysStemDelete, RexxStemObject, toStem, stringsize_t, start, OPTIONAL_stringsize_t, count)
+
 {
-  RexxReturnCode        rc;
-  CHAR          szStemName[255];
-  PSZ           pszStemIdx;
-  CHAR          szValue[255];
-  SHVBLOCK      shvb;
-  ULONG         ulIdx;
-  ULONG         ulFirst;
-  ULONG         ulItems = 1;
-  ULONG         ulCount;
-  bool          fOk = true;
+    if (argumentOmitted(3))
+    {
+        count = 1;
+    }
 
-  if ( (numargs < 2) || (numargs > 3) || /* validate arguments       */
-      !RXVALIDSTRING(args[0]) || !RXVALIDSTRING(args[1]) ||
-      ((numargs == 3) && !RXVALIDSTRING(args[2])) )
-    return INVALID_ROUTINE;
+    stringsize_t items;
 
-  /* remember stem name */
-  memset(szStemName, 0, sizeof(szStemName));
-  strcpy(szStemName, args[0].strptr);
-  if (szStemName[args[0].strlength-1] != '.')
-    szStemName[args[0].strlength] = '.';
-  pszStemIdx = &(szStemName[strlen(szStemName)]);
+    RexxObjectPtr temp = context->GetStemArrayElement(toStem, 0);
+    if (temp == NULLOBJECT || !context->StringSize(temp, &items))
+    {
+        context->InvalidRoutine();
+        return 0;
+    }
 
-  /* get item index to be deleted */
-  if (sscanf(args[1].strptr, "%ld", &ulFirst) != 1)
-    return INVALID_ROUTINE;
+    // make sure the deletion site is within the bounds
+    if (start + count - 1 > items)
+    {
+        context->InvalidRoutine();
+        return 0;
+    }
 
-  /* get number of items to delete */
-  if (numargs == 3)
-  {
-    if (sscanf(args[2].strptr, "%ld", &ulItems) != 1)
-      return INVALID_ROUTINE;
-    if (ulItems == 0)
-      return INVALID_ROUTINE;
-  } /* endif */
-
-  /* retrieve the number of elements in stem */
-  strcpy(pszStemIdx, "0");
-  shvb.shvnext = NULL;
-  shvb.shvname.strptr = szStemName;
-  shvb.shvname.strlength = strlen((const char *)szStemName);
-  shvb.shvvalue.strptr = szValue;
-  shvb.shvvalue.strlength = sizeof(szValue);
-  shvb.shvnamelen = shvb.shvname.strlength;
-  shvb.shvvaluelen = shvb.shvvalue.strlength;
-  shvb.shvcode = RXSHV_SYFET;
-  shvb.shvret = 0;
-  if (RexxVariablePool(&shvb) == RXSHV_OK)
-  {
-    /* index retrieved fine */
-    if (sscanf(shvb.shvvalue.strptr, "%ld", &ulCount) != 1)
-      return INVALID_ROUTINE;
-
-    /* check wether supplied index and count is within limits */
-    if (ulFirst + ulItems - 1 > ulCount)
-      return INVALID_ROUTINE;
-
+    stringsize_t index;
     /* now copy the remaining indices up front */
-    for (ulIdx = ulFirst; ulIdx + ulItems <= ulCount; ulIdx++)
+    for ( index = start;  index + count <= items; index++)
     {
-      /* get element to relocate */
-      sprintf(pszStemIdx, "%ld", ulIdx + ulItems);
-      shvb.shvnext = NULL;
-      shvb.shvname.strptr = szStemName;
-      shvb.shvname.strlength = strlen((const char *)szStemName);
-      shvb.shvvalue.strptr = NULL;
-      shvb.shvvalue.strlength = 0;
-      shvb.shvnamelen = shvb.shvname.strlength;
-      shvb.shvvaluelen = shvb.shvvalue.strlength;
-      shvb.shvcode = RXSHV_SYFET;
-      shvb.shvret = 0;
-
-      if (RexxVariablePool(&shvb) == RXSHV_OK)
-      {
-        sprintf(pszStemIdx, "%ld", ulIdx);
-        shvb.shvnext = NULL;
-        shvb.shvname.strptr = szStemName;
-        shvb.shvname.strlength = strlen((const char *)szStemName);
-        shvb.shvnamelen = shvb.shvname.strlength;
-        shvb.shvvaluelen = shvb.shvvalue.strlength;
-        shvb.shvcode = RXSHV_SYSET;
-        shvb.shvret = 0;
-        rc = RexxVariablePool(&shvb);
-        if ((rc != RXSHV_OK) && (rc != RXSHV_NEWV))
-          fOk = false;
-
-        /* free memory allocated by REXX */
-        RexxFreeMemory(shvb.shvvalue.strptr);
-      }
-      else
-        fOk = false;
-
-      if (!fOk)
-        break;
-    } /* endfor */
-
-    if (fOk)
-    {
-      /* now delete the items at the end */
-      for (ulIdx = ulCount - ulItems + 1; ulIdx <= ulCount; ulIdx++)
-      {
-        sprintf(pszStemIdx, "%ld", ulIdx);
-        shvb.shvnext = NULL;
-        shvb.shvname.strptr = szStemName;
-        shvb.shvname.strlength = strlen((const char *)szStemName);
-        shvb.shvvalue.strptr = NULL;
-        shvb.shvvalue.strlength = 0;
-        shvb.shvnamelen = shvb.shvname.strlength;
-        shvb.shvvaluelen = shvb.shvvalue.strlength;
-        shvb.shvcode = RXSHV_SYDRO;
-        shvb.shvret = 0;
-        if (RexxVariablePool(&shvb) != RXSHV_OK)
+        // copy from the old index to the new index
+        RexxObjectPtr value = context->GetStemArrayElement(toStem, index + count);
+        // is this a sparse array?
+        if (value == NULLOBJECT)
         {
-          fOk = false;
-          break;
-        } /* endif */
-      } /* endfor */
-    } /* endif */
+            // return this as a failure
+            return -1;
+        }
+        context->SetStemArrayElement(toStem, index, value);
+    }
 
-    if (fOk)
+    /* now delete the items at the end */
+    for (index = items - count + 1; index <= items; index++)
     {
-      /* set the new number of items in the stem array */
-      strcpy(pszStemIdx, "0");
-      sprintf(szValue, "%ld", ulCount - ulItems);
-      shvb.shvnext = NULL;
-      shvb.shvname.strptr = szStemName;
-      shvb.shvname.strlength = strlen((const char *)szStemName);
-      shvb.shvvalue.strptr = szValue;
-      shvb.shvvalue.strlength = strlen(szValue);
-      shvb.shvnamelen = shvb.shvname.strlength;
-      shvb.shvvaluelen = shvb.shvvalue.strlength;
-      shvb.shvcode = RXSHV_SYSET;
-      shvb.shvret = 0;
-      rc = RexxVariablePool(&shvb);
-      if ((rc != RXSHV_OK) && (rc != RXSHV_NEWV))
-        fOk = false;
-    } /* endif */
-  }
-  else
-  {
-    fOk = false;
-  } /* endif */
+        context->DropStemArrayElement(toStem, index);
+    }
 
-  if (fOk)
-    RETVAL(0)
-  else
-    RETVAL(-1)
+    context->SetStemArrayElement(toStem, 0, context->StringSize(items - count));
+    return 0;
 }
 
 
@@ -7077,7 +6975,7 @@ RexxRoutineEntry rexxutil_routines[] =
     REXX_CLASSIC_ROUTINE(SysSetFileDateTime,          SysSetFileDateTime),
     REXX_CLASSIC_ROUTINE(SysGetFileDateTime,          SysGetFileDateTime),
     REXX_CLASSIC_ROUTINE(SysStemSort,                 SysStemSort),
-    REXX_CLASSIC_ROUTINE(SysStemDelete,               SysStemDelete),
+    REXX_TYPED_ROUTINE(SysStemDelete,                 SysStemDelete),
     REXX_CLASSIC_ROUTINE(SysStemCopy,                 SysStemCopy),
     REXX_CLASSIC_ROUTINE(SysUtilVersion,              SysUtilVersion),
     REXX_CLASSIC_ROUTINE(RxWinExec,                   RxWinExec),

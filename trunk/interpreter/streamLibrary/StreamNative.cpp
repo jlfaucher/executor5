@@ -573,7 +573,7 @@ const char *StreamInfo::openStd(const char *options)
  */
 const char *StreamInfo::handleOpen(const char *options)
 {
-    int oflag = RX_O_BINARY;                  // we always open in binary mode
+    int oflag = 0;                        // no default options
 
     // reset the standard fields
     resetFields();
@@ -656,14 +656,14 @@ const char *StreamInfo::handleOpen(const char *options)
             // position at the end, and set the write position
             setPosition(size(), charWritePosition);
 
-            char   char_buffer;
+            char   char_buffer = ' ';
             size_t bytesRead;
             // read the last character of the buffer.
             // we don't call readBuffer() for this because it
             // moves the read pointer
             if (!fileInfo.read(&char_buffer, 1, bytesRead))
             {
-                notreadyError();
+                if (!write_only) notreadyError();
             }
 
             // if the last character is not a ctrl_z, we need to
@@ -758,11 +758,11 @@ void StreamInfo::implicitOpen(int type)
     read_write = true;
     if (type == operation_nocreate)
     {
-        open(O_RDWR | RX_O_BINARY, IREAD_IWRITE, RX_SH_DENYWR);
+        open(O_RDWR, IREAD_IWRITE, RX_SH_DENYWR);
     }
     else
     {
-        open(RDWR_CREAT | RX_O_BINARY, IREAD_IWRITE, RX_SH_DENYWR);
+        open(RDWR_CREAT, IREAD_IWRITE, RX_SH_DENYWR);
     }
 
     // if there was an open error and we have the info to try again - doit
@@ -779,12 +779,12 @@ void StreamInfo::implicitOpen(int type)
         {
             // In Windows, all files are readable. Therefore S_IWRITE is
             // equivalent to S_IREAD | S_IWRITE.
-            open(O_WRONLY | RX_O_BINARY, IREAD_IWRITE, RX_SH_DENYWR);
+            open(O_WRONLY, IREAD_IWRITE, RX_SH_DENYWR);
             write_only = true;
         }
         else
         {
-            open(O_RDONLY | RX_O_BINARY, S_IREAD, RX_SH_DENYWR);
+            open(O_RDONLY, S_IREAD, RX_SH_DENYWR);
             read_only = true;
         }
 
@@ -817,14 +817,14 @@ void StreamInfo::implicitOpen(int type)
             // position at the end, and set the write position
             setPosition(size(), charWritePosition);
 
-            char   char_buffer;
+            char   char_buffer = ' ';
             size_t bytesRead;
             // read the last character of the buffer.
             // we don't call readBuffer() for this because it
             // moves the read pointer
             if (!fileInfo.read(&char_buffer, 1, bytesRead))
             {
-                notreadyError();
+                if (!write_only) notreadyError();
             }
 
             // if the last character is not a ctrl_z, we need to
@@ -2175,7 +2175,7 @@ RexxMethod1(CSTRING, stream_flush, CSELF, streamPtr)
  */
 const char *StreamInfo::streamOpen(const char *options)
 {
-    int oflag = RX_O_BINARY;               // we always open binary mode
+    int oflag = 0;                      // no default open options
     int pmode = 0;                      /* and the protection mode           */
     int shared = RX_SH_DENYRW;             /* def. open is non shared           */
 
@@ -2408,9 +2408,10 @@ const char *StreamInfo::streamOpen(const char *options)
     {
         // if this is some sort of device, it might be output only (i.e., a
         // printer).  Try opening again write only
-        if (fileInfo.isDevice())
+        // bug 3274050 : no longer limited to device, a regular file can have write-only permissions
+        if (write_only || fileInfo.isDevice())
         {
-            if (!open(RX_O_BINARY | WR_CREAT, S_IWRITE, shared))
+            if (!open(WR_CREAT, S_IWRITE, shared))
             {
                 char work[32];
 
@@ -2452,14 +2453,14 @@ const char *StreamInfo::streamOpen(const char *options)
             // position at the end, and set the write position
             setPosition(size(), charWritePosition);
 
-            char   char_buffer;
+            char   char_buffer = ' ';
             size_t bytesRead;
             // read the last character of the buffer.
             // we don't call readBuffer() for this because it
             // moves the read pointer
             if (!fileInfo.read(&char_buffer, 1, bytesRead))
             {
-                notreadyError();
+                if (!write_only) notreadyError();
             }
 
             // if the last character is not a ctrl_z, we need to

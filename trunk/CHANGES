@@ -6,6 +6,8 @@ release.
 All Bugs
 =============
 
+ * 3487781  DateTime class in Citrix environment raises error condition
+
  * 3491069  ListChoice Routine Doc discrepancy
 
  * 3488682  Bug in handling of stems after SysStemInsert & SysStemDelete

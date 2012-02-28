@@ -232,7 +232,7 @@ samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProdList.bmp
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProdList.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/Product.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProductIcon.bmp -text
-samples/windows/oodialog/userGuide/exercises/Samples/PopupTesting svnc_bugtraq_003anumber=true
+samples/windows/oodialog/userGuide/exercises/Samples/Popups svnc_bugtraq_003anumber=true
 samples/windows/oodialog/wav/byebye.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/cancel.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/clap.wav -text svneol=unset#audio/x-wav

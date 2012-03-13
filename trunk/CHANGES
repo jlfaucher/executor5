@@ -6,6 +6,8 @@ release.
 All Bugs
 =============
 
+ * 3501117  Crash at end of program
+
  * 3487781  DateTime class in Citrix environment raises error condition
 
  * 3491069  ListChoice Routine Doc discrepancy
@@ -69,6 +71,8 @@ All Bugs
  * 2982725  The Integer class is not supposed to show through
 
  * 2970679  Array~sort fails with large array
+
+ * 2933987  two rxapi.exe tasks,
 
  * 2916971  Cannot compile grxtreestore on 64-bit ubuntu
 

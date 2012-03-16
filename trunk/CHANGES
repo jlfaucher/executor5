@@ -6,6 +6,8 @@ release.
 All Bugs
 =============
 
+ * 3506001 ListChoice fails if 16 items passed
+
  * 3501117  Crash at end of program
 
  * 3487781  DateTime class in Citrix environment raises error condition

@@ -287,7 +287,7 @@
    SM_CXVSCROLL = 20
    size = .Size~new
    size~width = .DlgUtil~getSystemMetrics(SM_CXVSCROLL)
-   size~width = size~width * self~factorX
+   size~width = trunc(size~width * self~factorX)
    if size~width > 15 then return size~width + 2
    else return size~width
 

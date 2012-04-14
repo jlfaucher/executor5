@@ -76,11 +76,6 @@ samples/windows/api/rexxexit/testRexxExit -text
 samples/windows/ole/ReadMe.first -text
 samples/windows/ole/apps/oleUtils.frm -text
 samples/windows/ole/apps/samp06.mwp -text
-samples/windows/oodialog/PropertySheetDemo.rex -text
-samples/windows/oodialog/TabDemo.rex -text
-samples/windows/oodialog/bmp/TabOwnerDemoListView.bmp -text svneol=unset#image/bmp
-samples/windows/oodialog/bmp/TabOwnerDemoTab.bmp -text svneol=unset#image/bmp
-samples/windows/oodialog/bmp/TabOwnerDemoTreeView.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/bigpiece.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/blank.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/blanks.bmp -text svneol=unset#image/bmp
@@ -110,8 +105,6 @@ samples/windows/oodialog/bmp/install.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/install2.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/kanguru.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/moose.bmp -text svneol=unset#image/bmp
-samples/windows/oodialog/bmp/oodListViews1.bmp -text svneol=unset#image/bmp
-samples/windows/oodialog/bmp/oodListViews2.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/oodtree.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/phileat.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/phileat2.bmp -text svneol=unset#image/bmp
@@ -121,9 +114,6 @@ samples/windows/oodialog/bmp/philphil.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/philslep.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/philtest.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/philwait.bmp -text svneol=unset#image/bmp
-samples/windows/oodialog/bmp/propertySheetDemoListView.bmp -text
-samples/windows/oodialog/bmp/propertySheetDemoTab.bmp -text
-samples/windows/oodialog/bmp/propertySheetDemoTreeView.bmp -text
 samples/windows/oodialog/bmp/rhinoce.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/s2anim.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/s2arch.bmp -text svneol=unset#image/bmp
@@ -139,10 +129,6 @@ samples/windows/oodialog/bmp/s2scroll.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/s2tree.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/s2walker.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/sealion.bmp -text svneol=unset#image/bmp
-samples/windows/oodialog/bmp/ticketWizardMovie.bmp -text
-samples/windows/oodialog/bmp/ticketWizardRexxLA.bmp -text
-samples/windows/oodialog/bmp/ticketWizardTheater.bmp -text
-samples/windows/oodialog/bmp/ticketWizardTicket.bmp -text
 samples/windows/oodialog/bmp/tiger.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/wlkfig1.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/wlkfig2.bmp -text svneol=unset#image/bmp
@@ -197,11 +183,26 @@ samples/windows/oodialog/ooRexxTry/doc/Makefile.am -text
 samples/windows/oodialog/ooRexxTry/doc/ooRexxTry.pdf -text
 samples/windows/oodialog/ooRexxTry/ooRexxTry.rex -text
 samples/windows/oodialog/oophil.ico -text svneol=unset#applicatiion/octet-stream
-samples/windows/oodialog/rc/PropertySheetDemo.h -text
-samples/windows/oodialog/rc/PropertySheetDemo.rc -text
+samples/windows/oodialog/propertySheet.tabs/PropertySheetDemo.rex -text
+samples/windows/oodialog/propertySheet.tabs/TabDemo.rex -text
+samples/windows/oodialog/propertySheet.tabs/rc/PropertySheetDemo.h -text
+samples/windows/oodialog/propertySheet.tabs/rc/PropertySheetDemo.rc -text
+samples/windows/oodialog/propertySheet.tabs/rc/TabOwnerDemoListView.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/propertySheet.tabs/rc/TabOwnerDemoTab.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/propertySheet.tabs/rc/TabOwnerDemoTreeView.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/propertySheet.tabs/rc/oodListViews1.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/propertySheet.tabs/rc/oodListViews2.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/propertySheet.tabs/rc/propertySheetDemoListView.bmp -text
+samples/windows/oodialog/propertySheet.tabs/rc/propertySheetDemoTab.bmp -text
+samples/windows/oodialog/propertySheet.tabs/rc/propertySheetDemoTreeView.bmp -text
+samples/windows/oodialog/propertySheet.tabs/rc/ticketWizard.h -text
+samples/windows/oodialog/propertySheet.tabs/rc/ticketWizard.rc -text
+samples/windows/oodialog/propertySheet.tabs/rc/ticketWizardMovie.bmp -text
+samples/windows/oodialog/propertySheet.tabs/rc/ticketWizardRexxLA.bmp -text
+samples/windows/oodialog/propertySheet.tabs/rc/ticketWizardTheater.bmp -text
+samples/windows/oodialog/propertySheet.tabs/rc/ticketWizardTicket.bmp -text
+samples/windows/oodialog/propertySheet.tabs/ticketWizard.rex -text
 samples/windows/oodialog/rc/oodtreeNewItem.rc -text
-samples/windows/oodialog/rc/ticketWizard.h -text
-samples/windows/oodialog/rc/ticketWizard.rc -text
 samples/windows/oodialog/simple/ChangeFont.rex -text
 samples/windows/oodialog/simple/Makefile.am -text
 samples/windows/oodialog/simple/ReadMe.txt -text
@@ -210,7 +211,6 @@ samples/windows/oodialog/simple/SimpleMonthCalendar.rc -text
 samples/windows/oodialog/simple/SimpleMonthCalendar.rex -text
 samples/windows/oodialog/simple/SimpleUpDown.rex -text
 samples/windows/oodialog/sysinfo/sysInfo.h -text
-samples/windows/oodialog/ticketWizard.rex -text
 samples/windows/oodialog/tutorial/add.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/tutorial/logo.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/userGuide/exercises/Exercise05/res/ProductIcon.bmp -text

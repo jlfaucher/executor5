@@ -1,0 +1,108 @@
+            Fixes in Open Object Rexx 4.1.1
+
+The following is the list of bug fixes added to ooRexx since the 4.1.0
+release.
+
+All Bugs
+=============
+
+ * 3506001 ListChoice fails if 16 items passed
+
+ * 3501117  Crash at end of program
+
+ * 3487781  DateTime class in Citrix environment raises error condition
+
+ * 3491069  ListChoice Routine Doc discrepancy
+
+ * 3488682  Bug in handling of stems after SysStemInsert & SysStemDelete
+
+ * 3482638  SysFileTree returns too many files for '*.' mask
+
+ * 3471889  Invalid statement in smtp.cls
+
+ * 3468276  SysToUnicode : wrong tests of translateflags
+
+ * 3462502  SysFileCopy missing on Linux rehl55 platform
+
+ * 3447211  IF.testGroup contains errors ? (rev. 7320)
+
+ * 3411663  Socket method recvFrom should set address
+
+ * 3386137  rexxpg.pdf: wrong description in 9.14.26 RexxDirectoryPut
+
+ * 3367256  SysStemInsert into empty stem; stem.0 = 0
+
+ * 3315359  rexxpg.pdf error "REXX_TYPED_METHOD"
+
+ * 3305514  .Package does not have "newFile" class method
+
+ * 3296960  Trace -100 displays tracing
+
+ * 3290909  replaceAt method bug in MutableBuffer
+
+ * 3285359  SysUnLink missing fro docs
+
+ * 3279812  NOBUFFER option ignored for WRITE
+
+ * 3274050  Cannot write file to which I don't have read
+
+ * 3205178  SockGetHostByAddr wont work
+
+ * 3187459  Array section method does not accept an array-style index
+
+ * 3185834  HOSTEMU: a DISKR cause file to be created
+
+ * 3184047  error in sample
+
+ * 3178760  RexxLocalVariables::live - only mark if not NULL
+
+ * 3178574  On *nix Move libraries to /usr/lib
+
+ * 3139337  mimemultipart cannot set attribute type
+
+ * 3139083  use of .context is crashing interpreter
+
+ * 3138013  CSVStream remembers headers inapropriately
+
+ * 3137873  rxapi looping
+
+ * 3131745  make clean deletes ylwrap
+
+ * 3046566  SockGetHostName problems
+
+ * 2982725  The Integer class is not supposed to show through
+
+ * 2970679  Array~sort fails with large array
+
+ * 2933987  two rxapi.exe tasks,
+
+ * 2916971  Cannot compile grxtreestore on 64-bit ubuntu
+
+ * 2895044  RexxGtk
+
+ * 2863294  i386-apple-darwin9.8.0 does not compile.
+
+ * 2846301  SysStemSort very,very slow ....
+
+ * 2832094  RexxTry using wrong path for Documentation on Linux
+
+ * 2811792  librxsock.so relocation error
+
+ * 2811711  rexximage multiple inclusions
+
+ * 1153642  Stem created / returned by a proc wrong in SysDumpVariables
+
+
+Documentation
+=============
+
+ * 3202270  SysFileCopy: example code does not work
+
+ * 3141538  rexxref: 5.1.6 Package importedPackages underdocced
+
+ * 2883890  Erroneous example send-function ooRexx Reference
+
+ * 2882474  Say where to submit feedback
+
+ * 2840155  Package method newFile not callable from ooRexx
+

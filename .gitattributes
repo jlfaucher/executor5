@@ -1,1 +1,169 @@
 * text=auto !eol
+trunk/CONTRIBUTORS -text
+trunk/Makefile.am -text
+trunk/NOTICE -text
+trunk/RPM_build_notes.txt -text
+trunk/extensions/csvStream/csvStream.cls -text
+trunk/extensions/hostemu/cmdparse.cpp -text
+trunk/extensions/hostemu/cmdparse.ypp -text
+trunk/extensions/hostemu/hostemu.h -text
+trunk/extensions/hostemu/platform/unix/hostemu.cpp -text
+trunk/extensions/hostemu/platform/windows/hostemu.cpp -text
+trunk/extensions/platform/unix/rxunixsys/rxunixsys.cpp -text
+trunk/extensions/platform/unix/rxunixsys/rxunixsys.h -text
+trunk/extensions/platform/windows/oodialog/3dcheck.bmp -text svneol=unset#image/bmp
+trunk/extensions/platform/windows/oodialog/AppIcon.ico -text
+trunk/extensions/platform/windows/oodialog/AppIcon2.ico -text
+trunk/extensions/platform/windows/oodialog/oodialog.ico -text svneol=unset#applicatiion/octet-stream
+trunk/extensions/rxsock/mime.cls -text
+trunk/extensions/rxsock/smtp.cls -text
+trunk/extensions/rxsock/streamsocket.cls -text
+trunk/interpreter/platform/unix/SysNativeMethods.h -text
+trunk/platform/unix/debian/changelog.in -text svnc_snv_003aeol_002dstyle=native
+trunk/platform/unix/debian/compat -text svnc_snv_003aeol_002dstyle=native
+trunk/platform/unix/debian/control -text svnc_snv_003aeol_002dstyle=native
+trunk/platform/unix/debian/copyright -text svnc_snv_003aeol_002dstyle=native
+trunk/platform/unix/debian/dirs -text svnc_snv_003aeol_002dstyle=native
+trunk/platform/unix/debian/docs -text svnc_snv_003aeol_002dstyle=native
+trunk/platform/unix/debian/postinst.in -text svnc_snv_003aeol_002dstyle=native
+trunk/platform/unix/debian/postrm -text svnc_snv_003aeol_002dstyle=native
+trunk/platform/unix/debian/prerm -text svnc_snv_003aeol_002dstyle=native
+trunk/platform/unix/debian/rules -text svnc_snv_003aeol_002dstyle=native
+trunk/platform/unix/macosx/MakeRexxPackage.in -text
+trunk/platform/unix/macosx/PackageInfo.in -text
+trunk/platform/unix/macosx/org.rexxla.oorexx.rxapid.plist -text
+trunk/platform/unix/macosx/postflight.in -text
+trunk/platform/unix/macosx/preflight.in -text
+trunk/platform/windows/hostemu.def -text
+trunk/platform/windows/hostemu.mak -text
+trunk/platform/windows/install/oorexx.nsi -text
+trunk/platform/windows/install/orange-uninstall.bmp -text svneol=unset#image/bmp
+trunk/platform/windows/install/orange.bmp -text svneol=unset#image/bmp
+trunk/platform/windows/install/uninstall.ico -text svneol=unset#applicatiion/octet-stream
+trunk/platform/windows/misc.mak -text
+trunk/platform/windows/orxw.ico -text svneol=unset#applicatiion/octet-stream
+trunk/platform/windows/rexx.ico -text svneol=unset#applicatiion/octet-stream
+trunk/rexxapi/server/platform/windows/rxapi.ico -text
+trunk/samples/windows/0ReadMe.first -text
+trunk/samples/windows/api/callrxnt/callrxnt.ico -text svneol=unset#applicatiion/octet-stream
+trunk/samples/windows/api/callrxwn/callrxwn.ico -text svneol=unset#applicatiion/octet-stream
+trunk/samples/windows/api/rexxexit/rexxexit.ico -text svneol=unset#applicatiion/octet-stream
+trunk/samples/windows/api/rexxexit/testRexxExit -text
+trunk/samples/windows/ole/ReadMe.first -text
+trunk/samples/windows/ole/apps/oleUtils.frm -text
+trunk/samples/windows/ole/apps/samp06.mwp -text
+trunk/samples/windows/oodialog/bmp/bigpiece.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/blank.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/blanks.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake1.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake10.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake11.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake2.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake3.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake4.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake5.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake6.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake7.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake8.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cake9.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/cakepiec.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/chihuahu.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/eleph2.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/fork.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/goat.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/handfkle.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/handfkri.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/handleft.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/handrite.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/horse.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/install.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/install2.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/kanguru.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/moose.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/movie.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/oodlist1.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/oodlist2.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/oodtree.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/phileat.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/phileat2.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/phileata.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/philouch.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/philphil.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/philslep.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/philtest.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/philwait.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/psdemoTab.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/psdemolv.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/psdemotv.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/rhinoce.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2anim.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2arch.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2backg.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2input.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2jack.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2list.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2mov.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2philf.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2prog.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2prop.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2scroll.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2tree.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/s2walker.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/sealion.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/ticket.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/tiger.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/wlkfig1.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/wlkfig2.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/wlkfig3.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/wlkfig4.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/wlkfig5.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/wlkfig6.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/wlkfig7.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/bmp/wlkfig8.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/examples/columnClickListView.rex -text
+trunk/samples/windows/oodialog/examples/resources/Default.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/examples/resources/Disabled.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/examples/resources/Hot.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/examples/resources/Normal.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/examples/resources/Pushed.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/oleinfo/icons.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/ooRexxTry/Makefile.am -text
+trunk/samples/windows/oodialog/ooRexxTry/doc/Makefile.am -text
+trunk/samples/windows/oodialog/ooRexxTry/doc/ooRexxTry.pdf -text
+trunk/samples/windows/oodialog/ooRexxTry/ooRexxTry.rex -text
+trunk/samples/windows/oodialog/oophil.ico -text svneol=unset#applicatiion/octet-stream
+trunk/samples/windows/oodialog/rc/oodtreeNewItem.rc -text
+trunk/samples/windows/oodialog/tutorial/add.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/tutorial/logo.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/wav/byebye.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/cancel.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/clap.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/elephant.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/goat.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/gotcha.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/guess.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/help.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/horse.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/inst.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/jackpot.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/moose.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/nope.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/philcake.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/phileat.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/philhelp.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/philouch.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/philslep.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/philstop.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/philstrt.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/philwait.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/rhino.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/sample.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/sealion.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/start.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/take.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/tiger.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/whistle.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/wav/yourgood.wav -text svneol=unset#audio/x-wav
+trunk/samples/windows/oodialog/winsystem/windowsSystem.frm -text
+trunk/utilities/rexx/platform/windows/rexx.mak -text

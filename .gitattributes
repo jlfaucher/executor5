@@ -54,6 +54,8 @@ platform/windows/install/orange.bmp -text svneol=unset#image/bmp
 platform/windows/install/uninstall.ico -text svneol=unset#applicatiion/octet-stream
 platform/windows/orxw.ico -text svneol=unset#applicatiion/octet-stream
 platform/windows/rexx.ico -text svneol=unset#applicatiion/octet-stream
+rexxapi/common/RegistrationTable.cpp -text
+rexxapi/common/RegistrationTable.hpp -text
 rexxapi/server/platform/windows/rxapi.ico -text
 samples/native.api/Makefile.am -text
 samples/native.api/ReadMe.txt -text

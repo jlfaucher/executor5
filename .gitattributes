@@ -192,6 +192,7 @@ samples/windows/oodialog/propertySheet.tabs/rc/PropertySheetDemo.rc -text
 samples/windows/oodialog/propertySheet.tabs/rc/TabOwnerDemoListView.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/propertySheet.tabs/rc/TabOwnerDemoTab.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/propertySheet.tabs/rc/TabOwnerDemoTreeView.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/propertySheet.tabs/rc/aeroRexxOnAStickRexxLA.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/propertySheet.tabs/rc/oodListViews1.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/propertySheet.tabs/rc/oodListViews2.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/propertySheet.tabs/rc/propertySheetDemoListView.bmp -text

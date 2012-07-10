@@ -320,6 +320,7 @@ class RexxSource : public RexxInternalObject {
     RexxInstruction *doNew();
     RexxInstruction *loopNew();
     RexxInstruction *createLoop();
+    RexxInstruction *createDoLoop();
     RexxInstruction *createDoLoop(RexxInstructionDo *, bool);
     RexxInstruction *dropNew();
     RexxInstruction *elseNew(RexxToken *);

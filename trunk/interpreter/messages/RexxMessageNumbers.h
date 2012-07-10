@@ -622,6 +622,8 @@
 #define Error_Execution_invalid_thread_msg                           716
 #define Error_Invalid_expression_parse_msg                           717
 #define Error_Invalid_expression_call_msg                            718
+#define Error_Incomplete_do_loop_msg                                 725
+#define Error_Invalid_subkeyword_attribute_msg                       726
 
 
 #endif

@@ -101,6 +101,7 @@
 #define Rexx_Error_Incomplete_do_then                           14003
 #define Rexx_Error_Incomplete_do_else                           14004
 #define Rexx_Error_Incomplete_do_otherwise                      14901
+#define Rexx_Error_Incomplete_do_loop                           14005
 #define Rexx_Error_Invalid_hex                                  15000
 #define Rexx_Error_Invalid_hex_hexblank                         15001
 #define Rexx_Error_Invalid_hex_binblank                         15002
@@ -215,6 +216,7 @@
 #define Rexx_Error_Invalid_subkeyword_message                   25922
 #define Rexx_Error_Invalid_subkeyword_select                    25923
 #define Rexx_Error_Invalid_subkeyword_options                   25924
+#define Rexx_Error_Invalid_subkeyword_attribute                 25925
 #define Rexx_Error_Invalid_whole_number                         26000
 #define Rexx_Error_Invalid_whole_number_power                   26008
 #define Rexx_Error_Invalid_whole_number_repeat                  26002

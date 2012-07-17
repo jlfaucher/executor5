@@ -15,6 +15,9 @@ trunk/extensions/platform/windows/oodialog/3dcheck.bmp -text svneol=unset#image/
 trunk/extensions/platform/windows/oodialog/AppIcon.ico -text
 trunk/extensions/platform/windows/oodialog/AppIcon2.ico -text
 trunk/extensions/platform/windows/oodialog/oodialog.ico -text svneol=unset#applicatiion/octet-stream
+trunk/extensions/platform/windows/oodialog/rexx.ico -text
+trunk/extensions/platform/windows/oodialog/rexx32.exe.manifest -text
+trunk/extensions/platform/windows/oodialog/rexx64.exe.manifest -text
 trunk/extensions/rxsock/mime.cls -text
 trunk/extensions/rxsock/smtp.cls -text
 trunk/extensions/rxsock/streamsocket.cls -text

@@ -35,53 +35,90 @@
 #/* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.               */
 #/*                                                                            */
 #/*----------------------------------------------------------------------------*/
-# NMAKE-compatible MAKE file for FNTEST*
-all:  $(OR_OUTDIR)\oodialog.dll
 
-!include "$(OR_LIBSRC)\ORXWIN32.MAK"
+# NOTE:  /OPT:REF in linker flags eliminates unreferenced functions and data.
+#        Need to use /Gy when compiling to use /OPT:REF.
+
+# NMAKE-compatible MAKE file for ooDialog
+
+# If OOD_INDEPENDENT is defined we are operating outside of the interpreter
+# build.  In that case, OOD_OUTDIR, OOD_OODIALOGSRC, and OOD_INCLUDE_File are
+# defined in the parent make file that calls us.  When called in the interpreter
+# build process, we set those macros using the OR_xx values set by the build
+# batch files.
+
+!ifdef OOD_INDEPENDENT
+
+REXXAPI_LIBS = $(REXX_LIBS)
+
+!else
+
+OOD_OUTDIR=$(OR_OUTDIR)
+OOD_OODIALOGSRC=$(OR_OODIALOGSRC)
+REXXAPI_LIBS = $(OR_OUTDIR)\rexx.lib $(OR_OUTDIR)\rexxapi.lib
+OOD_INCLUDE_FILE = "$(OR_LIBSRC)\ORXWIN32.MAK"
+
+!endif
+
+# Generate the version information.  Quit if there is an error.
+!IF [generateVersionFile.bat] != 0
+!  ERROR Build error: could not gerate version file, ooDialog.ver.incl
+!ENDIF
+
+!include ooDialog.ver.incl
+!include $(OOD_INCLUDE_FILE)
+
+# The ooDialog specific version definition
+ood_ver_def = -DOOD_VER=$(OOD_MAJOR) -DOOD_REL=$(OOD_MINOR) -DOOD_MOD=$(OOD_MOD_LVL) -DOOD_BLD=$(OOD_BLD_LVL) -DOOD_COPY_YEAR=\"$(OOD_COPY_YEAR)\"
+
+# We use our own rc flags version.
+rcflags_oodialog = rc /NOLOGO /DWIN32 -dOODIALOG_VER=$(OOD_MAJOR) -dOODIALOG_REL=$(OOD_MINOR) -dOODIALOG_SUB=$(OOD_MOD_LVL) -dOODIALOG_BLD=$(OOD_BLD_LVL) -dOODIALOG_VER_STR=\"$(OOD_VER_STR)\" -dOODIALOG_COPY_YEAR=\"$(OOD_COPY_YEAR)\" -dMANIFEST_FILE=$(M_FILE)
+
 C=cl
-OPTIONS= $(cflags_common) $(cflags_dll) $(OR_ORYXINCL)
-OR_LIB=$(OR_OUTDIR)
+OPTIONS= $(cflags_common) $(ood_ver_def) $(cflags_dll) $(OR_ORYXINCL)
 
-SOURCEF= $(OR_OUTDIR)\oovutil.obj $(OR_OUTDIR)\oovdata.obj $(OR_OUTDIR)\oovtext.obj $(OR_OUTDIR)\oovtools.obj \
-         $(OR_OUTDIR)\oovmsg.obj $(OR_OUTDIR)\oovscrll.obj $(OR_OUTDIR)\oovdeskt.obj $(OR_OUTDIR)\oovdraw.obj \
-         $(OR_OUTDIR)\oovuser.obj $(OR_OUTDIR)\oovbmp.obj $(OR_OUTDIR)\oovother.obj $(OR_OUTDIR)\menu.obj \
-         $(OR_OUTDIR)\oodialog.res
+SOURCEF= $(OOD_OUTDIR)\oovutil.obj $(OOD_OUTDIR)\oovdata.obj $(OOD_OUTDIR)\oovtext.obj $(OOD_OUTDIR)\oovtools.obj \
+         $(OOD_OUTDIR)\oovmsg.obj $(OOD_OUTDIR)\oovscrll.obj $(OOD_OUTDIR)\oovdeskt.obj $(OOD_OUTDIR)\oovdraw.obj \
+         $(OOD_OUTDIR)\oovuser.obj $(OOD_OUTDIR)\oovbmp.obj $(OOD_OUTDIR)\oovother.obj $(OOD_OUTDIR)\menu.obj \
+         $(OOD_OUTDIR)\oodialog.res
 
-.c{$(OR_OUTDIR)}.obj:
-    $(C) $(OPTIONS)  /DINCL_32  -c $(@B).c /DCREATEDLL /Fo$(OR_OUTDIR)\$(@B).obj
+all:  $(OOD_OUTDIR)\oodialog.dll
+
+.c{$(OOD_OUTDIR)}.obj:
+    $(C) $(OPTIONS)  /DINCL_32  -c $(@B).c /DCREATEDLL /Fo$(OOD_OUTDIR)\$(@B).obj
 
 #
 # *** .cpp -> .obj rules
 #
-{$(OR_OODIALOGSRC)}.cpp{$(OR_OUTDIR)}.obj:
+{$(OOD_OODIALOGSRC)}.cpp{$(OOD_OUTDIR)}.obj:
     @ECHO .
     @ECHO Compiling $(@B).cpp
-    $(OR_CC) $(cflags_common) $(cflags_dll) /DCREATEDLL /Fo$(OR_OUTDIR)\$(@B).obj $(OR_ORYXINCL)  $(OR_OODIALOGSRC)\$(@B).cpp
+    $(OR_CC) $(cflags_common) $(ood_ver_def) $(cflags_dll) /DCREATEDLL /Fo$(OOD_OUTDIR)\$(@B).obj $(OR_ORYXINCL)  $(OOD_OODIALOGSRC)\$(@B).cpp
 
 
-{$(OR_OODIALOGSRC)}.c{$(OR_OUTDIR)}.obj:
+{$(OOD_OODIALOGSRC)}.c{$(OOD_OUTDIR)}.obj:
     @ECHO .
     @ECHO Compiling $(@B).c
-    $(OR_CC) $(cflags_common) $(cflags_dll) /DCREATEDLL /Fo$(OR_OUTDIR)\$(@B).obj $(OR_ORYXINCL)  $(OR_OODIALOGSRC)\$(@B).c
+    $(OR_CC) $(cflags_common) $(ood_ver_def)  $(cflags_dll) /DCREATEDLL /Fo$(OOD_OUTDIR)\$(@B).obj $(OR_ORYXINCL)  $(OOD_OODIALOGSRC)\$(@B).c
 
 
-$(OR_OUTDIR)\oodialog.dll:     $(SOURCEF)
+$(OOD_OUTDIR)\oodialog.dll: $(SOURCEF)
+    @ECHO .
+    @ECHO Linking $(OOD_OUTDIR)\oodialog.dll
     $(OR_LINK) \
-        $(SOURCEF)  \
+    $(SOURCEF)  \
     $(lflags_common) $(lflags_dll) \
-    $(OR_LIB)\rexx.lib \
-    $(OR_LIB)\rexxapi.lib \
+    $(REXXAPI_LIBS) \
     WINMM.LIB \
     COMDLG32.LIB \
     COMCTL32.LIB \
     shlwapi.lib \
-    -def:$(OR_OODIALOGSRC)\oovutil.def \
-    -out:$(OR_OUTDIR)\$(@B).dll
+    -def:$(OOD_OODIALOGSRC)\oovutil.def \
+    -out:$(OOD_OUTDIR)\$(@B).dll
 
 
 # Update the version information block
-$(OR_OUTDIR)\oodialog.res: $(OR_OODIALOGSRC)\oodialog.rc
+$(OOD_OUTDIR)\oodialog.res: $(OOD_OODIALOGSRC)\oodialog.rc
     @ECHO .
     @ECHO ResourceCompiling $(@B).res
-        $(rc) $(rcflags_common) /i $(OR_OODIALOGSRC) /i $(OR_WINKERNELSRC) -r -fo$(OR_OUTDIR)\$(@B).res $(OR_OODIALOGSRC)\$(@B).rc
+    $(rc) $(rcflags_oodialog) /i $(OOD_OODIALOGSRC) /i $(OR_WINKERNELSRC) -r -fo$(OOD_OUTDIR)\$(@B).res $(OOD_OODIALOGSRC)\$(@B).rc

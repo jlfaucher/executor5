@@ -1,5 +1,5 @@
 dnl
-dnl Copyright (c) 2005-2010 Rexx Language Association. All rights reserved.
+dnl Copyright (c) 2005-2012 Rexx Language Association. All rights reserved.
 dnl
 dnl This program and the accompanying materials are made available under
 dnl the terms of the Common Public License v1.0 which accompanies this
@@ -34,11 +34,11 @@ dnl SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 dnl
 
 dnl Process this file with autoconf to produce a configure script
-AC_INIT(oorexx, 4.1.1)
+AC_INIT(oorexx, 4.1.3)
 AC_PREFIX_DEFAULT(/usr)
 
 PACKAGE=ooRexx
-VERSION=4.1.1
+VERSION=4.1.3
 
 AC_CANONICAL_SYSTEM
 

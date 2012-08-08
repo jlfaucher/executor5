@@ -20,7 +20,7 @@
 /*              the instance and a following FtpSetUser method can establish  */
 /*              a new connection to an FTP server.                            */
 /*                                                                            */
-/* Copyright (c) 2005-2010 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2012 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -894,7 +894,7 @@ self~srvr_os = ''                -- remote host operating system
 self~traceflg = 0                -- .true = display ftp commands
 self~tracelog = .nil             -- trace log stream
 self~user = ''                   -- user account on the ftp server
-self~version = '4.1.1'           -- current version of this class
+self~version = '4.1.3'           -- current version of this class
 self~bufsize = 4096              -- default buffer size for send/receive
 self~thrdstatus = ''
 return

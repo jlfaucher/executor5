@@ -505,7 +505,7 @@
    use arg id, data, category
    if Arg(2,'o') = 1 | data = "DATA" then return -1
    item = self~BoxMessage(category, id, 0x0000014C, 0, "T" || data)
-   if item > 0 then return item + 1; else return 0
+   if item >= 0 then return item + 1; else return 0
 
 ::method GetCurrentCategoryComboIndex unguarded
    use arg id, category
@@ -572,7 +572,7 @@
    use arg id, data, category
    if Arg(2,"o") = 1 then return -1
    item = self~BoxMessage(category, id, 0x0000018F, 0, "T" || data)
-   if item > 0 then return item + 1; else return 0
+   if item >= 0 then return item + 1; else return 0
 
 ::method GetCurrentCategoryListIndex unguarded
    use arg id, category

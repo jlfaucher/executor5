@@ -35,7 +35,8 @@
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 
-/* Windows Dialog Interface for Open Object Rexx (ooRexx)
+/**
+ * Windows Dialog Interface for Open Object Rexx (ooRexx)
  *
  * Menu Classes
  *
@@ -43,524 +44,74 @@
  */
 
 
-/** PLEASE NOTE:
- *
- * The classes and methods in this file are purposively NOT DOCUMENTED.  Do NOT
- * use these classes or methods because the classes, methods, and / or arugments
- * WILL CHANGE in the next release of ooRexx. If you do use these classes in
- * your own code, you do so at you own risk.
- *
- */
-
 /* class: Menu - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*\
      A mix in class implementing functionality that is common to all menus.
 \* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 ::class 'Menu' public mixinclass Object
 
-::attribute hMenu set private
-::attribute hMenu get
-
-::attribute dlg private
-
-::attribute initCode set private
-::attribute initCode get
-
--- The resource ID of a menu.
-::attribute wID set private
-::attribute wID get
-
-::attribute connectionRequested private
-::attribute connectionQ private
-
-::method menuInit private
-  use strict arg symbolSrc
-
-  self~hMenu = 0
-  self~dlg = .nil
-  self~initCode = 0
-  self~wID = .nil
-
-  self~connectionRequested = .false
-  self~connectionQ = .queue~new
-
-  select
-    when symbolSrc~isA(.directory) then self~constDir = symbolSrc
-
-    when symbolSrc~isA(.ResourceUtils) then self~constDir = symbolSrc~constDir
-
-    when symbolSrc~isA(.string) then do
-      self~ConstDir = .directory~new
-      self~ParseIncludeFile(symbolSrc)
-    end
-
-    otherwise self~constDir = .directory~new
-  end
-
-  return 0
-
-::method maybeResolveID private
-  use strict arg id
-
-  if id <> .nil then do
-    id = self~resolveResourceID(id)
-    if id = -1 then do
-      self~initCode = id
-      return .false
-    end
-    self~wID = id
-  end
-
-  return .true
-
-/* getCount() returns the number of items in a menu.  The default is to get the
- * count of items in this menu, but passing in a raw menu handle will also work.
- */
-::method getCount
-  use arg obj
-
-  select
-    when arg(1, 'O') then return WinMenu("COUNT", self~hMenu)
-    when self~isValidMenuHandle(obj) then return WinMenu("COUNT", obj)
-    otherwise return -1
-  end
-  -- End select
-
-/** isValidMenu()  Returns true if *this* Menu object represents a menu that the
- * operating system says is valid, otherwise false.
- */
-::method isValidMenu
-  return WinMenu("ISMENU", self~hMenu)
-
-/** isValidMenuHandle()  Returns true if the specified handle represents a menu
- * that the operating system says is valid, otherwise false.
- */
-::method isValidMenuHandle
-  use strict arg handle
-  return WinMenu("ISMENU", handle)
-
-/** isSubMenu()  Returns true if the menu item specified is a menu item that
- * opens a submenu, othewise false.
- */
-::method isSubMenu
-  use strict arg itemID, byPosition = .false
-
-  itemID = self~resolveItemID(itemID, byPosition)
-  if itemID == -1 then return .false
-
-  return GetMII("ISSUB", self~hMenu, itemID, byPosition)
-
-/** isCommandItem()  Returns true if the menu item specified is a command menu
- * item, i.e., not a menu item that opens a submenu or a separator, othewise
- * false.
- */
-::method isCommandItem
-  use strict arg itemID, byPosition = .false
-
-  itemID = self~resolveItemID(itemID, byPosition)
-  if itemID == -1 then return .false
-
-  return GetMII("ISITEM", self~hMenu, itemID, byPosition)
-
-/** isSeparator()  Returns true if the menu item is a separator, otherwise false.
- * Note that with extended menus, it is possible to assign resource IDs even to
- * separators.  Therefore it is possible to query both by ID and position.
- */
-::method isSeparator
-  use strict arg itemID, byPosition = .false
-
-  itemID = self~resolveItemID(itemID, byPosition)
-  if itemID == -1 then return .false
-
-  return GetMII("ISSEP", self~hMenu, itemID, byPosition)
-
-/** getHandle()  Returns the raw menu handle of this menu.
- */
-::method getHandle
-  return self~hMenu
-
-/** getMenuHandle()  Get the raw menu handle of a submenu of this menu.
- */
-::method getMenuHandle
-  use strict arg itemID, byPosition = .false
-
-  itemID = self~resolveItemID(itemID, byPosition)
-  if itemID == -1 then return -1
-
-  return GetMII("SUB", self~hMenu, itemID, byPosition)
-
-/** releaseMenuHandle()  Releases (frees) the operating system resources used by
- * a menu.  The menu is specified by its raw handle.  To release the operating
- * system resources for an ooDialog Menu object, use the destroy() method.
- */
-::method releaseMenuHandle
-  use strict arg handle
-  return WinMenu("DEL", handle)
-
-/** getPopup()  Returns a .PopupMenu that represents the specified submenu.
- * Check the PopupMenu initCode to determine success.
- */
-::method getPopup unguarded
-  use strict arg itemID, byPosition = .false, symbolSrc = .nil
-
-  -- We want to *always* return a PopupMenu object, so even if there is an error
-  -- with the itemID or with getMenuHandle(), we still pass the value on to
-  -- PopupMenu~new.  .PopupMenu~init() can handle the incorrect values (if any)
-  -- and will create the object with a non-zero initCode.
-
-  itemID = self~resolveItemID(itemID, byPosition)
-
-  -- This is the id to be passed on to PopupMenu~new.
-  if byPosition then id = .nil
-  else id = itemID
-
-  hSubMenu = GetMII("SUB", self~hMenu, itemID, byPosition)
-
-  return .PopupMenu~new(id, hSubMenu, symbolSrc)
-
-::method insertPopup unguarded
-  use strict arg before, popup, text, id, stateOpts = "", typeOpts = "", byPosition = .false
-
-  id = self~resolveResourceID(id)
-  if id == -1 then return -1
-
-  before = self~resolveItemID(before, byPosition)
-  if before == -1 then return -1
-
-  if \ popup~isA(.PopupMenu) then return -2
-
-  ret = InsertMII("POP", self~hMenu, before, byPosition, popup~getHandle, text, id, stateOpts~upper, typeOpts~upper)
-  return self~maybeRedraw(ret)
-
-::method insertItem unguarded
-  use strict arg before, text, id, stateOpts = "", typeOpts = "", byPosition = .false, connect = .false
-
-  id = self~resolveResourceID(id)
-  if id == -1 then return -1
-
-  before = self~resolveItemID(before, byPosition)
-  if before == -1 then return -1
-
-  ret = InsertMII("ITEM", self~hMenu, before, byPosition, text, id, stateOpts~upper, typeOpts~upper)
-
-  if connect then do
-    msgToRaise = text~changeStr('&', "")~space(0)
-    if self~dlg <> .nil then do
-      self~connectItem(id, msgToRaise, self~dlg)
-    end
-    else do
-      self~connectionRequested = .true
-      self~connectionQ~queue(.MapItem~new(id, msgToRaise))
-    end
-  end
-
-  return self~maybeRedraw(ret)
-
-::method insertSeparator unguarded
-  use strict arg before, byPosition = .false
-
-  before = self~resolveItemID(before, byPosition)
-  if before == -1 then return -1
-
-  ret = InsertMII("SEP", self~hMenu, before, byPosition)
-  return self~maybeRedraw(ret)
-
-::method maybeRedraw private
-  use strict arg ret
-  if ret <> 0 | self~dlg == .nil then return ret
-  return WinMenu("DRAW", self~dlg~dlgHandle)
-
-/** deleteSubMenu()
- * Removes the submenu from this menu and frees the hMenu.  To be able to reuse
- * the the submenu use the removeSubMenu() method.
- */
-::method deleteSubMenu
-  use strict arg id, byPosition = .false
-  forward to (self~delete)
-
-/** removeSubMenu()
- * Remove the submenu from this menu and return it, as a .PopupMenu to the
- * caller.
- */
-::method removeSubMenu
-  use strict arg id, byPosition = .false, symbolSrc = .nil
-
-  subMenu = self~getPopup(id, byPosition, symbolSrc)
-  if subMenu~initCode <> 0 then return subMenu
-
-  self~delete(id, byPosition)
-  return subMenu
-
-/** removeItem() remove a menu item from this menu.
- */
-::method removeItem
-  use strict arg id, byPosition = .false
-  forward to (self~delete)
-
-::method removeSeparator
-  use strict arg id, byPosition = .false
-  forward to (self~delete)
-
-::method delete private
-  use strict arg id, byPosition = .false
-
-  itemID = self~resolveItemID(itemID, byPosition)
-  if itemID == -1 then return .false
-
-  ret = WinMenu("DELMENU", self~hMenu, itemID, byPosition)
-  return self~maybeRedraw(ret)
-
-::method isEnabled
-  use strict arg itemID, byPosition = .false
-
-  itemID = self~resolveItemID(itemID, byPosition)
-  if itemID == -1 then return .false
-
-  return GetMII("ISTATE", self~hMenu, itemID, byPosition)~wordPos("ENABLED") <> 0
-
-::method isGrayed
-  use strict arg itemID, byPosition = .false
-  forward to (self~isEnabled)
-
-::method enable
-  use strict arg itemIDs, byPosition = .false, enable = .true
-
-  if itemIDs~isA(.Collection) then do
-    status = 0
-    do id over itemIDs
-      ret = self~doEnable(id, byPosition, enable)
-      if ret < 0, ret <> -1 then return ret
-      if ret == -1 then status = -1
-    end
-  end
-  else do
-    status = self~doEnable(itemIDs, byPosition, enable)
-  end
-
-  return status
-
-::method disable
-  use strict arg itemIDs, byPosition = .false
-  return self~enable(itemIDs, byPosition, .false)
-
-::method gray
-  use strict arg itemIDs, byPosition = .false
-  return self~enable(itemIDs, byPosition, .false)
-
-::method doEnable private
-  use strict arg id, byPosition, enable
-
-  id = self~resolveItemID(id, byPosition)
-  if id == -1 then return -1
-
-  keyword = "ENABLED"
-  if \ enable then keyword = "DISABLED"
-
-  return SetMII("ISTATE", self~hMenu, id, byPosition, keyword)
-
-::method isChecked
-  use strict arg itemID, byPosition = .false
-
-  itemID = self~resolveItemID(itemID, byPosition)
-  if itemID == -1 then return .false
-
-  return GetMII("ISTATE", self~hMenu, itemID, byPosition)~wordPos("CHECKED") <> 0
-
-::method check
-  use strict arg itemIDs, byPosition = .false, check = .true
-
-  if itemIDs~isA(.Collection) then do
-    status = 0
-    do id over itemIDs
-      ret = self~doCheck(id, byPosition, check)
-      if ret < 0, ret <> -1 then return ret
-      if ret == -1 then status = -1
-    end
-  end
-  else do
-    status = self~doCheck(itemIDs, byPosition, check)
-  end
-
-  return status
-
-::method uncheck
-  use strict arg itemIDs, byPosition = .false
-  return self~check(itemIDs, byPosition, .false)
-
-::method doCheck private
-  use strict arg id, byPosition, check
-
-  id = self~resolveItemID(id, byPosition)
-  if id == -1 then return -1
-
-  keyword = "CHECKED"
-  if \ check then keyword = "UNCHECKED"
-
-  return SetMII("ISTATE", self~hMenu, id, byPosition, keyword)
-
-::method checkRadio
-  use strict arg idStart, idEnd, idCheck, byPosition = .false
-  idStart = self~resolveItemID(idStart, byPosition)
-  idEnd   = self~resolveItemID(idEnd, byPosition)
-  idCheck = self~resolveItemID(idCheck, byPosition)
-  if (idStart == -1) | (idEnd == -1) | (idCheck == -1) then return -1
-
-  return WinMenu("CHECKRADIO", self~hMenu, idStart, idEnd, idCheck, byPosition)
-
-::method getState
-  use strict arg itemID, byPosition = .false
-
-  itemID = self~resolveItemID(itemID, byPosition)
-  if itemID == -1 then return -1
-
-  return GetMII("ISTATE", self~hMenu, itemID, byPosition)
-
-::method getType
-  use strict arg itemID, byPosition = .false
-
-  itemID = self~resolveItemID(itemID, byPosition)
-  if itemID == -1 then return -1
-
-  return GetMII("TYPE", self~hMenu, itemID, byPosition)
-
-/* Set or get a menu item's text */
-::method getText
-  use strict arg itemID, byPosition = .false
-
-  itemID = self~resolveItemID(itemID, byPosition)
-  if itemID == -1 then return -1
-
-  return GetMII("TEXT", self~hMenu, itemID, byPosition)
-
-::method setText
-  use strict arg itemID, text, byPosition = .false
-
-  itemID = self~resolveItemID(itemID, byPosition)
-  if itemID == -1 then return -1
-
-  return SetMII("TEXT", self~hMenu, itemID, byPosition, text)
-
-/* getID()  Get an item ID, by definition this is by position.  If the
- * ID is already known, there is no point in querying for it.
- */
-::method getID
-  use strict arg posID
-  return GetMII("ID", self~hMenu, posID, .true)
-
-/* setID()  Set an item ID, by position is the defualt.  This function can
- * also be used to change an existing ID, so the by ID form is supported.  Note
- * that with extended menus all items can have IDs, even separators.
- */
-::method setID
-  use strict arg itemID, id, byPosition = .true
-
-  itemID = self~resolveItemID(itemID, byPosition)
-  if itemID == -1 then return -1
-
-  id = self~resolveResourceID(id)
-  if id == -1 then return -1
-
-  return setMII("ID", self~hMenu, itemID, byPosition, id)
-
-/* resolveItemID()  Convenience function to resolve an argument that can be
- * either a resource ID or a position ID.
- */
-::method resolveItemID private
-  use strict arg itemID, byPosition
-
-  if byPosition then do
-    if itemID~isA(.string), itemID~datatype('W'), itemID > -1 then return itemID
-    else return -1
-  end
-
-  return self~resolveResourceID(itemID)
-
-
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*\
-  Methods that affect an entire menu, rather than a menu item.
-\* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-
-/* Set or get the menu help context ID */
-::method setHelpID
-  use strict arg id, recurse = .false  -- recurse means apply to submenus also.
-
-  id = self~resolveResourceID(id)
-  if id == -1 then return -1
-
-  -- Be sure recurse is a boolean.
-  if recurse \== .true, recurse \== .false then recurse = .true
-
-  return SetMI("HELP", self~hMenu, id, recurse)
-
-::method getHelpID
-  return GetMI("HELP", self~hMenu)
-
-::method destroy
-  if self~isA(.MenuBar), self~dlg <> .nil, then self~detach
-  ret = WinMenu("DEL", self~hMenu)
-  self~hMenu = 0
-  return ret
-
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*\
-  Message connection methods.
-\* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-::method checkConnectionRequest private
-  use strict arg dlg
-
-  if self~connectionRequested then do
-    self~connectionRequested = .false
-    do map over self~connectionQ
-      self~connectItem(map~key, map~item, dlg)
-    end
-    self~connectionQ~empty
-  end
-
-/** connectItem()  Connects the menu command item with the specified ID to the
- * specified method.
- */
-::method connectItem
-  use strict arg id, msgToRaise, dlg = (self~dlg)
-
-  id = self~resolveResourceID(id)
-  if id == -1 then return -1
-
-  if \ dlg~isA(.BaseDialog) then return -3
-
-  if id < 3 | id = 9 then return 0
-
-  ret = dlg~addUserMsg(msgToRaise, 0x00000111, 0xFFFFFFFF, id, 0x0000FFFF, 0, 0)
-  if ret == 1 then return -4
-
-  return 0
-
-/** connectItemsToMsg()  Connects a collection of menu command items to the
- * single specified method.
- */
-::method connectItemsToMsg
-  use strict arg itemIDs, msgToRaise, dlg = (self~dlg)
-
-  if \ itemIDs~isA(.Collection) then return -2
-
-  status = 0
-  do id over itemIDs
-    ret = self~connectItem(id, msgToRaise, dlg)
-    if ret < 0, ret <> -1 then return ret
-    if ret == -1 then status = -1
-  end
-
-  return status
-
-::method connectAllItems external "LIBRARY oodialog menu_connectAllItems"
-
--- Connect WM_CONTEXTMENU messages to a method.
-::method connectContextMenu
-  use strict arg msgToRaise, hwnd = .nil, dlg = (self~dlg)
-
-  if \ dlg~isA(.BaseDialog) then return -3
-
-  if hwnd \== .nil then
-    return dlg~addUserMsg(msgToRaise, 0x0000007B, 0xFFFFFFFF, hwnd, 0xFFFFFFFF, 0, 0, 0x00000201)
-  else
-    return dlg~addUserMsg(msgToRaise, 0x0000007B, 0xFFFFFFFF, 0, 0, 0, 0, 0x00000201)
+::method connectCommandEvent class external "LIBRARY oodialog menu_connectCommandEvent_cls"
+
+::method menuInit private external "LIBRARY oodialog menu_menuInit_pvt"
+::method unInit external "LIBRARY oodialog menu_uninit"
+
+::attribute wID get external "LIBRARY oodialog menu_wID"
+::attribute hMenu get external "LIBRARY oodialog menu_getHMenu"
+
+-- TODO NEED appendPopup() and appendItem()  (note you can not append a separator, or can you?)
+
+-- TODO there are some methods where the C code was there but there are no
+-- Rexx methods to match.  SetItemType, SetPopupType, SetItemState, SetPopupType
+-- These methods would take a combination of keywords.  The parsing of the
+-- keywords is already implmented.
+
+::method check external "LIBRARY oodialog menu_check"
+::method checkRadio external "LIBRARY oodialog menu_checkRadio"
+::method connectAllCommandEvents external "LIBRARY oodialog menu_connectAllCommandEvents"
+::method connectCommandEvent external "LIBRARY oodialog menu_connectCommandEvent"
+::method connectMenuEvent external "LIBRARY oodialog menu_connectMenuEvent"
+::method connectSomeCommandEvents external "LIBRARY oodialog menu_connectSomeCommandEvents"
+::method deletePopup external "LIBRARY oodialog menu_deletePopup"
+::method destroy external "LIBRARY oodialog menu_destroy"
+::method disable external "LIBRARY oodialog menu_disable"
+::method enable external "LIBRARY oodialog menu_enable"
+::method getAutoConnectStatus external "LIBRARY oodialog menu_getAutoConnectStatus"
+::method getCount external "LIBRARY oodialog menu_getCount"
+::method getHandle external "LIBRARY oodialog menu_getHMenu"
+::method getHelpID external "LIBRARY oodialog menu_getHelpID"
+::method getID external "LIBRARY oodialog menu_getID"
+::method getItemState external "LIBRARY oodialog menu_getItemState"
+::method getMaxHeight external "LIBRARY oodialog menu_getMaxHeight"
+::method getMenuHandle external "LIBRARY oodialog menu_getMenuHandle"
+::method getPopup unguarded external "LIBRARY oodialog menu_getPopup"
+::method getText external "LIBRARY oodialog menu_getText"
+::method getType external "LIBRARY oodialog menu_getItemType"
+::method gray external "LIBRARY oodialog menu_disable"
+::method hilite external "LIBRARY oodialog menu_hilite"
+::method insertItem unguarded external "LIBRARY oodialog menu_insertItem"
+::method insertPopup unguarded external "LIBRARY oodialog menu_insertPopup"
+::method insertSeparator unguarded external "LIBRARY oodialog menu_insertSeparator"
+::method isChecked external "LIBRARY oodialog menu_isChecked"
+::method isCommandItem external "LIBRARY oodialog menu_isCommandItem"
+::method isDisabled external "LIBRARY oodialog menu_isDisabled"
+::method isEnabled external "LIBRARY oodialog menu_isEnabled"
+::method isGrayed external "LIBRARY oodialog menu_isDisabled"
+::method isPopup external "LIBRARY oodialog menu_isPopup"
+::method isSeparator external "LIBRARY oodialog menu_isSeparator"
+::method isValidItemID external "LIBRARY oodialog menu_isValidItemID"
+::method isValidMenu external "LIBRARY oodialog menu_isValidMenu"
+::method isValidMenuHandle external "LIBRARY oodialog menu_isValidMenuHandle"
+::method itemTextToMethodName external "LIBRARY oodialog menu_itemTextToMethodName"
+::method releaseMenuHandle external "LIBRARY oodialog menu_releaseMenuHandle"
+::method removeItem external "LIBRARY oodialog menu_removeItem"
+::method removePopup external "LIBRARY oodialog menu_removePopup"
+::method removeSeparator external "LIBRARY oodialog menu_removeSeparator"
+::method setAutoConnection external "LIBRARY oodialog menu_setAutoConnection"
+::method setHelpID external "LIBRARY oodialog menu_setHelpID"
+::method setID external "LIBRARY oodialog menu_setID"
+::method setMaxHeight external "LIBRARY oodialog menu_setMaxHeight"
+::method setText external "LIBRARY oodialog menu_setText"
+::method unCheck external "LIBRARY oodialog menu_unCheck"
+::method unHilite external "LIBRARY oodialog menu_unHilite"
 
 ::method test external "LIBRARY oodialog menu_test"
 
@@ -569,42 +120,12 @@
 \* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 ::class 'MenuBar' public mixinclass Menu
 
-/** attachTo()
- * Attaches this menu bar to the specified dialog window.  This method is not
- * intended to be used when this menu is already attached to a window.  Use the
- * replace method for that situation.
- *
- * However, a menu can only have one owner window.  So, if this menu is already
- * attached to a dialog, it is first detached.
- */
-::method attachTo
-  use strict arg dlg
-  if \ dlg~isA(.BaseDialog) then return -3
+::method attachTo external "LIBRARY oodialog menuBar_attachTo"
+::method detach external "LIBRARY oodialog menuBar_detach"
+::method isAttached external "LIBRARY oodialog menuBar_isAttached"
+::method redraw external "LIBRARY oodialog menuBar_redraw"
+::method replace external "LIBRARY oodialog menuBar_replace"
 
-  if self~dlg <> .nil then self~detach
-
-  oldMenu = WinMenu("ASSOC", self~hMenu, dlg~hwnd)
-  if oldMenu < 0 then return oldMenu
-
-  dlg~linkMenu(self)
-  self~dlg = dlg
-
-  self~checkConnectionRequest(dlg)
-
-  return oldMenu
-
-::method replace
-  use strict arg dlg
-  if \ dlg~isA(.BaseDialog) then return -3
-
-::method detach
-  dlg = self~dlg
-  if dlg == .nil then return -1
-
-  ret = WinMenu("DET", dlg~hwnd)
-  dlg~unlinkMenu
-  self~dlg = .nil
-  return ret
 
 /** unInit()
  * A menu that is not assigned to a window must be destroyed by the application
@@ -612,261 +133,88 @@
  * by the system when the window is destroyed.
  */
 ::method unInit
-  if self~dlg <> .nil then return
-  self~destroy
+  forward class (.Menu)
 
-::method failedInit private
-  use strict arg ret
-  self~destroy
-  self~initCode = ret
-  return ret
+/* class: SystemMenu - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*\
+     A system menu class.  System menus are also known as window or control
+     menus.  It is the menu that appears when clicking on the icon in the upper
+     left corner of a window.
+\* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+::class 'SystemMenu' public subclass Object inherit Menu
+
+::constant WM_SYSCOMMAND     "0x0112"
+
+-- Use decimal value to allow comparison in event handlers.
+::constant SC_SIZE           61440
+::constant SC_MOVE           61456
+::constant SC_MINIMIZE       61472
+::constant SC_MAXIMIZE       61488
+::constant SC_NEXTWINDOW     61504
+::constant SC_PREVWINDOW     61520
+::constant SC_CLOSE          61536
+::constant SC_VSCROLL        61552
+::constant SC_HSCROLL        61568
+::constant SC_MOUSEMENU      61584
+::constant SC_KEYMENU        61696
+::constant SC_ARRANGE        61712
+::constant SC_RESTORE        61728
+::constant SC_TASKLIST       61744
+::constant SC_SCREENSAVE     61760
+::constant SC_HOTKEY         61776
+::constant SC_DEFAULT        61792
+::constant SC_MONITORPOWER   61808
+::constant SC_CONTEXTHELP    61824
+::constant SC_SEPARATOR      61455
+
+::method init external "LIBRARY oodialog sysMenu_init"
+::method revert external "LIBRARY oodialog sysMenu_revert"
+::method unInit
+  forward class (.Menu)
+
 
 
 /* class: BinaryMenuBar- - - - - - - - - - - - - - - - - - - - - - - - - - - -*\
      A menu bar menu created from a binary resource, or created as an empty
      menu.
 \* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-::class 'BinaryMenuBar' public subclass Object inherit MenuBar ResourceUtils
+::class 'BinaryMenuBar' public subclass Object inherit MenuBar
 
-::method init
-  use strict arg src = .nil, id = .nil, symbolSrc = .nil, helpID = 0, attach = .false, autoConnect = .false
-
-  if self~menuInit(symbolSrc) <> 0 then return self~initCode
-  if \ self~maybeResolveID(id) then return self~initCode
-
-  select
-    when src~isA(.ResDialog) then do
-      if self~wID == .nil then do
-        self~initCode = -1
-        return -1
-      end
-
-      hMenu = WinMenu("LOAD", 0, src~adm, self~wID)
-    end
-
-    when src~isA(.string) then do
-      if src~datatype('W') then do
-        -- This is to create a BinaryMenuBar from a hMenu.  But, is this really
-        -- of any use?  It could be used of creating a System menu, but a system
-        -- menu might be better off as its own class.
-        if WinMenu("ISMENU", src) then hMenu = src
-        else hMenu = -1
-      end
-      else do
-        if self~wID == .nil then do
-          self~initCode = -1
-          return -1
-        end
-
-        hMenu = WinMenu("LOAD", 1, src, self~wID)
-      end
-    end
-
-    when src == .nil then hMenu = WinMenu("CREATE", 0)
-
-    otherwise hMenu = -1
-  end
-  -- End select
-
-  if hMenu < 0 then do
-    self~initCode = hMenu
-    return hMenu
-  end
-
-  self~hMenu = hMenu
-  if helpID <> 0 then self~setHelpID(helpID)
-
-  select
-    when attach & src~isA(.ResDialog) then do
-      ret = self~attachTo(src)
-      if ret < 0 then return self~failedInit(ret)
-    end
-
-    when attach & symbolSrc~isA(.BaseDialog) then do
-      ret = self~attachTo(symbolSrc)
-      if ret < 0 then return self~failedInit(ret)
-    end
-
-    otherwise nop
-  end
-  -- End select
-
-  return 0
+::method init external "LIBRARY oodialog binMenu_init"
+::method unInit
+  forward class (.Menu)
 
 
 /* class: PopupMenu- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*\
      A popup menu.  (Popup menus are also called, at various times, submenus,
      drop down menus, or context menus.)
 \* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-::class 'PopupMenu' public subclass Object inherit Menu ResourceUtils
+::class 'PopupMenu' public subclass Object inherit Menu
 
-::method init
-  use strict arg id = .nil, handle = .nil, symbolSrc = .nil, helpID = 0
+::method connectContextMenu class external "LIBRARY oodialog popMenu_connectContextMenu_cls"
 
-  if self~menuInit(symbolSrc) <> 0 then return self~initCode
-  if \ self~maybeResolveID(id) then return self~initCode
+::method init external "LIBRARY oodialog popMenu_init"
 
-  select
-    when handle == .nil then do
-      handle = WinMenu("CREATE", 1)
-    end
+::method assignTo external "LIBRARY oodialog popMenu_assignTo"
+::method connectContextMenu external "LIBRARY oodialog popMenu_connectContextMenu"
+::method isAssigned external "LIBRARY oodialog popMenu_isAssigned"
+::method show external "LIBRARY oodialog popMenu_show"
+::method track external "LIBRARY oodialog popMenu_track"
 
-    when handle < 0 then nop
-
-    otherwise do
-      if \ WinMenu("ISMENU", handle) then handle = -2
-    end
-  end
-  -- End select
-
-  if handle < 0 then do
-    self~initCode = handle
-    return handle
-  end
-
-  self~hMenu = handle
-  if helpID <> 0 then self~setHelpID(helpID)
-
-  return 0
-
-/** show() displays a context menu and returns after the user has selected an
- * item or canceled.  When the user selects an item, a WM_COMMAND message with
- * the id of the selection is generated.  If the user cancels, nothing happens.
- * 0 indicates success, less than 0 is the negated system error code.
- */
-::method show unguarded
-  use strict arg x, y, owner = (self~dlg), hAlign = "RIGHT", vAlign = "BOTTOM", bothButtons = .false, miscOpts = ""
-
-  if \ owner~isA(.BaseDialog) then return -3
-  if self~dlg \== owner then do
-    -- TODO Revisit  Question: Do we want to set the assigned dialog to the owner ??
-    self~dlg = owner
-  end
-
-  if bothButtons then mode = "RIGHT"
-  else mode = ""
-
-  return TrackPopup(mode, self~hMenu, owner~dlgHandle, x, y, hAlign~upper, vAlign~upper, miscOpts~upper)
-
-/** track() displays a contex menu and returns after the user has selected an
- * item or canceled the menu.  No notification (no WM_COMMAND message) is sent
- * to the owner window.  The selected id is returned, or 0 if the menu is
- * canceled or an error happens.
- */
-::method track unguarded
-  use strict arg x, y, owner = (self~dlg), hAlign = "RIGHT", vAlign = "BOTTOM", bothButtons = .false, miscOpts = ""
-
-  if \ owner~isA(.BaseDialog) then return -3
-  if self~dlg \== owner then do
-    -- TODO Revisit  Question: Do we want to set the assigned dialog to the owner ??
-    self~dlg = owner
-  end
-
-  if bothButtons then mode = "NONOTIFY RIGHT"
-  else mode = "NONOTIFY"
-
-  return TrackPopup(mode, self~hMenu, owner~dlgHandle, x, y, hAlign~upper, vAlign~upper, miscOpts~upper)
-
-::method assignTo unguarded
-  use strict arg dlg
-  if \ dlg~isA(.BaseDialog) then return -3
-
-  oldDlg = self~dlg
-  self~dlg = dlg
-
-  self~checkConnectionRequest(dlg)
-  return oldDlg
+::method unInit
+  say 'In uninit() of PopupMenu'
+  forward class (.Menu)
 
 /* class: MenuTemplate - - - - - - - - - - - - - - - - - - - - - - - - - - - -*\
     A mix in class supplying the funtionality to create a menu template in
-    memory.
+    memory.  This a private, internal use only, class.  The methods are doc-
+    umented as part of the UserMenuBar, the class itself is not documented.
 \* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-::class 'MenuTemplate' public mixinclass ResourceUtils
+::class 'MenuTemplate' private mixinclass Object
 
-::method memInit private
-  expose basePtr currentPtr memHandle isFinal
-  use strict arg count, helpID
-
-  isFinal = .false
-
-  parse value MemMenu("INIT", count, helpID) with memHandle basePtr currentPtr
-
-  if memHandle < 0 then do
-    self~finalize
-    return memHandle
-  end
-
-  return 0
-
-::method isFinished
-  expose isFinal
-  return isFinal
-
-::method finish
-  expose basePtr currentPtr memHandle isFinal
-
-  if isFinal | memHandle == 0 then return -2
-
-  hMenu = WinMenu("LOAD", 2, memHandle, basePtr)
-  self~finalize
-  return hMenu
-
-::method addPopup
-  expose currentPtr isFinal
-  use strict arg name, id = 0, opt = "", helpID = 0
-
-  if isFinal then return -2
-
-  id = self~checkId(id)
-  if  id == -1 then return id
-
-  -- Rather than fail on a bad help ID, just use 0.
-  helpID = self~checkId(helpID)
-  if  helpID == -1 then helpID = 0
-
-  currentPtr = MemMenu("ADD", currentPtr, id, name, "POPUP " || opt~upper, helpID)
-
-  return 0
-
-::method addItem
-  expose currentPtr isFinal
-  use strict arg name, id, opt = "", msgToRaise = .nil
-
-  if isFinal then return -2
-
-  id = self~CheckId(id)
-  if  id == -1 then return id
-
-  currentPtr = MemMenu("ADD", currentPtr, id, name, opt~upper)
-
-  if msgToRaise <> .nil then do
-    self~connectionRequested = .true
-    self~connectionQ~queue(.MapItem~new(id, msgToRaise))
-  end
-
-  return 0
-
-/* With extended menus, separators can have IDs.  This is useful ...  */
-::method addSeparator
-  expose currentPtr isFinal
-  use strict arg id = 0, opt = ""
-
-  if isFinal then return -2
-
-  -- Rather than fail on a bad ID, just use 0.
-  id = self~checkId(id)
-  if  id == -1 then id = 0
-
-  currentPtr = MemMenu("ADD", currentPtr, id, "", "SEPARATOR")
-  return 0
-
-::method finalize private
-  expose basePtr currentPtr memHandle isFinal
-
-  basePtr = 0
-  currentPtr = 0
-  memHandle = 0
-  isFinal = .true
+::method addPopup external "LIBRARY oodialog menuTemplate_addPopup"
+::method addItem external "LIBRARY oodialog menuTemplate_addItem"
+::method addSeparator external "LIBRARY oodialog menuTemplate_addSeparator"
+::method isComplete external "LIBRARY oodialog menuTemplate_isComplete"
 
 
 /* class: UserMenuBar- - - - - - - - - - - - - - - - - - - - - - - - - - - - -*\
@@ -875,41 +223,10 @@
 \* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 ::class 'UserMenuBar' public subclass Object inherit MenuBar MenuTemplate
 
--- The context help ID for a menu.  Assigning the help ID in the
--- MENUEX_TEMPLATE_HEADER does not work as Microsoft documents it. This is used
--- as a work around.  It is not maintained to always reflect with the real id
--- is; use self~getHelpID() to determine the actual help ID.
-::attribute helpID private
-
-::method init
-  use strict arg symbolSrc = .nil, count = 100, helpID = 0
-
-  if self~menuInit(symbolSrc) <> 0 then return self~initCode
-
-  -- Rather than fail on a bad help ID, just use 0.
-  helpID = self~checkId(helpID)
-  if  helpID == -1 then helpID = 0
-
-  ret = self~memInit(count, helpID)
-  if ret < 0 then do
-    self~initCode = ret
-    return ret
-  end
-
-  -- Work around.  Setting the help ID in the in-memory template does not work
-  -- as documented.
-  self~helpID = helpID
-
-  return 0
-
-::method complete
-  hMenu = self~finish
-  if hMenu < 0 then return hMenu
-
-  self~hMenu = hMenu
-  if self~helpID <> 0 then self~setHelpID(self~HelpID)
-
-  return 0
+::method init external "LIBRARY oodialog userMenu_init"
+::method complete external "LIBRARY oodialog userMenu_complete"
+::method unInit
+  forward class (.Menu)
 
 
 /* class: ScriptMenuBar- - - - - - - - - - - - - - - - - - - - - - - - - - - -*\
@@ -918,185 +235,264 @@
 \* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 ::class 'ScriptMenuBar' public subclass Object inherit MenuBar MenuTemplate
 
-::method init
-  use strict arg rcFile, id = .nil, symbolSrc = .nil, helpID = 0, count = 50, connect = .false, attach = .false
+::method init external "LIBRARY oodialog scriptMenu_init"
+::method resolveSymbolicID external "LIBRARY oodialog global_resolveSymbolicID"
+::method unInit
+  forward class (.Menu)
 
-  if self~menuInit(symbolSrc) <> 0 then return self~initCode
-  if \ self~maybeResolveID(id) then return self~initCode
-
-  helpID = self~checkId(helpID)
-  if  helpID == -1 then helpID = 0
-
-  ret = self~memInit(count, helpID)
-  if ret < 0 then do
-    self~initCode = ret
-    return ret
-  end
-
-  ret = self~load(rcFile, self~wID, connect, count)
-  if ret <> 0 then do
-    self~initCode = ret
-    return ret
-  end
-
-  hMenu = self~finish
-  if hMenu < 0 then do
-    self~initCode = hMenu
-    return hMenu
-  end
-
-  self~hMenu = hMenu
-
-  if helpID <> 0 then self~setHelpID(helpID)
-
-  if attach & symbolSrc~isA(.BaseDialog) then do
-    ret = self~attachTo(symbolSrc)
-    if ret < 0 then return self~failedInit(ret)
-  end
-
-  return 0
-
+/** load() Parses a menu definition in a resource script file and loads it into
+ *         memory (through a MenuTemplate.)  The MENU resource definition
+ *         statement looks like:
+ *
+ *    menuID MENU  [[optional-statements]]
+ *
+ *    We ignore the optional statements. menuID can be a number, a symbolic ID
+ *    that resolves to a number, or a string name.
+ *
+ *    If noMenuID is set to .true we simply take the first menu found.  If
+ *    menuid is set to -1 then we are looking for a string name that matches
+ *    menuName.  Otherwise we match menuid.  Syntax errors are raised for all
+ *    problems, including not finding the menu.  If no error is raised, the
+ *    menu is guaranteed to be loaded into memory.
+ *
+ *    Assumes that the caller has already parsed the file for symbolic ID
+ *    defintions.
+ */
 ::method load private
-   use strict arg resfile, menuid, connect, count
+  use strict arg resfile, menuid, connect, count, noMenuID = .false, menuName = ""
 
-   file = SysSearchPath("PATH",resfile)
-   if file == "" then do
-      say "Resource file not found -->" resfile
-      return 1
-   end
+  signal on syntax
 
-   f = .stream~new(file)
-   op = f~open(read)
-   if op \= "READY:" then do
-      say "Resource file not readable -->" op
-      return 1
-   end
+  file = SysSearchPath("PATH", resfile)
+  if file == "" then do
+    msg = 'Unable to find resource script file "'resFile'"'
+    raise syntax 98.900 array (msg)
+  end
 
-   found = 0; n = 0
-   fl = f~lines
-   do while found = 0 & fl > 0
-      do while n = 0 & fl > 0
-         s = f~linein; fl = fl - 1
-         /* Add any sybmolic IDs defined in the file to the ConstDir.  Only
-          * check for #define at the top of the file.  We check for symbolic IDS
-          * here because menu resources could be defined in a separate file.
-          */
-         if s~wordpos("#define") > 0 then do
-            s = s~translate(" ", "9"x)
-            parse var s "#define " symb iid
-            self~ConstDir[symb~space(0)~translate] = iid
-         end
-         n = s~wordpos("MENU")
-      end
+  f = .stream~new(file)
+  op = f~open(read)
+  if op \= "READY:" then do
+    msg = 'Resource script file "'resFile'" is not readable:' op
+    raise syntax 98.900 array (msg)
+  end
 
-      if (self~checkfile(f) = 1) then return 1
+  found = 0; n = 0
+  menuName = menuName~translate
+  isMenuEx = .false
+  fl = f~lines
+  do while found = 0, fl > 0
+     do while n = 0, fl > 0
+        s = f~linein; fl -= 1
+        keyWord = s~word(2)
+        if keyWord == "MENU" |  keyWord == "MENUEX" then n = 2
+     end
 
-      if menuid == .nil  then found = 1
-      else do
-         if s~word(n-1)~translate = menuid~translate then found = 1
-         else if self~CheckId(s~word(n-1)) = menuid then found = 1
-         else n = 0
-      end
-   end
+     if f~lines == 0 then do
+       -- We read the whole file and never found a MENU statement.
+       f~close
 
-   s = f~linein; fl = fl - 1
-   do while s~wordpos("BEGIN") = 0 & s~pos("{") = 0 & fl > 0
-      s = f~linein; fl = fl - 1
-   end
+       if noMenuID then subMsg = 'no MENU statement found'
+       else if menuName \== "" then subMsg = 'no MENU statement for menuid "'menuName'"'
+       else subMsg = 'no MENU statement for menuid "'menuid'"'
 
-   if (self~checkFile(f) = 1) then return 1
+       msg = 'Error: script file "'resFile'"' subMsg
+       raise syntax 98.900 array (msg)
+     end
 
-   rcarray = .array~new(50)
-   bracket = 1
-   cur = 0
-   endcount = 0
+     if noMenuID then found = 1
+     else if menuid == -1, s~word(n-1)~translate == menuName then found = 1
+     else if menuid \== -1, self~resolveSymbolicID(s~word(n-1)) == menuid then found = 1
+     else n = 0
 
-   prevs = ""
-   s = f~linein; fl = fl - 1
-   do while bracket > 0 & fl >= 0
-      if s~wordpos("END") > 0 | s~pos("}") > 0 then
-      do
-         bracket = bracket - 1;
-         endcount = endcount + 1
-         cur = cur + 1
-         rcarray[cur] = s
-      end
-      else if s~wordpos("BEGIN") > 0 | s~pos("{") > 0 then do
-         bracket = bracket + 1;
-         cur = cur + 1
-         rcarray[cur] = s
-      end
-      else if s~strip \= "" then do
-         cur = cur + 1
-         rcarray[cur] = s
-      end
-      s = f~linein; fl = fl - 1
-   end
+     if n \= 0, keyWord == "MENUEX" then isMenuEx = .true
+  end
 
-   f~close
-   arrcount = cur;
+  s = f~linein; fl -= 1
+  do while s~wordpos("BEGIN") = 0, s~pos("{") = 0, fl > 0
+     s = f~linein; fl -= 1
+  end
 
-   if (count < cur - endcount) then count = cur - endcount +5;
+  if f~lines == 0 then do
+     -- We read the whole file and never found the begin or bracket.
+     f~close
+     msg = 'Error: script file "'resFile'" no BEGIN or "{" for MENU statement'
+     raise syntax 98.900 array (msg)
+  end
 
-   self~processingLoad = 1
+  rcarray = .array~new(50)
+  bracket = 1
+  cur = 0
+  endcount = 0
 
-   do i = 1 to arrcount
-      s = rcarray[i]
+  prevs = ""
+  s = f~linein; fl -= 1
+  do while bracket > 0, fl >= 0
+     if s~wordpos("END") > 0 | s~pos("}") > 0 then do
+       bracket -= 1;
+       endcount += 1
+       cur += 1
+       rcarray[cur] = s
+     end
+     else if s~wordpos("BEGIN") > 0 | s~pos("{") > 0 then do
+       bracket += 1;
+       cur += 1
+       rcarray[cur] = s
+     end
+     else if s~strip \= "" then do
+       cur += 1
+       rcarray[cur] = s
+     end
+     s = f~linein; fl -= 1
+  end
 
-      select
-         when s~wordpos("POPUP") > 0 then do
-            parse var s type '"'name'"'    "," opt
+  f~close
+  arrcount = cur
 
-            j = i + 1;
-            bracket = 0
-            do until bracket = 0
-              if rcarray[j]~wordpos("BEGIN") > 0 | rcarray[j]~pos("{") > 0 then
-                bracket = bracket + 1
-              else if rcarray[j]~wordpos("END") > 0 | rcarray[j]~pos("}") > 0 then
-                bracket = bracket - 1
-              j = j +1
-            end
+  if (count < cur - endcount) then do
+    msg = 'Menu in script file "'resFile'"contains more items ('cur - endcount') than allocated ('count')'
+    raise syntax 98.900 array (msg)
+  end
 
-            if rcarray[j]~wordpos("END") > 0 | rcarray[j]~pos("}") > 0 then opt = opt || " END"
-            self~addPopup(name, , opt)
-         end
+  if isMenuEx then return self~parseMenuEx(rcarray, arrcount, connect)
+  else return self~parseMenu(rcarray, arrcount, connect)
 
-         when s~wordpos("SEPARATOR") > 0 then do
-            parse var s type sep opt
-            if rcarray[i+1]~wordpos("END") > 0 | rcarray[i+1]~pos("}") > 0 then opt = opt || " END"
-            self~addSeparator( , opt)
-         end
+syntax:
+  c = condition('O')
+  if c~traceBack \== .nil then c~traceBack~empty
+  raise propagate
 
-         when s~wordpos("MENUITEM") > 0 then do
-            parse var s type '"'name'"'    "," id "," opt
-            if rcarray[i+1]~wordpos("END") > 0 | rcarray[i+1]~pos("}") > 0 then opt = opt || " END"
-            if connect then
-               self~addItem(name, id, opt, name~changeStr('&', "")~space(0))
-            else
-               self~addItem(name, id, opt)
-         end
+::method parseMenu private
+  use strict arg rcarray, arrcount, connect
 
-         when s~wordpos("END") > 0 | s~pos("}") > 0 | s~wordpos("BEGIN") > 0 | s~pos("{") > 0 then nop;
+  do i = 1 to arrcount
+     s = rcarray[i]
 
-         otherwise do
-            self~errorFile(f, s)
-            return 1
-         end
-     end /*select 1*/
+     select
+        when s~wordPos("POPUP") > 0 then do
+           parse var s type '"'name'"'    "," opt
+
+           j = i + 1;
+           bracket = 0
+           do until bracket = 0
+             if rcarray[j]~wordPos("BEGIN") > 0 | rcarray[j]~pos("{") > 0 then
+               bracket += 1
+             else if rcarray[j]~wordPos("END") > 0 | rcarray[j]~pos("}") > 0 then
+               bracket -= 1
+             j += 1
+           end
+
+           if rcarray[j]~wordPos("END") > 0 | rcarray[j]~pos("}") > 0 then opt = opt || " END"
+           self~addPopup(0, name, opt, 0)
+        end
+
+        when s~wordPos("SEPARATOR") > 0 then do
+           parse var s type sep opt
+           if rcarray[i+1]~wordPos("END") > 0 | rcarray[i+1]~pos("}") > 0 then opt = opt || " END"
+           self~addSeparator(0, opt)
+        end
+
+        when s~wordPos("MENUITEM") > 0 then do
+           parse var s type '"'name'"'    "," id "," opt
+           id = id~strip
+           if rcarray[i+1]~wordPos("END") > 0 | rcarray[i+1]~pos("}") > 0 then opt = opt || " END"
+           if connect then
+              self~addItem(id, name, opt, self~itemTextToMethodName(name))
+           else
+              self~addItem(id, name, opt)
+        end
+
+        when s~wordPos("END") > 0 | s~pos("}") > 0 | s~wordPos("BEGIN") > 0 | s~pos("{") > 0 then nop;
+
+        otherwise do
+          msg = "Error parsing MENU definition." || '  ' || "Resource file:" f || '  ' || "Line:" s
+          raise syntax 98.900 array (msg)
+        end
+    end /*select 1*/
   end /* do while */
-  self~processingLoad = 0
 
   return 0
 
-::class 'MapItem' public
+::method mergeTypeState private
+  use strict arg type, state
 
-::attribute key set private
-::attribute key get
+  opt  = ""
+  if type~wordPos("MFT_BITMAP") > 0 then opt = "BITMAP"
+  else if type~wordPos("MFT_SEPARATOR") > 0 then opt = "SEPARATOR"
+  else if type~wordPos("MFT_STRING") > 0 then opt = "STRING"
 
-::attribute item set private
-::attribute item get
+  if type~wordPos("MFT_MENUBARBREAK") > 0 then opt ||= " MENUBARBREAK"
+  if type~wordPos("MFT_MENUBREAK") > 0 then opt    ||= " MENUBREAK"
+  if type~wordPos("MFT_OWNERDRAW") > 0 then opt    ||= " OWNERDRAW"
+  if type~wordPos("MFT_RADIOCHECK") > 0 then opt   ||= " RADIOCHECK"
+  if type~wordPos("MFT_RIGHTJUSTIFY") > 0 then opt ||= " RIGHTJUSTIFY"
+  if type~wordPos("MFT_RIGHTORDER") > 0 then opt   ||= " RIGHTORDER"
 
-::method init
-  expose key item
-  use strict arg key, item
+  if state~wordPos("MFS_CHECKED") > 0 then opt ||= " CHECKED"
+  if state~wordPos("MFS_DEFAULT") > 0 then opt ||= " DEFAULT"
+  if state~wordPos("MFS_DISABLED") > 0 then opt ||= " DISABLED"
+  if state~wordPos("MFS_ENABLED") > 0 then opt ||= " ENABLED"
+  if state~wordPos("MFS_GRAYED") > 0 then opt ||= " GRAYED"
+  if state~wordPos("MFS_HILITE") > 0 then opt ||= " HILITE"
+  if state~wordPos("MFS_UNCHECKED") > 0 then opt ||= " UNCHECKED"
+  if state~wordPos("MFS_UNHILITE") > 0 then opt ||= " UNHILITE"
+
+  return opt
+
+
+::method parseMenuEx private
+  use strict arg rcarray, arrcount, connect
+
+  do i = 1 to arrcount
+     s = rcarray[i]
+
+     select
+        when s~word(1) == "POPUP" then do
+           parse var s type '"'name'"' "," id "," type "," state "," helpID
+           id = id~strip; helpID = id~strip
+
+           j = i + 1;
+           bracket = 0
+           do until bracket = 0
+             if rcarray[j]~wordPos("BEGIN") > 0 | rcarray[j]~pos("{") > 0 then
+               bracket += 1
+             else if rcarray[j]~wordPos("END") > 0 | rcarray[j]~pos("}") > 0 then
+               bracket -= 1
+             j += 1
+           end
+
+           opt = self~mergeTypeState(type, state)
+           if rcarray[j]~wordPos("END") > 0 | rcarray[j]~pos("}") > 0 then opt ||= " END"
+
+           self~addPopup(id, name, opt, helpID)
+        end
+
+        when s~word(1) == "MENUITEM" then do
+           parse var s type '"'name'"' "," id "," type "," state
+           id = id~strip
+
+           opt = self~mergeTypeState(type, state)
+           if rcarray[i+1]~wordPos("END") > 0 | rcarray[i+1]~pos("}") > 0 then opt ||= " END"
+
+           if opt~wordPos("SEPARATOR") > 0 then do
+             self~addSeparator(id, opt)
+           end
+           else do
+             if connect then
+                self~addItem(id, name, opt, self~itemTextToMethodName(name))
+             else
+                self~addItem(id, name, opt)
+           end
+        end
+
+        when s~wordPos("END") > 0 | s~pos("}") > 0 | s~wordPos("BEGIN") > 0 | s~pos("{") > 0 then nop;
+
+        otherwise do
+          msg = "Error parsing MENUEX definition." || '  ' || "Resource file:" f || '  ' || "Line:" s
+          raise syntax 98.900 array (msg)
+        end
+    end /*select i = 1*/
+  end /* do while */
+
+  return 0
+
 

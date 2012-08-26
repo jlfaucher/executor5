@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
-/* Copyright (c) 2008-2009 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2008-2012 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -84,7 +84,9 @@ use arg
   rcFile = "resources\imageButton.rc"
   symbolFile = "resources\imageButton.h"
 
-  dlg = .ImageListDlg~new(rcFile, IDD_IMAGELIST_BUTTON, , symbolFile)
+  .application~setDefaults("O", symbolFile, .false)
+
+  dlg = .ImageListDlg~new(rcFile, IDD_IMAGELIST_BUTTON)
 
   if dlg~initCode <> 0 then do
     say "The Image List Dialog was not created correctly"
@@ -100,27 +102,27 @@ return 0
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*\
   Directives, Classes, or Routines.
 \* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-::requires "oodWin32.cls"
+::requires "ooDialog.cls"
 
-::class 'ImageListDlg' subclass RcDialog inherit AdvancedControls MessageExtensions
+::class 'ImageListDlg' subclass RcDialog
 
 ::method initDialog
   expose pbPush pbView pbAdd stStatus ctr imagesLoaded
 
-  self~connectButton(IDC_PB_PUSHME, "onPushMe")
-  self~connectButton(IDC_PB_VIEW, "onView")
-  self~connectButton(IDC_PB_ADD, "onAdd")
+  self~connectButtonEvent(IDC_PB_PUSHME, "CLICKED", "onPushMe")
+  self~connectButtonEvent(IDC_PB_VIEW, "CLICKED", "onView")
+  self~connectButtonEvent(IDC_PB_ADD, "CLICKED", "onAdd")
 
-  self~connectButtonNotify(IDC_PB_VIEW, "HOTITEM", onHover)
-  self~connectButtonNotify(IDC_PB_ADD, "HOTITEM", onHover)
+  self~connectButtonEvent(IDC_PB_VIEW, "HOTITEM", onHover)
+  self~connectButtonEvent(IDC_PB_ADD, "HOTITEM", onHover)
 
   imagesLoaded = .false
   ctr = 0
 
-  pbPush = self~getButtonControl(IDC_PB_PUSHME)
-  pbView  = self~getButtonControl(IDC_PB_VIEW)
-  pbAdd  = self~getButtonControl(IDC_PB_ADD)
-  stStatus = self~getStaticControl(IDC_ST_STATUS)
+  pbPush = self~newPushButton(IDC_PB_PUSHME)
+  pbView  = self~newPushButton(IDC_PB_VIEW)
+  pbAdd  = self~newPushButton(IDC_PB_ADD)
+  stStatus = self~newStatic(IDC_ST_STATUS)
 
   stStatus~setText("")
 
@@ -384,7 +386,7 @@ return .true
     end
     when ctr == 4 then do
       pbView~enable
-      cancel = self~getButtonControl(IDCANCEL)
+      cancel = self~newPushButton(IDCANCEL)
       cancel~style = "DEFPUSHBUTTON"
       stStatus~setText('View Pictures button now enabled, should not be default push button.')
       ctr = 5
@@ -507,9 +509,6 @@ return .true
   end
 
   return self~ok:super
-
-::method initAutoDetection
-   self~noAutoDetection
 
 ::method alignment2text private
   use strict arg alignment

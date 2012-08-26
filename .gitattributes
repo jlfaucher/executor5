@@ -11,7 +11,6 @@ trunk/extensions/hostemu/platform/unix/hostemu.cpp -text
 trunk/extensions/hostemu/platform/windows/hostemu.cpp -text
 trunk/extensions/platform/unix/rxunixsys/rxunixsys.cpp -text
 trunk/extensions/platform/unix/rxunixsys/rxunixsys.h -text
-trunk/extensions/platform/windows/oodialog/3dcheck.bmp -text svneol=unset#image/bmp
 trunk/extensions/platform/windows/oodialog/AppIcon.ico -text
 trunk/extensions/platform/windows/oodialog/AppIcon2.ico -text
 trunk/extensions/platform/windows/oodialog/oodialog.ico -text svneol=unset#applicatiion/octet-stream
@@ -84,9 +83,6 @@ trunk/samples/windows/oodialog/bmp/install.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/install2.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/kanguru.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/moose.bmp -text svneol=unset#image/bmp
-trunk/samples/windows/oodialog/bmp/movie.bmp -text svneol=unset#image/bmp
-trunk/samples/windows/oodialog/bmp/oodlist1.bmp -text svneol=unset#image/bmp
-trunk/samples/windows/oodialog/bmp/oodlist2.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/oodtree.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/phileat.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/phileat2.bmp -text svneol=unset#image/bmp
@@ -96,9 +92,6 @@ trunk/samples/windows/oodialog/bmp/philphil.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/philslep.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/philtest.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/philwait.bmp -text svneol=unset#image/bmp
-trunk/samples/windows/oodialog/bmp/psdemoTab.bmp -text svneol=unset#image/bmp
-trunk/samples/windows/oodialog/bmp/psdemolv.bmp -text svneol=unset#image/bmp
-trunk/samples/windows/oodialog/bmp/psdemotv.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/rhinoce.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/s2anim.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/s2arch.bmp -text svneol=unset#image/bmp
@@ -114,7 +107,6 @@ trunk/samples/windows/oodialog/bmp/s2scroll.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/s2tree.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/s2walker.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/sealion.bmp -text svneol=unset#image/bmp
-trunk/samples/windows/oodialog/bmp/ticket.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/tiger.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/wlkfig1.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/wlkfig2.bmp -text svneol=unset#image/bmp
@@ -124,21 +116,60 @@ trunk/samples/windows/oodialog/bmp/wlkfig5.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/wlkfig6.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/wlkfig7.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/wlkfig8.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/controls/userStringDTP.hlp -text
 trunk/samples/windows/oodialog/examples/columnClickListView.rex -text
+trunk/samples/windows/oodialog/examples/resources/CheckIn.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/examples/resources/ClosePalette.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/examples/resources/CodeReview.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/examples/resources/Default.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/examples/resources/Disabled.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/examples/resources/Hot.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/examples/resources/LinkToWeb.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/examples/resources/LockModule.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/examples/resources/LockProject.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/examples/resources/Normal.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/examples/resources/ProjectReview.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/examples/resources/Pushed.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/examples/resources/SaveAll.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/examples/resources/SaveModule.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/examples/resources/SaveProject.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/examples/resources/SplitModule.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/examples/resources/Update.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/menus/UserMenuBar.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/mouse/dragging.cur -text
 trunk/samples/windows/oodialog/oleinfo/icons.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/ooRexxTry/Makefile.am -text
 trunk/samples/windows/oodialog/ooRexxTry/doc/Makefile.am -text
 trunk/samples/windows/oodialog/ooRexxTry/doc/ooRexxTry.pdf -text
 trunk/samples/windows/oodialog/ooRexxTry/ooRexxTry.rex -text
 trunk/samples/windows/oodialog/oophil.ico -text svneol=unset#applicatiion/octet-stream
+trunk/samples/windows/oodialog/propertySheet.tabs/rc/TabOwnerDemoListView.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertySheet.tabs/rc/TabOwnerDemoTab.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertySheet.tabs/rc/TabOwnerDemoTreeView.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertySheet.tabs/rc/oodListViews1.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertySheet.tabs/rc/oodListViews2.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertySheet.tabs/rc/propertySheetDemoListView.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertySheet.tabs/rc/propertySheetDemoTab.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertySheet.tabs/rc/propertySheetDemoTreeView.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertySheet.tabs/rc/ticketWizardMovie.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertySheet.tabs/rc/ticketWizardRexxLA.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertySheet.tabs/rc/ticketWizardTheater.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertySheet.tabs/rc/ticketWizardTicket.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/rc/oodtreeNewItem.rc -text
 trunk/samples/windows/oodialog/tutorial/add.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/tutorial/logo.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/userGuide/exercises/Exercise05/res/ProductIcon.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp/CustList.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp/CustList.ico -text
+trunk/samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp/Customer.ico -text
+trunk/samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderForm.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderForm.ico -text
+trunk/samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderList.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderList.ico -text
+trunk/samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProdList.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProdList.ico -text
+trunk/samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/Product.ico -text
+trunk/samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProductIcon.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/wav/byebye.wav -text svneol=unset#audio/x-wav
 trunk/samples/windows/oodialog/wav/cancel.wav -text svneol=unset#audio/x-wav
 trunk/samples/windows/oodialog/wav/clap.wav -text svneol=unset#audio/x-wav

@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
-/* Copyright (c) 2007-2009 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2007-2012 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -71,32 +71,30 @@ See documentation for version control
     say "This console will receive the output of your system commands."
     say "Try 'dir' for example."
     say
-    code~Execute('ShowTop')                     -- Execute the dialog
-    code~DeInstall                              -- Finished, so deInstall
+    code~execute('ShowTop')                     -- Execute the dialog
 exit
 
-::requires 'oodwin32.cls'                       -- Needed for the dialog
+::requires "ooDialog.cls"                       -- Needed for the dialog
 ::requires 'winsystm.cls'                       -- Needed for the Windows clipboard
 
-::class oort_dialog subclass userdialog inherit AdvancedControls MessageExtensions
-::method Init
+::class oort_dialog subclass userdialog
+::method init
     self~init:super
-    rc = self~Create(.dx,.dy,.dwidth,.dheight,.title,'ThickFrame MinimizeBox MaximizeBox')
-    self~InitCode = (rc=0)
-    self~connectResize('OnResize')
+    rc = self~create(.dx,.dy,.dwidth,.dheight,.title,'ThickFrame MinimizeBox MaximizeBox')
+    self~initCode = (rc=0)
     self~fontMenuHelper
 
-::method DefineDialog
-    expose u
+::method defineDialog
+    expose u menuBar
     u = .dlgAreaU~new(self)
     if .nil \= u~lastError then
         call errorDialog u~lastError
 
 ---------- Arguments title & dialog area
     at = .dlgArea~new(0,0,u~w,10)
-    self~addText(at~x,at~y,at~w,at~h,'Arguments','CENTER',17)
+    self~createStaticText(17,at~x,at~y,at~w,at~h,'CENTER','Arguments')
     ad = .dlgArea~new(0,at~y + 10,u~w,u~h('15%'))
-    self~addEntryLine(12,'args_data',ad~x,ad~y,ad~w,ad~h,'multiline hscroll vscroll')
+    self~createEdit(12,ad~x,ad~y,ad~w,ad~h,'multiline hscroll vscroll','args_data')
 
 ---------- Code title & dialog area
     ct = .dlgArea~new(0,ad~y + ad~h,u~w,10)
@@ -106,100 +104,104 @@ exit
 
 ---------- Says title & dialog area
     st = .dlgArea~new(0,cd~y + cd~h,u~w('50%'),10)
-    self~addText(st~x,st~y,st~w,st~h,'Says','CENTER',19)
+    self~createStaticText(19,st~x,st~y,st~w,st~h,'CENTER','Says')
     sd = .dlgArea~new(0,st~y + st~h,u~w('50%'),u~h('43%'))
-    self~addEntryLine(14,'say_data',sd~x,sd~y,sd~w,sd~h,'notab readonly multiline hscroll vscroll')
+    self~createEdit(14,sd~x,sd~y,sd~w,sd~h,'notab readonly multiline hscroll vscroll','say_data')
 
 ---------- Returns title & dialog area
     rt = .dlgArea~new(sd~x + sd~w,cd~y + cd~h,u~w('50%'),10)
-    self~addText(rt~x,rt~y,rt~w,rt~h,'Returns','CENTER',20)
+    self~createStaticText(20,rt~x,rt~y,rt~w,rt~h,'CENTER','Returns')
     rd = .dlgArea~new(rt~x,st~y + st~h,u~w('50%'),u~h('15%'))
-    self~addEntryLine(15,'results_data',rd~x,rd~y,rd~w,rd~h,'notab readonly multiline hscroll vscroll')
+    self~createEdit(15,rd~x,rd~y,rd~w,rd~h,'notab readonly multiline hscroll vscroll','results_data')
 
 ---------- Errors/Information title & dialog area
     et = .dlgArea~new(rt~x,rd~y + rd~h,u~w('50%'),10)
-    self~addText(et~x,et~y,et~w,et~h,'Errors / Information','CENTER',21)
+    self~createStaticText(21,et~x,et~y,et~w,et~h,'CENTER','Errors / Information')
     ed = .dlgArea~new(rt~x,et~y + et~h,u~w('50%'),u~h('17%'))
-    self~addEntryLine(16,'error_data',ed~x,ed~y,ed~w,ed~h,'notab readonly multiline hscroll vscroll')
+    self~createEdit(16,ed~x,ed~y,ed~w,ed~h,'notab readonly multiline hscroll vscroll','error_data')
 
 ---------- Run & Exit buttons for easier execution
-    self~AddButton(80,ed~x     ,ed~y + ed~h + 2,35,10,'&Run','RunIt')
-    self~AddButton(81,ed~x + 40,ed~y + ed~h + 2,35,10,'E&xit','Cancel')
+    self~createPushButton(80,ed~x     ,ed~y + ed~h + 2,35,10,,'&Run','RunIt')
+    self~createPushButton(IDCANCEL,ed~x + 40,ed~y + ed~h + 2,35,10,,'E&xit')
 
 ----------
-    self~createMenu
-    self~AddPopupMenu('&File')
-       self~addMenuItem('&Run'   ,22,     ,'RunIt')
-       self~addMenuItem('&SaveAs',23,     ,'FileDialog')
-       self~addMenuItem('&Open'  ,25,     ,'FileDialog')
-       self~addMenuItem('E&xit'  ,24,'END','Cancel')
+    menuBar = .UserMenuBar~new(500,0,65)
 
-    self~addPopUpMenu('&Edit')
-       self~addPopupMenu('Font&Name')
-           self~addMenuItem('&Lucida Console',30,     ,'onFontMenuClick')
-           self~addMenuItem('&Courier New'   ,31,'END','onFontMenuClick')
-      self~addMenuSeparator
-      self~addPopUpMenu('Font&Size','END')
-           self~addMenuItem('&8' ,40,     ,'onFontMenuClick')
-           self~addMenuItem('1&0',41,     ,'onFontMenuClick')
-           self~addMenuItem('1&2',42,     ,'onFontMenuClick')
-           self~addMenuItem('1&4',43,     ,'onFontMenuClick')
-           self~addMenuItem('1&6',44,     ,'onFontMenuClick')
-           self~addMenuItem('1&8',45,'END','onFontMenuClick')
+    menuBar~addPopup(510, '&File')
+       menuBar~addItem(22,'&Run'   ,     ,'RunIt')
+       menuBar~addItem(23,'&SaveAs',     ,'FileDialog')
+       menuBar~addItem(25,'&Open'  ,     ,'FileDialog')
+       menuBar~addItem(24,'E&xit'  ,'END','Cancel')
 
-   self~AddPopUpMenu('&Tools')
-       self~addPopupMenu('&Copy')
-           self~addMenuItem('&Args'   ,50,     ,'Clipboard')
-           self~addMenuItem('&Code'   ,51,     ,'Clipboard')
-           self~addMenuItem('&Says'   ,52,     ,'ClipBoard')
-           self~addMenuItem('&Returns',53,     ,'ClipBoard')
-           self~addMenuItem('&Errors' ,54,     ,'ClipBoard')
-           self~addMenuItem('A&ll'    ,55,'END','ClipBoard')
-           self~addMenuSeparator
-       self~addPopupMenu('C&lear')
-           self~addMenuItem('&Args'   ,60,     ,'ClearAll')
-           self~addMenuItem('&Code'   ,61,     ,'ClearAll')
-           self~addMenuItem('&Says'   ,62,     ,'ClearAll')
-           self~addMenuItem('&Returns',63,     ,'ClearAll')
-           self~addMenuItem('&Errors' ,64,     ,'ClearAll')
-           self~addMenuItem('A&ll'    ,65,'END','ClearAll')
-           self~addMenuSeparator
-       self~addPopupMenu('&Silent')
-           self~addMenuItem('&No'     ,66,     ,'Silent')
-           self~addMenuItem('&Yes'    ,67,'END','Silent')
-           self~addMenuSeparator
-       self~addPopupMenu('Sa&ve Settings','END')
-           self~addMenuItem('Sa&ve'   ,72,'END','SaveSettings')
-   self~addPopupMenu('&Help','END')
-       self~addMenuItem('Current &Settings',71,     ,'Settings')
-       self~addMenuItem('&About'   ,70,'END','Help')
+    menuBar~addPopup(520,'&Edit')
+       menuBar~addPopup(530,'Font&Name')
+           menuBar~addItem(30,'&Lucida Console',     ,'onFontMenuClick')
+           menuBar~addItem(31,'&Courier New'   ,'END','onFontMenuClick')
+       menuBar~addSeparator(535)
+       menuBar~addPopup(540,'Font&Size','END')
+           menuBar~addItem(40,'&8' ,     ,'onFontMenuClick')
+           menuBar~addItem(41,'1&0',     ,'onFontMenuClick')
+           menuBar~addItem(42,'1&2',     ,'onFontMenuClick')
+           menuBar~addItem(43,'1&4',     ,'onFontMenuClick')
+           menuBar~addItem(44,'1&6',     ,'onFontMenuClick')
+           menuBar~addItem(45,'1&8','END','onFontMenuClick')
+    menuBar~addPopup(550,'&Tools')
+       menuBar~addPopup(560,'&Copy')
+           menuBar~addItem(50,'&Args'   ,     ,'Clipboard')
+           menuBar~addItem(51,'&Code'   ,     ,'Clipboard')
+           menuBar~addItem(52,'&Says'   ,     ,'ClipBoard')
+           menuBar~addItem(53,'&Returns',     ,'ClipBoard')
+           menuBar~addItem(54,'&Errors' ,     ,'ClipBoard')
+           menuBar~addItem(55,'A&ll'    ,'END','ClipBoard')
+       menuBar~addSeparator(565)
+       menuBar~addPopup(570,'C&lear')
+           menuBar~addItem(60,'&Args'   ,     ,'ClearAll')
+           menuBar~addItem(61,'&Code'   ,     ,'ClearAll')
+           menuBar~addItem(62,'&Says'   ,     ,'ClearAll')
+           menuBar~addItem(63,'&Returns',     ,'ClearAll')
+           menuBar~addItem(64,'&Errors' ,     ,'ClearAll')
+           menuBar~addItem(65,'A&ll'    ,'END','ClearAll')
+       menuBar~addSeparator(575)
+       menuBar~addPopup(580,'&Silent')
+           menuBar~addItem(66,'&No'     ,     ,'Silent')
+           menuBar~addItem(67,'&Yes'    ,'END','Silent')
+       menuBar~addSeparator(585)
+       menuBar~addPopup(590,'Sa&ve Settings','END')
+           menuBar~addItem(72,'Sa&ve'   ,'END','SaveSettings')
+    menuBar~addPopup(600,'&Help','END')
+       menuBar~addItem(71,'Current &Settings',     ,'Settings')
+       menuBar~addItem(70,'&About'           ,'END','Help')
 
-::method InitDialog
-    expose args_input code_input result_input say_input errors_input
+   if \ menuBar~complete then
+       statusText = 'User menu bar completion error:' .SystemErrorCode SysGetErrortext(.SystemErrorCode)
+
+::method initDialog unguarded
+    expose args_input code_input result_input say_input errors_input menuBar
     -- Use font data from .ini file or defaults if .ini not present yet
 
     -- FW_EXTRALIGHT == 200
     d = .Directory~new
     d~weight = 200
     hfont = self~createFontEx(.fontname,.fontsize,d)
-    self~setMenu
+
+    if menuBar \== .nil then menuBar~attachTo(self)
 
     -- Set the font and silent menu item check marks.
     self~setFontMenuChecks
-    if .silent then self~checkMenuItem(67)
-    else self~checkMenuItem(66)
+    if .silent then menuBar~check(67)
+    else menuBar~check(66)
 
     -- Get the controls for all dialog elements that will need to be adjusted
-    args_input   = self~getEditControl(12)
-    code_input   = self~getEditControl(13)
-    say_input    = self~getEditControl(14)
-    result_input = self~getEditControl(15)
-    errors_input = self~getEditControl(16)
-    args_title   = self~getEditControl(17)
-    code_title   = self~getEditControl(18)
-    say_title    = self~getEditControl(19)
-    result_title = self~getEditControl(20)
-    errors_title = self~getEditControl(21)
+    args_input   = self~newEdit(12)
+    code_input   = self~newEdit(13)
+    say_input    = self~newEdit(14)
+    result_input = self~newEdit(15)
+    errors_input = self~newEdit(16)
+    args_title   = self~newStatic(17)
+    code_title   = self~newStatic(18)
+    say_title    = self~newStatic(19)
+    result_title = self~newStatic(20)
+    errors_title = self~newStatic(21)
 
     -- Set the color of the titles
     args_title  ~setColor(5,10)
@@ -209,12 +211,11 @@ exit
     errors_title~setColor(13,10)
 
     -- Set the font name/size to the default values
-    self~ReDraw
+    self~reDraw
 
     if \.useDefault then
         do
             -- Read oorexxtry.ini position & size the dialog based on its values
-            handle = self~getSelf
             k1 = SysIni('oorexxtry.ini','oorexxtry','k1')
             k2 = SysIni('oorexxtry.ini','oorexxtry','k2')
             k3 = SysIni('oorexxtry.ini','oorexxtry','k3')
@@ -223,19 +224,32 @@ exit
                 nop -- First exection will not find the ini file
             else
                 do
-                    self~setWindowRect(handle,k1,k2,k3-k1,k4-k2)
+                    r = .Rect~new(k1,k2,k3-k1,k4-k2)
+                    self~setWindowPos(TOP,r)
                     self~ensureVisible
                 end
         end
 
+    self~connectResize('onResize', .true)
+
 -- Run menu option
 ::method RunIt
     expose args_input code_input result_input say_input errors_input
-    parse value code_input~getPos() with siX siY
-    parse value code_input~getSize() with siW siH
-    ch1 = code_input~Cursor_Wait
-    parse value self~CursorPos with preCX preCY
-    code_input~SetCursorPos((siX+(siW/2))*self~FactorX,(siY+(siH/2))*self~FactorY)
+
+    -- Calculate the center point of the code_input edit control, in screen
+    -- co-ordinates.
+    r = code_input~clientRect
+    centerPoint = .Point~new((r~right - r~left) % 2, (r~bottom - r~top) % 2)
+    code_input~client2screen(centerPoint)
+
+    -- Get and save the current mouse position.
+    mouse = .Mouse~new(code_input)
+    oldCursorPos = mouse~getCursorPos
+
+    -- Set the cursor to the busy symbol / move the cursor to our center point
+    oldCursor = mouse~wait
+    mouse~setCursorPos(centerPoint)
+
     arg_array = self~getText(args_input,.true)
     .local~si = say_input
     w1 = code_input~selected~word(1)
@@ -336,9 +350,11 @@ exit
         end
     if \.silent then        -- Let the user know when code execution is complete
         call beep 150,150
-    code_input~RestoreCursorShape(ch1)
-    self~SetCursorPos(preCX,preCY)
-    self~ReturnFocus
+
+    mouse~restoreCursor(oldCursor)
+    mouse~setCursorPos(oldCursorPos)
+
+    self~returnFocus
 return
 
 ArgSyntax:
@@ -358,20 +374,21 @@ ArgSyntax:
     .local~emsg = ''
     self~focusItem(12)
     args_input~select(1,1)
-    code_input~RestoreCursorShape(ch1)
-    self~SetCursorPos(preCX,preCY)
+
+    mouse~restoreCursor(oldCursor)
+    mouse~setCursorPos(oldCursorPos)
 return
 
-::method Cancel
-    handle = self~getSelf
-    sp = self~getWindowRect(handle)
+::method cancel
+
+    r = self~windowRect
     -- Write out the size,position,fontname,fontsize, & silent to the .ini file
     if \self~isMinimized & \self~isMaximized then
         do
-            rv = SysIni('oorexxtry.ini','oorexxtry','k1',sp~word(1))
-            rv = SysIni('oorexxtry.ini','oorexxtry','k2',sp~word(2))
-            rv = SysIni('oorexxtry.ini','oorexxtry','k3',sp~word(3))
-            rv = SysIni('oorexxtry.ini','oorexxtry','k4',sp~word(4))
+            rv = SysIni('oorexxtry.ini','oorexxtry','k1',r~left)
+            rv = SysIni('oorexxtry.ini','oorexxtry','k2',r~top)
+            rv = SysIni('oorexxtry.ini','oorexxtry','k3',r~right)
+            rv = SysIni('oorexxtry.ini','oorexxtry','k4',r~bottom)
         end
     rv = SysIni('oorexxtry.ini','oorexxtry','fn',.fontname)
     rv = SysIni('oorexxtry.ini','oorexxtry','fs',.fontsize)
@@ -388,7 +405,7 @@ return self~ok:super
             do
                 cp_array  = self~getText(args_input,.false)
                 cp_string = cp_array~makestring
-                cp~Copy(cp_string)
+                cp~copy(cp_string)
                 .local~imsg = 'Arguments Are On ClipBoard'
             end
         when msg = 51 then
@@ -402,7 +419,7 @@ return self~ok:super
             do
                 cp_array  = self~getText(say_input,.false)
                 cp_string = cp_array~makestring
-                cp~Copy(cp_string)
+                cp~copy(cp_string)
                 .local~imsg = 'Says Are On The ClipBoard'
             end
         when msg = 53 then
@@ -416,7 +433,7 @@ return self~ok:super
             do
                 cp_array  = self~getText(errors_input,.false)
                 cp_string = cp_array~makestring
-                cp~Copy(cp_string)
+                cp~copy(cp_string)
                 .local~imsg = 'Errors Are On ClipBoard'
             end
         when msg = 55 then
@@ -442,7 +459,7 @@ return self~ok:super
                 cp_string = cp_array~makestring
                 allData = allData||'Errors/Information'||.endOfLine||cp_string||.endOfLine||'-'~copies(20)||.endOfLine
 
-                cp~Copy(allData)
+                cp~copy(allData)
                 .local~imsg = 'All Data Is On ClipBoard'
             end
         otherwise
@@ -450,7 +467,7 @@ return self~ok:super
     end
     self~error_data    = .imsg
     errors_input~title = self~error_data
-    self~ReturnFocus
+    self~returnFocus
 
 -- Code2File menu option
 ::method FileDialog
@@ -504,7 +521,7 @@ return self~ok:super
                     errors_input~title = self~error_data
                 end
         end
-    self~ReturnFocus
+    self~returnFocus
 
 -- ClearAll menu option
 ::method ClearAll
@@ -556,39 +573,40 @@ return self~ok:super
         otherwise
             nop
     end
-    self~ReturnFocus
+    self~returnFocus
 
 ::method Silent
+    expose menuBar
     use arg msg, args
     select
         when msg = 66 then do
             .local~silent = .false
-            self~checkMenuItem(66)
-            self~unCheckMenuItem(67)
+            menuBar~check(66)
+            menuBar~unCheck(67)
         end
         when msg = 67 then do
             .local~silent = .true
-            self~checkMenuItem(67)
-            self~unCheckMenuItem(66)
+            menuBar~check(67)
+            menuBar~unCheck(66)
         end
         otherwise
             nop
     end
-    self~ReturnFocus
+    self~returnFocus
 
 ::method SaveSettings
     use arg msg, args
-    handle = self~getSelf
-    sp = self~getWindowRect(handle)
+
+    r = self~windowRect
     select
         when msg = 72 then
             do
                 if \self~isMinimized & \self~isMaximized then
                     do
-                        rv = SysIni('oorexxtry.ini','oorexxtry','k1',sp~word(1))
-                        rv = SysIni('oorexxtry.ini','oorexxtry','k2',sp~word(2))
-                        rv = SysIni('oorexxtry.ini','oorexxtry','k3',sp~word(3))
-                        rv = SysIni('oorexxtry.ini','oorexxtry','k4',sp~word(4))
+                        rv = SysIni('oorexxtry.ini','oorexxtry','k1',r~left)
+                        rv = SysIni('oorexxtry.ini','oorexxtry','k2',r~top)
+                        rv = SysIni('oorexxtry.ini','oorexxtry','k3',r~right)
+                        rv = SysIni('oorexxtry.ini','oorexxtry','k4',r~bottom)
                     end
                 rv = SysIni('oorexxtry.ini','oorexxtry','fn',.fontname)
                 rv = SysIni('oorexxtry.ini','oorexxtry','fs',.fontsize)
@@ -597,7 +615,7 @@ return self~ok:super
         otherwise
             nop
     end
-    self~ReturnFocus
+    self~returnFocus
 
 ::method ReturnFocus
     expose code_input
@@ -618,10 +636,10 @@ return self~ok:super
     code_input~select(sel_start,sel_end)
 
 -- Method to handle all the resizing
-::method OnResize
+::method onResize
     expose u
     use arg dummy,sizeinfo
-    if self~PeekDialogMessage~left(8) \= 'OnResize' then u~resize(self,sizeinfo)
+    u~resize(self,sizeinfo)
 
 ::method Help
     expose code_input u
@@ -640,17 +658,16 @@ return self~ok:super
             call errorDialog 'Error creating help dialog. initCode:' help~initCode
             exit
         end
-    help~Execute('ShowTop')
-    help~DeInstall
+    help~execute('ShowTop')
 
 ::method Settings
     expose code_input u
     handle = self~getSelf
-    parse value self~GetWindowRect(handle) with var1 var2 var3 var4
+    parse value self~getWindowRect(handle) with var1 var2 var3 var4
     .local~dw = (var3 - var1) / self~factorX
     .local~dh = (var4 - var2) / self~factorY
 
-    parse value self~GetPos with dx dy
+    parse value self~getPos with dx dy
     .local~dx = dx
     .local~dy = dy
 
@@ -660,8 +677,7 @@ return self~ok:super
             call errorDialog 'Error creating help dialog. initCode:' settings~initCode
             exit
         end
-    settings~Execute('ShowTop')
-    settings~DeInstall
+    settings~execute('ShowTop')
 
 -- Redraw applicable areas of the dialog based on the font menu choice
 ::method ReDraw
@@ -682,18 +698,17 @@ return self~ok:super
     iarray = .array~new()
     max_length = 0
     do i = 1 to the_input~lines
-        -- Using 6000 in hopes no one will ever have a single line of code > 6000 characters
         if stripIt then
             do
-                if the_input~getLine(i,6000)~strip() \= '' then
+                if the_input~getLine(i)~strip() \= '' then
                     do
-                        iarray~append(the_input~getLine(i,6000))
+                        iarray~append(the_input~getLine(i))
                         max_length += iarray[iarray~last]~length
                     end
             end
         else
             do
-                iarray~append(the_input~getLine(i,6000))
+                iarray~append(the_input~getLine(i))
                 max_length += iarray[iarray~last]~length
             end
     end
@@ -715,24 +730,24 @@ return iarray
 
     -- Reset the menu item check marks and redraw in the new font.
     self~setFontMenuChecks
-    self~ReDraw
+    self~reDraw
 
 -- This method sets the appropriate font menu item check state.  Checked for selected
 -- and unchecked for unselected.
 ::method setFontMenuChecks private
-    expose fontMenuIDs
+    expose fontMenuIDs menuBar
 
     -- Iterate over all items in the table unchecking each menu item.  Brute force,
     -- but easy, and there are not many items. The alternative is to keep track of
     -- which items are checked and uncheck / check the correct ones.
     do id over fontMenuIDs~allItems
-        self~uncheckMenuItem(id)
+        menuBar~unCheck(id)
     end
 
     -- Now check the menu item that matches what font name and size is currently
     -- in use.
-    self~checkMenuItem(fontMenuIDs[.fontname])
-    self~checkMenuItem(fontMenuIDs[.fontsize])
+    menuBar~check(fontMenuIDs[.fontname])
+    menuBar~check(fontMenuIDs[.fontsize])
 
 -- A private help method that sets up things to make working with the font menu easier
 ::method fontMenuHelper private
@@ -785,7 +800,7 @@ return
             -- Redirect STDOUT for say statements
             scrnOut = .SayCatcher~New('STDOUT')~~Command('open write nobuffer')
             theSayMonitor = .monitor~New(scrnOut)
-            .output~Destination(theSayMonitor)
+            .output~destination(theSayMonitor)
             -- Run the Code
             args = arg(1)
             self~run:super(rt_method, 'a', args)
@@ -835,44 +850,50 @@ return 0
 return 0
 
 
-::class help_dialog subclass userdialog inherit AdvancedControls MessageExtensions
-::method Init
+::class help_dialog subclass userdialog
+::method init
     self~init:super
-    lp = .dx + (.dw / 2) - 50
-    tp = .dy + (.dh / 2) - 30
-    rc = self~Create(lp,tp,100,60,.title)
-    self~InitCode = (rc=0)
+    lp = (.dx + (.dw / 2) - 50)~format( , 0)
+    tp = (.dy + (.dh / 2) - 30)~format( , 0)
+    rc = self~create(lp,tp,100,60,.title,"THICKFRAME")
+    self~initCode = (rc=0)
 
-::method DefineDialog
-    expose h
+::method defineDialog
+    expose h sizing
     h = .dlgAreaU~new(self)
     if .nil \= h~lastError then
         call errorDialog h~lastError
+    h~updateOnResize = .false
+    sizing = .false
+
     vt = .dlgArea~new(h~x,0,h~w,10)
-    self~addText(vt~x,vt~y,vt~w,vt~h,'Version','CENTER',20)
+    self~createStaticText(20,vt~x,vt~y,vt~w,vt~h,'CENTER','Version')
     vd = .dlgArea~new(h~x,vt~y + vt~h,h~w,10)
-    self~addText(vd~x,vd~y,vd~w,vd~h,.version,'CENTER',21)
+    self~createStaticText(21,vd~x,vd~y,vd~w,vd~h,'CENTER',.version)
 
     at = .dlgArea~new(h~x,vd~y + vd~h,h~w,10)
-    self~addText(at~x,at~y,at~w,at~h,'Author','CENTER',22)
+    self~createStaticText(22,at~x,at~y,at~w,at~h,'CENTER','Author')
     ad = .dlgArea~new(h~x,at~y + at~h,h~w,10)
-    self~addText(ad~x,ad~y,ad~w,ad~h,'Lee Peedin','CENTER',23)
+    self~createStaticText(23,ad~x,ad~y,ad~w,ad~h,'CENTER','Lee Peedin')
 
     dt = .dlgArea~new(h~x,ad~y + ad~h,h~w,10)
-    self~addText(dt~x,dt~y,dt~w,dt~h,'Documentation','CENTER',24)
+    self~createStaticText(24,dt~x,dt~y,dt~w,dt~h,'CENTER','Documentation')
     dd = .dlgArea~new(h~x,dt~y + dt~h,h~w,10)
-    self~AddButton(25,dd~x,dd~y,dd~w,10,'&PDF','Help')
+    self~createPushButton(25,dd~x,dd~y,dd~w,10,,'&PDF','Help')
 
-::method InitDialog
-    v_title = self~getEditControl(20)
-    a_title = self~getEditControl(22)
-    d_title = self~getEditControl(24)
+::method initDialog unguarded
+    v_title = self~newStatic(20)
+    a_title = self~newStatic(22)
+    d_title = self~newStatic(24)
 
     v_title~setColor(5,10)
     a_title~setColor(5,10)
     d_title~setColor(5,10)
 
-::method Help
+    self~connectResize('onResize', .true)
+    self~connectSizeMoveEnded('onSizeMoveEnded')
+
+::method help
     -- The help doc is supposed to be in the 'doc' subdirectory, but we will also check the
     -- current directory, then the Rexx home directory.
     if SysFileExists('doc\ooRexxTry.pdf') then do
@@ -893,17 +914,35 @@ return 0
               "  Rexx home:         "||value("REXX_HOME",,"ENVIRONMENT")||"\doc\ooRexxTry.pdf" || .endOfLine -
               || .endOfLine || -
               "Sorry, no help is available"
-        call errorDialog msg
+        title = 'ooRexx Try for the 21st Century - Error'
+        j = MessageDialog(msg, self~hwnd, title, 'Ok', 'WARNING')
         return
     end
     'start "ooRexxTry Online Documentation"' '"'||helpDoc||'"'
 
+::method onResize unguarded
+    expose h sizing
+  	use arg sizingType, sizeinfo
 
-::class settings_dialog subclass userdialog inherit AdvancedControls MessageExtensions
+    sizing = .true
+    h~resize(self, sizeinfo)
+
+::method onSizeMoveEnded unguarded
+  expose sizing
+
+  -- If we were resizing, force the dialog controls to redraw themselves.
+  if sizing then self~update
+
+  -- We are not resizing anymore.
+  sizing = .false
+  return 0
+
+
+::class settings_dialog subclass userdialog
 ::method Init
     self~init:super
-    lp = .dx + (.dw / 2) - 50
-    tp = .dy + (.dh / 2) - 30
+    lp = (.dx + (.dw / 2) - 50)~format( , 0)
+    tp = (.dy + (.dh / 2) - 30)~format( , 0)
     rc = self~Create(lp,tp,100,60,.title)
     self~InitCode = (rc=0)
 
@@ -928,9 +967,9 @@ return 0
     self~addText(dd~x,dd~y,dd~w,dd~h,.silent,'CENTER',23)
 
 ::method InitDialog
-    v_title = self~getEditControl(20)
-    a_title = self~getEditControl(22)
-    d_title = self~getEditControl(24)
+    v_title = self~newStatic(20)
+    a_title = self~newStatic(22)
+    d_title = self~newStatic(24)
 
     v_title~setColor(14,0)
     a_title~setColor(14,0)

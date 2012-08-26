@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
-/* Copyright (c) 2008-2008 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2008-2012 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -66,8 +66,10 @@
  *   findTheWindow()              windowsSystem.frm
  */
 
+.application~useGlobalConstDir("O", "winSystemDlgs.h")
+
 -- Prompt the user for a window title
-dlg = .UserPrompt~new("winSystemDlgs.rc", IDD_USER_PROMPT, , "winSystemDlgs.h")
+dlg = .UserPrompt~new("winSystemDlgs.rc", IDD_USER_PROMPT)
 
 if dlg~initCode <> 0 then do
   msg = "Error initializing the UserPrompt dialog." || '0d0a0d0a'x || -
@@ -118,7 +120,7 @@ return 0
   -- Get the edit control object and then the text the user entered.  We only
   -- instantiate the edit control object the first time through.
 
-  if \ edit~isA(.EditControl) then edit = self~getEditControl(IDC_EDIT_NAME)
+  if \ edit~isA(.EditControl) then edit = self~newEdit(IDC_EDIT_NAME)
   title = edit~getText~strip
 
   -- Check that the user entered something.

@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
-/* Copyright (c) 2010-2010 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2010-2012 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -60,21 +60,21 @@
 
 -- End of entry point.
 
-::requires "oodWin32.cls"
+::requires "ooDialog.cls"
 
-::class 'SimpleLV' subclass UserDialog inherit AdvancedControls MessageExtensions
+::class 'SimpleLV' subclass UserDialog
 
 ::method defineDialog
 
-  self~addListControl(IDC_LISTVIEW, ,  10, 20, 305, 145, "REPORT SHOWSELALWAYS")
-  self~addButton(IDOK, 280, 175, 35, 15, "Close", , "DEFAULT")
+  self~createListView(IDC_LISTVIEW, 10, 20, 305, 145, "REPORT SHOWSELALWAYS")
+  self~createPushButton(IDOK, 280, 175, 35, 15, "DEFAULT", "Close")
 
-  self~connectListViewNotify(IDC_LISTVIEW, "CLICK", onClick)
+  self~connectListViewEvent(IDC_LISTVIEW, "CLICK", onClick)
 
 ::method initDialog
 
   -- Get a reference to the list view.
-  list = self~getListControl(IDC_LISTVIEW)
+  list = self~newListView(IDC_LISTVIEW)
 
   list~addExtendedStyle("FULLROWSELECT GRIDLINES CHECKBOXES HEADERDRAGDROP")
 

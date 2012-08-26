@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
-/* Copyright (c) 2008-2008 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2008-2012 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -56,12 +56,14 @@
  *
  */
 
+-- Use the global .constDir for symbolic IDs and turn auto detection off.
+.application~setDefaults("O", "winSystemDlgs.h", .false)
+
 -- Create and show our ooDialog dialog.  The logic of the program is contained
 -- within the WindowListDlg class.
-dlg = .WindowListDlg~new("winSystemDlgs.rc", IDD_WINDOW_List, , "winSystemDlgs.h")
+dlg = .WindowListDlg~new("winSystemDlgs.rc", IDD_WINDOW_List)
 if dlg~initCode == 0 then do
   dlg~execute("SHOWTOP")
-  dlg~deinstall
   return 0
 end
 else do
@@ -74,15 +76,7 @@ end
 
 ::requires "windowsSystem.frm"
 
-::class 'WindowListDlg' public subclass RcDialog inherit AdvancedControls MessageExtensions
-
-/** initAutoDetection()
- * Prevent ooDialog from fooling with the initialization of our dialog controls.
- * We will initialize the controls the way we want them.
- */
-::method initAutoDetection
-  self~noAutoDetection
-
+::class 'WindowListDlg' public subclass RcDialog
 
 /** initdialog()
  * Initialize the state of our dialog controls.
@@ -99,7 +93,7 @@ end
   windows = .array~new
 
   -- If we can't get the list view control, something is wrong.
-  listView = self~getListControl(IDC_LV_WINDOWS)
+  listView = self~newListView(IDC_LV_WINDOWS)
   if listView == .nil then return self~putInErrorState("NOLISTVIEW")
 
   -- The extended list view styles can only be added after the list view control
@@ -273,7 +267,7 @@ end
 
   -- We will try to disable the 'Show' push button.  But, if the dialog is not
   -- working correctly, it could be that this won't work.
-  pb = self~getButtonControl(IDC_PB_SHOW)
+  pb = self~newPushButton(IDC_PB_SHOW)
   if pb <> .nil then pb~disable
 
   return 0

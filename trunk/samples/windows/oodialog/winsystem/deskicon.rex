@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2008 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2012 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -92,4 +92,4 @@ if rc then call errorDialog "Error.  Could not create the 'My Notepad 2' shortcu
 return 0
 
 ::requires "winsystm.cls"
-::requires "oodplain.cls"  -- For errorDialog() / askDialog()
+::requires "ooDialog.cls"

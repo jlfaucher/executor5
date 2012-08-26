@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2009 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2012 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -35,35 +35,52 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.               */
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
-/****************************************************************************/
-/* Name: OOGRAPH.REX                                                        */
-/* Type: Object REXX Script                                                 */
-/*                                                                          */
-/* Description: Graphical demonstration                                     */
-/*                                                                          */
-/****************************************************************************/
 
- parse source . . me
- mydir = me~left(me~lastpos('\')-1)              /* where is code     */
- env = 'ENVIRONMENT'
- sp = value('SOUNDPATH',,env)
- sp = value('SOUNDPATH',mydir'\WAV;'sp,env)
+/**
+ * Name: oograph.rex
+ * Type: Open Object REXX Script
+ *
+ * Description: A dialog that allows the user to execute two graphical ooRexx
+ *              examples.  One example displays bitmaps and the other example
+ *              shows how to use the drawing methods provided by ooDialog.
+ *
+ *              The main program, this program, shows how to use the
+ *              scrollBitmapFromTo() and scrollInButton() methods.
+ */
 
- d = .GraphDialog~new()
- if d~InitCode \= 0 then do
-   say "Dialog init did not work"
-   exit
- end
+  -- Use the global .constDir for symbolic IDs
+  .application~useGlobalConstDir('O')
 
- title = "Graphical Demonstration of Open Object Rexx and ooDialog Capabilities"
- d~createCenter(trunc(770 / d~FactorX), trunc(470 / d~FactorY), title)
- d~execute("SHOWTOP")
- d~deinstall
- return
+  .constDir[IDC_BMP_TOP]      = 101
+  .constDir[IDC_BMP_MIDDLE]   = 102
+  .constDir[IDC_ST_WFRAME]    = 203
+  .constDir[IDC_PB_OWNERDRAW] = 103
+  .constDir[IDC_PB_VIEWER]    = 111
+  .constDir[IDC_PB_DRAW]      = 112
+
+   -- A directory manager saves the current directory and can later go back to
+   -- that directory.  It also sets up the environment we need.  The class
+   -- itself is located in samplesSetup.rex
+   mgr = .DirectoryManager~new()
+
+   d = .GraphDialog~new()
+   if d~initCode \= 0 then do
+      say "Dialog init did not work"
+      mgr~goBack
+      return d~initCode
+   end
+
+   title = "Graphical Demonstration of Open Object Rexx and ooDialog Capabilities"
+   d~createCenter(trunc(770 / d~FactorX), trunc(470 / d~FactorY), title)
+   d~execute("SHOWTOP")
+
+   mgr~goBack
+   return 0
 
 /*-------------------------------- requires --------------------------*/
 
 ::requires "ooDialog.cls"
+::requires "samplesSetup.rex"
 
 /*-------------------------------- dialog class ----------------------*/
 
@@ -75,95 +92,145 @@
    but2size = trunc(300 / self~factorY)
 
    -- The two bitmap buttons are created larger than they need to be.  In particular,
-   -- The 102 button height is much larger, it covers most of the lower part of the
+   -- The IDC_BMP_MIDDLE button height is much larger, it covers most of the lower part of the
    -- dialog.
    --
-   -- Then, the bitmaps for the buttons are displaced (moved from the upper left corner
-   -- of the button) by a large amount.  The 101 button is displaced far to the right,
-   -- and the 102 button is displaced far to the bottom and far to the left.  In the run()
-   -- method, scrollBitmapFromTo() is used to scroll the bitmaps from their displaced positions
-   -- back to the upper left corner of the buttons.  This gives the bitmaps the appearance of
-   -- scrolling from the right to the left, the 101 button, and from the bottom to the top,
-   -- the 102 button.
+   -- Then, the bitmaps for the buttons are positioned (moved from the upper left corner
+   -- of the button) by a large amount.  The IDC_BMP_TOP button is positioned far to the right,
+   -- and the IDC_BMP_MIDDLE button is positioned far to the bottom and far to the left.  In the
+   -- showInterface() method, scrollBitmapFromTo() is used to scroll the bitmaps from
+   -- their positions back to the upper left corner of the buttons.  This gives the IDC_BMP_TOP
+   -- button the appearance of scrolling from the right to the left, and the IDC_BMP_MIDDLE button
+   -- the appearance of scrolling from the bottom to the top.
 
-   self~AddBitmapButton(101,1,10,self~SizeX-1, 130 / self~FactorY,,,"bmp\install.bmp",,,,"USEPAL")
-   self~AddBitmapButton(102,20,but2pos,self~SizeX - 20,but2size,,,"bmp\install2.bmp")
-   self~DisplaceBitmap(101,self~SizeX * self~FactorX+10, 0)
-   self~DisplaceBitmap(102, -450, 100)
+   -- install.bmp   550 x 100 pixels
+   -- install2.bmp  450 x 120 pixels
+
+   self~createBitmapButton(IDC_BMP_TOP, 1, 10, self~sizeX-1, trunc(130 / self~factorY), "USEPAL", , , "bmp\install.bmp")
+   self~createBitmapButton(IDC_BMP_MIDDLE, 20, but2pos, self~sizeX - 20, but2size, , , , "bmp\install2.bmp")
+
+   pos = .Point~new(trunc(self~sizeX * self~factorX) + 10, 0)
+   self~setBitmapPosition(IDC_BMP_TOP, pos)
+
+   pos~x = 0
+   pos~y = trunc(self~sizeY * self~factorY) + 10
+   self~setBitmapPosition(IDC_BMP_MIDDLE, pos)
 
    -- Add the other controls.
-   self~AddWhiteFrame(10, self~SizeY - 52, self~SizeX-20, 28,"HIDDEN", 203)
-   self~AddButton(103,12, self~SizeY - 50, self~SizeX-24, 24,,,"OWNER NOTAB")
-   self~AddButtonGroup(self~SizeX-220, self~SizeY - 18,60,12, ,
-            "&Bitmap-Viewer 111 BmpView &Draw-Color-Demo 112 OODraw &Cancel 2 CANCEL", 1, "DEFAULT")
+   self~createWhiteFrame(IDC_ST_WFRAME, 10, self~SizeY - 62, self~sizeX - 20, 38, "HIDDEN")
+   self~createPushButton(IDC_PB_OWNERDRAW, 12, self~SizeY - 60, self~sizeX - 24, 34, "OWNER NOTAB")
+
+   groupArgs = "&Bitmap-Viewer"   .constDir[IDC_PB_VIEWER] "bitmapViewer " || -
+               "&Draw-Color-Demo" .constDir[IDC_PB_DRAW]   "ooDraw "       || -
+               "&Cancel"          .constDir[IDCANCEL]      "cancel"
+   self~createPushButtonGroup(self~sizeX - 220, self~sizeY - 18, 60, 12, groupArgs, 1, "DEFAULT")
 
 ::method initDialog
 
    -- We set the background color of these buttons to the same backgroud color
    -- as the dialog, so that the buttons blend into the dialog.
    COLOR_BTNFACE = 15
-   self~setItemSysColor(103, COLOR_BTNFACE)
-   self~setItemSysColor(101, COLOR_BTNFACE)
-   self~setItemSysColor(102, COLOR_BTNFACE)
+   self~setControlSysColor(IDC_PB_OWNERDRAW, COLOR_BTNFACE)
+   self~setControlSysColor(IDC_BMP_TOP, COLOR_BTNFACE)
+   self~setControlSysColor(IDC_BMP_MIDDLE, COLOR_BTNFACE)
 
-::method run unguarded
+   self~start("showInterface")
+
+::method showInterface unguarded
    expose m but2size
-   bmppos = but2size - 125 / self~FactorY
-   self~DisableItem(111)  /* disable push buttons */
-   self~DisableItem(112)
-   self~DisableItem(2)
+
+   bmppos = trunc(but2size - 125 / self~FactorY)
+
+   self~disableControl(IDC_PB_VIEWER)  /* disable push buttons */
+   self~disableControl(IDC_PB_DRAW)
+   self~disableControl(IDCANCEL)
 
    ret = play("inst.wav", yes)
 
    -- Scroll the bitmaps from their displaced positions back to the upper left corners
    -- of the buttons.
-   self~ScrollBitmapFromTo(101, self~SizeX * self~FactorX, 5, 12, 5, -12, 0, 1)
-   self~ScrollBitmapFromTo(102, 30, bmppos, 30, 0, 0, -3, 2, 1)
+   self~scrollBitmapFromTo(IDC_BMP_TOP, trunc(self~SizeX * self~FactorX), 5, 12, 5, -12, 0, 1)
+   self~scrollBitmapFromTo(IDC_BMP_MIDDLE, 30, bmppos, 30, 0, 0, -3, 2, 1)
 
-   -- The size of the 102 button actually covers the controls under the button.  If the
+   -- The size of the IDC_BMP_MIDDLE button actually covers the controls under the button.  If the
    -- user clicks on any portion of the button, the button is repainted in the 'depressed'
    -- state.  Since the other controls are not repainted, this cause them (or parts of
    -- them) to disappear.  To prevent that, we resize the button to only take up the height
    -- needed for the bitamp.
-   self~ResizeItem(102, self~sizeX-40, (120 / self~factorY) + 2, "NOREDRAW")
+   self~resizeControl(IDC_BMP_MIDDLE, 450 + 32, 120 + 2, "NOREDRAW")
 
-   self~ShowItem(103)     /* show scroll button */
-   self~ShowItem(203)
-   self~EnableItem(2)     /* Enable push buttons */
-   self~EnableItem(111)
-   self~EnableItem(112)
-                          /* asynchronuous scroll */
-   m = self~start("ScrollInButton",103,"This OODialog sample demonstrates dynamic dialog creation", ,
-                   "Arial", 36, "BOLD", 0,2,2,6)
-   do while self~finished = 0 & m~completed = 0
-      self~HandleMessages
-   end
-   if m~completed = 0 then self~ScrollInButton(103) /* end scroll */
+   self~showControl(IDC_PB_OWNERDRAW)     /* show scroll button */
+   self~showControl(IDC_ST_WFRAME)
+   self~enableControl(IDCANCEL)     /* Enable push buttons */
+   self~enableControl(IDC_PB_VIEWER)
+   self~enableControl(IDC_PB_DRAW)
 
-   do while self~finished = 0
-      /* scroll asynchronously so scrolling can be interrupted when button is pressed */
-      m = self~start("ScrollInButton", 103, "... please press Bitmap-Viewer or Draw-Color-Demo buttons to run graphical applications ...", ,
-                     "Arial", 32, "SEMIBOLD", 0, 2,4)
+   -- Start the Asynchronuous scrolling of the introductory text.
+   text = "This ooDialog sample demonstrates dynamic dialog creation"
+   m = self~start("ScrollInButton", IDC_PB_OWNERDRAW, text, "Arial", 36, "BOLD", 0, 2, 2, 6)
+   m~notify(.message~new(self, "scrollingFinished"))
 
-      do while self~finished = 0 & m~completed = 0
-         self~HandleMessages
-      end
-      /* if still scrolling, end the scroll */
-      if m~completed = 0 then self~ScrollInButton(103)
+   -- Now, wait until the scrolling finishes, or the user closes the main dialog.
+   self~waitForEvent
+
+   -- While the user has not closed the dialog, scroll the instruction text.
+   do while \ self~finished
+      text = "... please press Bitmap-Viewer or Draw-Color-Demo buttons to run graphical applications ..."
+      m = self~start("scrollInButton", IDC_PB_OWNERDRAW, text, "Arial", 32, "SEMIBOLD", 0, 2, 4)
+      m~notify(.message~new(self, "scrollingFinished"))
+
+      self~waitForEvent
    end
 
-::method BmpView                  /* invoke Bitmap Viewer OOBMPVU.REX */
+-- Wait until the haveEvent object variable turns .true.  In this program we just
+-- watch for two events, the scrolling text has finished, or the user has closed
+-- the dialog.
+::method waitForEvent unguarded
+  expose haveEvent
+
+  haveEvent = .false
+  guard on when haveEvent
+
+-- This is the notification method for the scrolling text.  It is invoked when
+-- the scrollInButton() method has finished.  The haveEvent object variable is
+-- set to true which causes ourself to stop waiting.
+::method scrollingFinished unguarded
+  expose haveEvent
+  haveEvent = .true
+
+-- leaving() is invoked by the ooDialog framework when the underlying dialog is
+-- closed.  It serves as a notification that the dialog is finished.  The default
+-- implementation does nothing.  It can be, and if meant to be, over-ridden by
+-- the programmer when desired.  We use it to signal ourself to stop waiting by
+-- setting haveEvent to true.
+::method leaving  unguarded
+  expose haveEvent
+  haveEvent = .true
+
+
+-- Invoke the Bitmap Viewer program (oobmpvu.rex.)
+::method bitmapViewer
    expose m
-   if m~completed = 0 then self~ScrollInButton(103)
-   self~hideWindow(self~get)
+
+   -- Stop the scrolling and hide ourself.
+   if \ m~completed then self~scrollInButton(IDC_PB_OWNERDRAW)
+   self~hide
+
    call "oobmpvu.rex"
-   self~~showWindow(self~get)~toTheTop
-   self~ScrollInButton(103)       /* restart scrolling */
 
-::method OODraw                   /* Invoke Color Draw Demo OODRAW.REX */
+   -- Show ourself and become the topmost.
+   self~~show~toTheTop
+
+-- Invoke the Color Draw Demo program (oodraw.rex.)
+::method ooDraw
    expose m
-   if m~completed = 0 then self~ScrollInButton(103)
-   self~hideWindow(self~get)
+
+   -- Stop the scrolling and hide ourself.
+   if m~completed = 0 then self~scrollInButton(IDC_PB_OWNERDRAW)
+   self~hide
+
    call "oodraw.rex"
-   self~~showWindow(self~get)~toTheTop
-   self~ScrollInButton(103)       /* restart scrolling */
+
+   -- Show ourself and become the topmost.
+   self~~show~toTheTop
+

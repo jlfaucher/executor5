@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2006 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2012 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -37,7 +37,7 @@
 /*----------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
-/* OODialog\Samples\oostdfct.rex   Standard Dialog Functions Demo           */
+/* ooDialog\Samples\oostdfct.rex   Standard Dialog Functions Demo           */
 /*                                                                          */
 /*--------------------------------------------------------------------------*/
 
@@ -110,4 +110,4 @@ say 'Single=' SingleSelection('Select one again', commonTitle,                  
 
 say 'End of standard dialog function demonstration...'
 
-::requires 'OODPLAIN.cls'
+::requires "ooDialog.cls"

@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2006 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2012 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -37,7 +37,7 @@
 /*----------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
-/* OODialog\Samples\oostddlg.rex   Standard Dialog demonstration            */
+/* ooDialog\Samples\oostddlg.rex   Standard Dialog demonstration            */
 /*                                                                          */
 /*--------------------------------------------------------------------------*/
 
@@ -118,6 +118,7 @@ mon.5 = "May"      ;mon.6 = "June"     ; mon.7 = "July"    ; mon.8 = "August"
 mon.9 = "September";mon.10= "October"  ; mon.11= "November"; mon.12= "December"
 
 d = .SingleSelection~new("This is a single selection dialog","Single Selection",mon.,6,,6)
+d~focusItem(106)
 s = d~execute
 if s>0 then say "Your SingleSelection data:" mon.s
 
@@ -151,5 +152,5 @@ say 'End of standard dialog demonstration...'
 /*----------------------------------------------------------------------------*/
 /*----------------------------------------------------------------------------*/
 
-::requires "OODPLAIN.cls"
+::requires "ooDialog.cls"
 

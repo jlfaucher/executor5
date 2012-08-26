@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2006 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2012 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -35,38 +35,41 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.               */
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
-/****************************************************************************/
-/* Name: EMPLOYE4.REX                                                       */
-/* Type: Object REXX Script                                                 */
-/*                                                                          */
-/****************************************************************************/
 
-dlg = .MyDialogClass~new
-if dlg~InitCode <> 0 then exit
-if dlg~Load("EMPLOYE2.RC", 100) \= 0 then exit
-dlg~Execute("SHOWTOP")
-dlg~deinstall
-::requires "OODPLAIN.CLS"
+/**
+ * Name: employe4.rex
+ * Type: Open Object REXX Script
+ */
 
-::class MyDialogClass subclass PlainUserDialog
-::method InitDialog
-    self~City = "New York"
-    self~Male = 1
-    self~Female = 0
-    self~AddComboEntry(22, "Munich")
-    self~AddComboEntry(22, "New York")
-    self~AddComboEntry(22, "San Francisco")
-    self~AddComboEntry(22, "Stuttgart")
-    self~AddListEntry(23, "Business Manager")
-    self~AddListEntry(23, "Software Developer")
-    self~AddListEntry(23, "Broker")
-    self~AddListEntry(23, "Police Man")
-    self~AddListEntry(23, "Lawyer")
-    self~ConnectButton(10, "Print")   /* connect button 10 with a method */
+dlg = .MyDialogClass~new("employe2.rc", 100)
+if dlg~initCode <> 0 then exit
 
-::method Print
-    self~GetData
-    if self~Male = 1 then title = "Mr."; else title = "Ms."
-    if self~Married = 1 then addition = " (married) "; else addition = ""
-    call infoDialog title self~Name addition || "A"x || "City:" self~City || "A"x ||,
-                     "Profession:" self~Profession
+dlg~execute("SHOWTOP")
+
+::requires "ooDialog.cls"
+
+::class MyDialogClass subclass RcDialog
+::method initDialog
+    self~city = "New York"
+    self~male = 1
+    self~female = 0
+    self~addComboEntry(22, "Munich")
+    self~addComboEntry(22, "New York")
+    self~addComboEntry(22, "San Francisco")
+    self~addComboEntry(22, "Stuttgart")
+    self~addListEntry(23, "Business Manager")
+    self~addListEntry(23, "Software Developer")
+    self~addListEntry(23, "Broker")
+    self~addListEntry(23, "Police Man")
+    self~addListEntry(23, "Lawyer")
+    self~connectButtonEvent(10, "CLICKED", "Print")   /* connect button 10 with a method */
+
+::method print
+    self~getData
+    if self~male = 1 then title = "Mr."
+    else title = "Ms."
+    if self~married = 1 then addition = " (married) "
+    else addition = ""
+
+    call infoDialog title self~name addition || "A"x || "City:" self~city || "A"x || -
+                     "Profession:" self~profession

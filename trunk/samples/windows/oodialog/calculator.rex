@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2006 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2012 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -41,16 +41,13 @@
 /* Resource: CALCULATOR                                                     */
 /*                                                                          */
 /* Description:                                                             */
-/* Sample that demonstrates the usage of RxMath and OODialog                */
+/* Sample that demonstrates the usage of RxMath and ooDialog                */
 /*                                                                          */
 /****************************************************************************/
 
 
-reStart:
-signal on any	/* go to the error handling on any error that signal can catch */
-
 /* create the dialog */
-CalcDlg = .Calculator~new
+calcDlg = .Calculator~new
 
 /* Set the defaults for arithmetic operations (optional) */
 NUMERIC DIGITS 9            /* precision can be up to 16 digits for RxMath */
@@ -58,75 +55,68 @@ NUMERIC FORM   SCIENTIFIC   /* controls exponential notation */
 NUMERIC FUZZ   0            /* number of digits ignored for numeric comparison */
 
 /* Display the dialog */
-if CalcDlg~InitCode = 0 then do
-  rc = CalcDlg~Execute("SHOWTOP")
+if calcDlg~initCode = 0 then do
+  rc = calcDlg~execute("SHOWTOP")
 end
-
-CalcDlg~deinstall
 
 exit   /* leave program */
 
 /* error handling: Display the cause of the error and restart the programm */
 any:
-	call errorDialog "Error" rc "occurred at line" sigl":" errortext(rc) "a"x condition("o")~message
-	if CalcDlg~IsDialogActive then
-	  CalcDlg~StopIt
-	signal reStart
+  call errorDialog "Error" rc "occurred at line" sigl":" errortext(rc) "a"x condition("o")~message
+  if calcDlg~isDialogActive then do
+     calcDlg~finished = .true
+     calcDlg~stopDialog
+  end
+  signal reStart
 
-/* If you use a requires directive for oodwin32.cls, you don't need to use a
- * requires directive for any of the other ooDialog class files.  oodwin32.cls
- * has a requires directive for oodialog.cls, which in turn has a requires
- * directive for oodplain.cls.
- */
-::requires "oodwin32.cls"
+::requires "ooDialog.cls"
 
 /* This requires loads the RxMath functions. */
 ::requires "rxmath" library
 
 /* The Calculator dialog class */
-/* Advanced controls are required to get the dialog-item objects */
-::class Calculator subclass UserDialog inherit AdvancedControls
+::class 'Calculator' subclass UserDialog
 
-::method Init
+::method init
   forward class (super) continue /* call parent constructor */
   InitRet = Result
 
-  if self~Load("rc\CALCULATOR.RC", ) \= 0 then do
-     self~InitCode = 1
+  if self~load("rc\CALCULATOR.RC", ) \= 0 then do
+     self~initCode = 1
      return 1
   end
 
   /* Connect dialog control items to class methods */
-  self~ConnectButton("BNO1","BNO1")
-  self~ConnectButton("BNO2","BNO2")
-  self~ConnectButton("BNO3","BNO3")
-  self~ConnectButton("BNO4","BNO4")
-  self~ConnectButton("BNO5","BNO5")
-  self~ConnectButton("BNO6","BNO6")
-  self~ConnectButton("BNO7","BNO7")
-  self~ConnectButton("BNO8","BNO8")
-  self~ConnectButton("BNO9","BNO9")
-  self~ConnectButton("BNO0","BNO0")
-  self~ConnectButton("BSIGN","BSIGN")
-  self~ConnectButton("BPOINT","BPOINT")
-  self~ConnectButton("BDIVIDE","BDIVIDE")
-  self~ConnectButton("BTIMES","BTIMES")
-  self~ConnectButton("BMINUS","BMINUS")
-  self~ConnectButton("BPLUS","BPLUS")
-  self~ConnectButton("BSQRT","BSQRT")
-  self~ConnectButton("BLOG","BLOG")
-  self~ConnectButton("BLOG10","BLOG10")
-  self~ConnectButton("BPI","BPI")
-  self~ConnectButton("BBACKSPACE","BBACKSPACE")
-  self~ConnectButton("BCLEAR","BCLEAR")
-  self~ConnectButton("BCALC","BCALC")
-  self~ConnectButton("BSINUS","BSINUS")
-  self~ConnectButton("BCOSINUS","BCOSINUS")
-  self~ConnectButton("BTANGENS","BTANGENS")
-  self~ConnectButton("BARCSIN","BARCSIN")
-  self~ConnectButton("BARCCOS","BARCCOS")
-  self~ConnectButton("BARCTAN","BARCTAN")
-  self~ConnectButton(1,"OK")
+  self~connectButtonEvent("BNO1", "CLICKED", "BNO1")
+  self~connectButtonEvent("BNO2", "CLICKED", "BNO2")
+  self~connectButtonEvent("BNO3", "CLICKED", "BNO3")
+  self~connectButtonEvent("BNO4", "CLICKED", "BNO4")
+  self~connectButtonEvent("BNO5", "CLICKED", "BNO5")
+  self~connectButtonEvent("BNO6", "CLICKED", "BNO6")
+  self~connectButtonEvent("BNO7", "CLICKED", "BNO7")
+  self~connectButtonEvent("BNO8", "CLICKED", "BNO8")
+  self~connectButtonEvent("BNO9", "CLICKED", "BNO9")
+  self~connectButtonEvent("BNO0", "CLICKED", "BNO0")
+  self~connectButtonEvent("BSIGN", "CLICKED", "BSIGN")
+  self~connectButtonEvent("BPOINT", "CLICKED", "BPOINT")
+  self~connectButtonEvent("BDIVIDE", "CLICKED", "BDIVIDE")
+  self~connectButtonEvent("BTIMES", "CLICKED", "BTIMES")
+  self~connectButtonEvent("BMINUS", "CLICKED", "BMINUS")
+  self~connectButtonEvent("BPLUS", "CLICKED", "BPLUS")
+  self~connectButtonEvent("BSQRT", "CLICKED", "BSQRT")
+  self~connectButtonEvent("BLOG", "CLICKED", "BLOG")
+  self~connectButtonEvent("BLOG10", "CLICKED", "BLOG10")
+  self~connectButtonEvent("BPI", "CLICKED", "BPI")
+  self~connectButtonEvent("BBACKSPACE", "CLICKED", "BBACKSPACE")
+  self~connectButtonEvent("BCLEAR", "CLICKED", "BCLEAR")
+  self~connectButtonEvent("BCALC", "CLICKED", "BCALC")
+  self~connectButtonEvent("BSINUS", "CLICKED", "BSINUS")
+  self~connectButtonEvent("BCOSINUS", "CLICKED", "BCOSINUS")
+  self~connectButtonEvent("BTANGENS", "CLICKED", "BTANGENS")
+  self~connectButtonEvent("BARCSIN", "CLICKED", "BARCSIN")
+  self~connectButtonEvent("BARCCOS", "CLICKED", "BARCCOS")
+  self~connectButtonEvent("BARCTAN", "CLICKED", "BARCTAN")
 
   /* Initial values that are assigned to the object attributes */
   self~TLine= '0' /* set text-line to 0 initially */
@@ -134,62 +124,50 @@ any:
   /* Add your initialization code here */
   return InitRet
 
-::method InitDialog
-  InitDlgRet = self~InitDialog:super
-
-  /* Initialization Code (e.g. fill list and combo boxes) */
-  return InitDlgRet
-
-::method run
-  /* The run message is not automatically generated.      */
-  /* If you override it you have to call self~run:super.  */
-  /* It is the place for things that can't be done in the */
-  /* init method, e.g. SetCurrentComboIndex.              */
-
-	expose tl
-	tl = self~GetEditControl(TLine)	/* get the EditControl object */
-	self~run:super
+::method initDialog
+  expose tl
+  tl = self~newEdit(TLine) /* get the EditControl object */
 
 ::method getLine
   /* Return the current text-line content, */
   /* or 0 if infinity has been reached.    */
 
-	expose tl
-	if tl~Title~Left(5) = 'ERROR' then
-		return 0
-	return tl~Title
+  expose tl
+  if tl~getText~Left(5) = 'ERROR' then
+    return 0
+  return tl~getText
 
 ::method setLine
   /* Set the argument as new text-line. If this is ERROR raise an */
-	/* errorDialog with additional information.                    */
+  /* errorDialog with additional information.                    */
 
-	expose tl
-	use arg line, merror
-	if line~left(5) = 'ERROR' then
-		call errorDialog "RxCalc returned an error:" merror
-	tl~Title= line
+  expose tl
+  use arg line, merror
+  if line~left(5) = 'ERROR' then
+    call errorDialog "RxCalc returned an error:" merror
+  tl~setText(line)
 
 ::method justZero
   /* Return true if the current text-line is only one 0.   */
   /* Most functions will then ignore the current text-line */
 
-	line = self~GetLine
-	if line~Length = 1 & line = 0 then
-		return 1
-	return 0
+  line = self~getLine
+  if line~Length = 1 & line = 0 then
+    return 1
+  return 0
 
 ::method getCheckedLine
   /* Return the result of the current calculation or the line  */
   /* if it is only a number. DataType will not return NUM      */
   /* if any operators are present.                             */
 
-	line = self~getLine
-	if DataType(line) = 'NUM' then
-		return line
-	else do
-		interpret 'calcResult =' line
-		return calcResult
-	end
+  line = self~getLine
+  if DataType(line) = 'NUM' then
+    return line
+  else do
+    interpret 'calcResult =' line
+    return calcResult
+  end
 
 /* --------------------- message handler -----------------------------------*/
 
@@ -199,106 +177,129 @@ any:
   /* the 10 digits into one. The last character of the argument is the      */
   /* number that was pressed.                                               */
 
-	use arg message
-	number = message~SubStr(4)
-	if self~justZero then
-		self~SetLine(number)
-	else self~SetLine(self~GetLine||number)
+  use arg message
+  number = message~SubStr(4)
+  if self~justZero then
+    self~setLine(number)
+  else self~setLine(self~getLine||number)
 
 ::method BSIGN
-  /* Not really usefull, as the method just appends a minus-sign. */
-  /* Extensive validation checks would be beyond the scope of a   */
-  /* simple sample program.                                       */
+  /* Toggles the sign of the leading number on the text line. */
 
-	if self~justZero then
-		self~SetLine('-')
-	else self~setLine(self~GetLine||'-')
+  if self~justZero then
+    self~setLine('-')
+  else do
+    select
+      when left(self~getLine,1)='-' then
+        self~setLine('+'||substr(self~getLine,2))
+      when left(self~getLine,1)='+' then
+        self~setLine('-'||substr(self~getLine,2))
+      otherwise
+        self~setLine('-'||self~getLine)
+    end
+  end
 
 ::method BPOINT
   /* Append a point.. */
-	self~SetLine(self~GetLine||'.')
+  self~setLine(self~getLine||'.')
 
 ::method BDIVIDE
   /* Appends a 'divide' symbol to the checked line. */
-	self~SetLine(self~GetCheckedLine||'/')
+  self~setLine(self~GetCheckedLine||'/')
 
 ::method BTIMES
   /* Append a 'multiply' symbol to the checked line. */
-	self~SetLine(self~GetCheckedLine||'*')
+  self~setLine(self~GetCheckedLine||'*')
 
 ::method BMINUS
   /* Appends a 'minus' symbol to the checked line. */
-	self~SetLine(self~GetCheckedLine||'-')
+  self~setLine(self~GetCheckedLine||'-')
 
 ::method BPLUS
   /* Appends a 'plus' symbol to the checked line. */
-	self~SetLine(self~GetCheckedLine||'+')
+  self~setLine(self~GetCheckedLine||'+')
 
 ::method BSQRT
   /* Displays the square root of the checked line.          */
-	/* MATHERRNO is filled with additional information if the */
-	/* RxMath-funtion detects an error.                       */
-	self~SetLine(RxCalcSqrt(self~GetCheckedLine), MATHERRNO)
+  /* MATHERRNO is filled with additional information if the */
+  /* RxMath-funtion detects an error.                       */
+  self~setLine(RxCalcSqrt(self~GetCheckedLine), MATHERRNO)
 
 ::method BLOG
   /* Displays the natural logarithm of the checked line */
-	self~SetLine(RxCalcLog(self~GetCheckedLine), MATHERRNO)
+  self~setLine(RxCalcLog(self~GetCheckedLine), MATHERRNO)
 
 ::method BLOG10
   /* Displays the 10-base logarithm of the checked line */
-	self~SetLine(RxCalcLog10(self~GetCheckedLine), MATHERRNO)
+  self~setLine(RxCalcLog10(self~GetCheckedLine), MATHERRNO)
 
 ::method BPI
   /* Displays the number Pi */
-	if self~justZero then
-		self~SetLine(RxCalcPi(), MATHERRNO)
-	else self~SetLine(self~GetLine||RxCalcPi(), MATHERRNO)
+  if self~justZero then
+    self~setLine(RxCalcPi(), MATHERRNO)
+  else self~setLine(self~getLine||RxCalcPi(), MATHERRNO)
 
 ::method BBACKSPACE
   /* Delete the last character of the line */
-	line = self~GetLine
-	line = line~Left(line~Length - 1)
-	if line = '' then			/* if the line is empty set it to 0 */
-			self~SetLine(0)
-	else self~SetLine(line)
+  line = self~getLine
+  line = line~Left(line~Length - 1)
+  if line = '' then     /* if the line is empty set it to 0 */
+      self~setLine(0)
+  else self~setLine(line)
 
 ::method BCLEAR
   /* Set the line to 0 */
-	self~SetLine(0)
+  self~setLine(0)
 
 ::method BCALC
   /* Interpret the current line = calculate the result */
-	interpret 'calcResult =' self~GetLine
-	self~SetLine(calcResult)
+  interpret 'calcResult =' self~getLine
+  self~setLine(calcResult)
 
 ::method BSINUS
   /* Display the sine of the checked line */
-	self~SetLine(RxCalcSin(self~getCheckedLine), MATHERRNO)
+  self~setLine(RxCalcSin(self~getCheckedLine), MATHERRNO)
 
 ::method BCOSINUS
   /* Display the cosine of the checked line */
-	self~SetLine(RxCalcCos(self~GetCheckedLine), MATHERRNO)
+  self~setLine(RxCalcCos(self~GetCheckedLine), MATHERRNO)
 
 ::method BTANGENS
   /* Display the tangent of the checked line */
-	self~SetLine(RxCalcTan(self~GetCheckedLine), MATHERRNO)
+  self~setLine(RxCalcTan(self~GetCheckedLine), MATHERRNO)
 
 ::method BARCSIN
   /* Display the arc sine of the checked line */
-	self~SetLine(RxCalcArcSin(self~GetCheckedLine), MATHERRNO)
+  self~setLine(RxCalcArcSin(self~GetCheckedLine), MATHERRNO)
 
 ::method BARCCOS
   /* Display the arc cosine of the checked line */
-	self~SetLine(RxCalcArcCos(self~GetCheckedLine), MATHERRNO)
+  self~setLine(RxCalcArcCos(self~GetCheckedLine), MATHERRNO)
 
 ::method BARCTAN
   /* Display the arc tangent of the checked line */
-	self~SetLine(RxCalcArcTan(self~GetCheckedLine), MATHERRNO)
+  self~setLine(RxCalcArcTan(self~GetCheckedLine), MATHERRNO)
 
 ::method Ok
-  /* This is the method connected to our exit-button. You don't have to implement it, */
-  /* but if you want to override the OK method, this is what you do. The button has   */
-  /* to have the ID 1!                                                                */
-  resOK = self~OK:super  /* make sure self~Validate is called and self~InitCode is set to 1 */
-  self~Finished = resOK  /* 1 means close dialog, 0 means keep open */
-  return resOK
+  /*
+    This is the method connected to our exit-button. You don't have to implement it,
+    ooDialog supplies a default implementation of the ok method.  Note that the ok
+    method is always connected to the button with resource ID 1.  Note also, that
+    once you invoke the superclass ok method, if validate() returns true, the dialog
+    will close.
+
+    This is what the default implementation of ok does: it invokes the validate()
+    method.  If validate() returns false, then ok() does nothing and just returns.
+    If validate() returns true then ok() sets self~initCode to 1 and
+    self~finished to true, which ends the dialog.
+
+    This over-ride sets the calculator display to 0 before ending the dialog.  Again,
+    this is not necessary, it is just done to demonstrate how to over-ride the ok
+    method
+  */
+  if \ self~validate then return 0
+
+  self~setLine(0)
+  self~initCode = 1
+  self~finished = .true
+  return self~finished

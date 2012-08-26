@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
-/* Copyright (c) 2006-2008 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2006-2012 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -34,35 +34,21 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.               */
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
-/* ========================================================================= */
-/* Template for an OODialog GUI by Jon Wolfers www.sahananda.fwbo.net/rexx   */
-/* ========================================================================= */
-/*                                                                           */
+
+/*----------------------------------------------------------------------------*/
 /* How to use this template:                                                 */
 /*                                                                           */
-/* This template allows you to create dialogs with OODialog without need     */
+/* This template allows you to create dialogs with ooDialog without need     */
 /* for the resource workshop.                                                */
 /*                                                                           */
 /* It sets out the class directive and the basic methods for a dialog        */
 /*                                                                           */
-/* OODialog is very fully featured and it would not be useful to try to      */
+/* ooDialog is very fully featured and it would not be useful to try to      */
 /* anticipate and include every possible activity.                           */
-/*                                                                           */
-/* Category dialogs & Property sheets subclass differently -see the Manual.  */
 /*                                                                           */
 /* Not all Dialogs require all the methods listed in the template.           */
 /* If you are not adding any control through a particular method then you    */
 /* can delete that method and let the superclass handle it                   */
-/*                                                                           */
-/* There is no copywrite applied to the work of preparing this template      */
-/* You may copy and adapt it as you like removing whatever you like and      */
-/* you are under no obligation to credit me in your work.                    */
-/* At the same time, this is provided as-is and I cannot Guarantee that any  */
-/* particular Dialog based on this template will work.                       */
-/*                                                                           */
-/* I am happy to accept corrections or suggestions for improvements          */
-/*                                                                           */
-/* Sahananda @ wlbc.co.uk                                    May 2005        */
 /*                                                                           */
 /* ========================================================================= */
 
@@ -83,7 +69,7 @@ signal on any name any          /* error handling if you want                */
                         /* a.20=[default] presets it                         */
                         /* ------------------------------------------------- */
 
-MyDialog=.MyDlgClass~new /*(a.)*/          /* Create OODialog Class instance */
+MyDialog=.MyDlgClass~new /*(a.)*/          /* Create ooDialog Class instance */
 
                         /* ------------------------------------------------- */
                         /* Here you can initialise attributes that you       */
@@ -94,17 +80,15 @@ MyDialog=.MyDlgClass~new /*(a.)*/          /* Create OODialog Class instance */
                         /* If you want to create a non-modal dialog or have  */
                         /* it start minimised etc. then change the following */
                         /* clause.  See Show, Execute, ExecuteAsync, Popup&  */
-                        /* PopupasChild in the OODialog Reference            */
-MyDialog~Execute('ShowTop')     /* Create, show and run the Windows Object   */
+                        /* PopupasChild in the ooDialog Reference            */
+MyDialog~execute('ShowTop')     /* Create, show and run the Windows Object   */
                         /* ------------------------------------------------- */
 
                         /* ------------------------------------------------- */
                         /* Here you have access to methods & Attributes of   */
-                        /* the OODialog Object after OK/Cancel has been      */
+                        /* the ooDialog Object after OK/Cancel has been      */
                         /* pressed.  ie: MyDialog~Attribute                  */
                         /* ------------------------------------------------- */
-
-MyDialog~DeInstall              /* Clear Up                                  */
 
                         /* ------------------------------------------------- */
                         /* Code that you want to execute after the Dialog    */
@@ -119,8 +103,19 @@ exit
 /* Error Handling routine - returns full information to console              */
 /*                                                                           */
 /* All error information available is written to STDOUT (usually the console)*/
-/* As this may not be present (running a GUI with REXXHIDE) a OODialog       */
-/* errorDialog popup is also presented                                      */
+/* As this may not be present (running a GUI with REXXHIDE) a ooDialog       */
+/* errorDialog popup is also presented                                       */
+/*                                                                           */
+/* While this type of error handling is useful to some people, it also will  */
+/* mask the print out of many syntax errors that happen while your dialog    */
+/* is executing.                                                             */
+/*                                                                           */
+/* If you are having trouble debugging problems in your dialog, 1.) Comment  */
+/* out the 'signal on any' line above.  2.) Execute your dialog from a       */
+/* console window so that you will see any syntax messages printed out by    */
+/* the interpreter.                                                          */
+/*                                                                           */
+/* Those two steps will solve many of your debugging problems.               */
 /* ========================================================================= */
 any:
 
@@ -157,11 +152,9 @@ any:
 
 exit -1
 /* ========================================================================= */
-::requires 'oodwin32.cls'
-/* ::requires 'winsystm.cls'    -- Uncomment if you inherit VirtualKeyCodes  */
+::requires "ooDialog.cls"
 /* ========================================================================= */
 ::class MyDlgClass subclass userdialog
-/* inherit AdvancedControls MessageExtensions VirtualKeyCodes *//*cut & paste*/
 /*                                                                           */
 /* The class directive                                                       */
 /* Rename your object from MyDlgClass to something that makes sense to you   */
@@ -171,70 +164,34 @@ exit -1
 /* REQUIRES directive then add the keyword PUBLIC to the class directive     */
 /*                                                                           */
 /*                          ----------------------                           */
-/* Multiple inheritance:                                                     */
 /*                                                                           */
-/* If you are going to use any of these methods:                             */
-/*                                                                           */
-/* ADDLISTCONTROL           CONNECTLISTCONTROL        GETLISTCONTROL         */
-/* ADDSLIDERCONTROL         CONNECTSLIDERCONTROL      GETSLIDERCONTROL       */
-/* ADDTABCONTROL                                      GETTABCONTROL          */
-/* ADDTREECONTROL           CONNECTTREECONTROL        GETTREECONTROL         */
-/* ADDPROGRESSBAR                                     GETPROGRESSBAR         */
-/* GETCOMBOBOX              GETLISTBOX                GETCHECKCONTROL        */
-/* GETRADIOCONTROL          GETBUTTONCONTROL          GETEDITCONTROL         */
-/* GETSTATICCONTROL         GETSCROLLBAR                                     */
-/*                                                                           */
-/* Then you must add INHERIT ADVANCEDCONTROLS to the class directive above   */
-/*                                                                           */
-/*                          ----------------------                           */
-/*                                                                           */
-/* If you are going to use any of these methods:                             */
-/*                                                                           */
-/* DEFTREEDRAGHANDLER       CONNECTSLIDERNOTIFY       CONNECTEDITNOTIFY      */
-/* DEFLISTDRAGHANDLER       CONNECTTABNOTIFY          CONNECTBUTTONNOTIFY    */
-/* DEFLISTEDITHANDLER       CONNECTSCROLLBARNOTIFY    CONNECTLISTNOTIFY      */
-/* DEFLISTEDITSTARTER       CONNECTCOMBOBOXNOTIFY     CONNECTTREENOTIFY      */
-/* DEFTREEEDITHANDLER       CONNECTLISTBOXNOTIFY      CONNECTCOMMONNOTIFY    */
-/* DEFTREEEDITSTARTER                                                        */
-/*                                                                           */
-/* Then you must add INHERIT MESSAGEEXTENSIONS to the class directive above  */
-/*                                                                           */
-/*                          ----------------------                           */
-/*                                                                           */
-/* If you are going to use either of these methods:                          */
-/*                                                                           */
-/* VCODE                    KEYNAME                                          */
-/*                                                                           */
-/* Then you must add INHERIT VIRTUALKEYCODES to the class directive above    */
-/*                                                                           */
-/*                          ----------------------                           */
-/*                                                                           */
-/* If you inherit more than one mixin class you only need to use the keyword */
-/* INHERIT once.  The order of inheritance is not important in this case.    */
-/* i.e.: INHERIT ADVANCEDCONTROLS MESSAGEEXTENSIONS VIRTUALKEYCODES          */
 /* ------------------------------------------------------------------------- */
 
 
 /* ------------------------------------------------------------------------- */
 /* The init method is called when the dialog is instantiated (by ~new above) */
-::method Init
+::method init
 /* ------------------------------------------------------------------------- */
 /* expose a.  */                /* Give these variables scope of the Object  */
 /* use arg a. */                /* Uncomment if you passed a. as a stem      */
 
 /*if you do not want to define initial values with a. do not pass it to super*/
 /* otherwise rogue default values may appear in your dialog                  */
-  self~Init:super /*(a.)*/      /* we call the Super Class (userdialog)      */
+  self~init:super /*(a.)*/      /* we call the Super Class (userdialog)      */
   width=300 ; height=200        /* Set the Width and height of dialog        */
 
                                 /* Now we create the Windows Object          */
-  rc=self~CreateCenter(width,height,'This text appears in the Dialog Title',,,,
-                                    'MS Sans Serif',8)
+  success=self~createCenter(width,height,                                    -
+                            'This text appears in the Dialog Title',,,       -
+                            'MS Sans Serif',8)
   /* The above line creates a dialog in the centre of the screen, if you     */
   /* Would rather specify values for x & y use the line below instead        */
-  /* rc=self~Create(x,y,width,height,Title)                                  */
+  /* success=self~create(x,y,width,height,Title)                             */
 
-  self~InitCode=(rc=0)
+  if \success then do
+    self~initCode=1
+    return
+  end
                         /* ------------------------------------------------- */
                         /* Here we can initialise any attributes of our      */
                         /* dialog.                                           */
@@ -243,145 +200,176 @@ exit -1
                         /* ------------------------------------------------- */
                         /* Here we can 'connect' dialog item events to       */
                         /* Methods or Attributes.                            */
-                        /* i.e.: self~ConnectListNotify(id,"Changed",,       */
+                        /* i.e.: self~connectListViewEvent(id,"Changed",,    */
                         /*                            "ItemSelectedMethod")  */
                         /*                                                   */
-                        /* NB: Many AddDialog Methods (which appear in the   */
-                        /* DefineDialog method below) also provide a way to  */
+                        /* NB: Many createXXX Methods (which appear in the   */
+                        /* defineDialog method below) also provide a way to  */
                         /* define connections.                               */
                         /* ------------------------------------------------- */
 
 /* ------------------------------------------------------------------------- */
-::method DefineDialog
+::method defineDialog
+/* expose menuBar */            /* Perhaps save a menu object if you create  */
+                                /* one below.                                */
 /* ------------------------------------------------------------------------- */
 /* This is where we lay out the controls (widgets) in our dialog             */
-/* Refer to the OODialog manual for the Add methods and their parameters     */
+/* Refer to the ooDialog manual for the create methods and their parameters  */
 /* ------------------------------------------------------------------------- */
 /* ------------------------------------------------------------------------- */
-/* dlgArea is a class of imaginary rectangles with an inner margin that allow*/
-/* you to reference coordinates within them by dialog units or percentage    */
-/* download dlgArea.cls from www.sahananda.fwbo.net/rexx                     */
+/* DlgArea is a class of imaginary rectangles with an inner margin that      */
+/* allows you to reference coordinates within them by dialog units or        */
+/* percentages.                                                              */
 /* ------------------------------------------------------------------------- */
-/* u = .dlgAreaU~new(self) -- Whole dialog           */
-/* a = .dlgArea~new(u~x(''),u~y(''),u~w(''),u~h('')) */
+/* u = .DlgAreaU~new(self) -- Whole dialog           */
+/* a = .DlgArea~new(u~x(''),u~y(''),u~w(''),u~h('')) */
 
                         /* ------------------------------------------------- */
                         /* Here we add the control objects to our dialog     */
-                        /* Dialog Width  is available to us as self~SizeX &  */
-                        /* Dialog Height is available to us as self~SizeY    */
+                        /* Dialog Width  is available to us as self~sizeX &  */
+                        /* Dialog Height is available to us as self~sizeY    */
                         /* ------------------------------------------------- */
 
-   self~AddButton( 1,Self~SizeX-60 ,Self~SizeY-20,50,15,'OK','Ok','DEFAULT')
-   self~AddButton( 2,Self~SizeX-120,Self~SizeY-20,50,15,'Cancel','Cancel')
+   self~createPushButton(IDOK,self~sizeX-60 ,self~sizeY-20,50,15,'DEFAULT','OK')
+   self~createPushButton(IDCANCEL,self~sizeX-120,self~sizeY-20,50,15,,'Cancel')
 
 /* examples to cut & paste:                                                  */
-/* self~addButton(id,x,y,cx,cy,'text','method','options')                    */
-/* self~AddCheckBox(id,'attribute',x,y,cx,cy,text,'options')                 */
-/* self~AddComboBox(id,'attribute',x,y,cx,cy,'options')                      */
-/* self~AddEntryLine(id,'attribute',x,y,cx,cy,'options')                     */
-/* self~AddListControl(id,'attribute',x,y,cx,cy,'options')                   */
-/* self~AddTreeControl(id,'attribute',x,y,cx,cy,'options')                   */
-/* self~addText(x,y,cx,cy,'text','options',id)                               */
-/* self~Add[Black|White|Gray]Rect,x,y,cx,cy,'options',id)                    */
+/* self~createPushButton(id,x,y,cx,cy,'options','text','method')             */
+/* self~createCheckBox(id,x,y,cx,cy,'options',text,'attribute')              */
+/* self~createComboBox(id,x,y,cx,cy,'options','attribute')                   */
+/* self~createEdit(id,x,y,cx,cy,'options','attribute')                       */
+/* self~createListView(id,x,y,cx,cy,'options','attribute')                   */
+/* self~createTreeView(id,x,y,cx,cy,'options','attribute')                   */
+/* self~createStaticText(id, x,y,cx,cy,'options','text')                     */
+/* self~create[Black|White|Gray]Rect(id,x,y,cx,cy,'options')                 */
 /* etc. etc. ...                                                             */
-/* other controls should have unique ids over 10 (or -1 for static text)     */
+/* other controls should have unique ids over 100 (or -1 for static text)    */
 
                         /* ------------------------------------------------- */
-                        /* You can add a menu here using Self~AddMenuItem &  */
-                        /* Self~AddMenuSeperator.                            */
-                        /* To display it add a call to SetMenu in the        */
-                        /* InitDialog method                                 */
+                        /* You could create a menu here, or really anywhere, */
+                        /* using one of the menu classes such as the         */
+                        /* .UserMenuBar, and the menu methods.               */
+                        /*                                                   */
+                        /* Save the menu and have it attach to the dialog in */
+                        /* the initDialog() method.  It could be saved in an */
+                        /* exposed variable for instance.                    */
                         /* ------------------------------------------------- */
 
-/* self~AddPopupMenu('name','options')                                       */
-/* self~AddMenuItem('text',id,'options','method')                            */
-/* self~AddMenuSeperator                                                     */
+/* menuBar = .UserMenuBar~new(200, self, ...)                                */
+/* menuBar~addPopUp(id, 'text', options, ...)                                */
+/* menuBar~addItem(id, 'someText', options, ...)                             */
+/* menuBar~addSeparator                                                      */
+/* menuBar~complete                                                          */
 /* ------------------------------------------------------------------------- */
-::method InitDialog
+::method initDialog
+/*  expose menuBar */   /* If you are adding a menu perhaps.                 */
 /* ------------------------------------------------------------------------- */
 /* If you have no need to initialise/populate items delete this method       */
-  self~InitDialog:super
+
+                        /* ------------------------------------------------- */
+                        /* Code here is run after the underlying windows     */
+                        /* dialog object has been created.  Whether the      */
+                        /* dialog is displayed depends on the style keywords */
+                        /* used in the createCenter(), (or create()) method. */
+                        /* By default the dialog will be created invisible.  */
+                        /* If you use the VISIBLE keyword, the dialog will   */
+                        /* be visisble at this point.                        */
+                        /* ------------------------------------------------- */
+
                         /* ------------------------------------------------- */
                         /* Here we can populate list boxes etc.              */
                         /* ------------------------------------------------- */
 
 /*  for example:                                                             */
-/*  List = self~GetListControl([id])                                         */
+/*  List = self~newListView([id])                                            */
 /*  if List \= .Nil then do                                                  */
 /*    list~setImageList(imageList, .Image~toID(LVSIL_SMALL))                 */
-/*    list~AddStyle("[Style1 style2...]")                                    */
-/*    list~InsertColumn(0,"[Title]",[width],[style])                         */
-/*    list~InsertColumn(1,"[Title]",[width],[style])                         */
+/*    list~addStyle("[Style1 style2...]")                                    */
+/*    list~insertColumn(0,"[Title]",[width],[style])                         */
+/*    list~insertColumn(1,"[Title]",[width],[style])                         */
 /*    do data over dataset                                                   */
 /*       ordinal=list~addrow(,[icon_no],[column 0 text],[column 1 text]...)  */
 /*    end                                                                    */
 /*  end                                                                      */
 
                         /* ------------------------------------------------- */
-                        /* If you defined a menu in Define Dialog, show it:  */
-                        /* self~SetMenu                                      */
+                        /* If you created a menu in defineDialog(), attach   */
+                        /* it:                                               */
                         /* ------------------------------------------------- */
 
-                        /* ------------------------------------------------- */
-                        /* Code here is run after the windows dialog object  */
-                        /* has been created, but before it is displayed      */
-                        /* ------------------------------------------------- */
+/*  menuBar~attachTo(self) */
 
 /* ------------------------------------------------------------------------- */
-::method Run
+::method ok
 /* ------------------------------------------------------------------------- */
-/* If you do not need to add processing to this class you can delete it      */
+/* The ok() method is invoked automatically by the ooDialog framework when   */
+/* the user pushes or clicks a button, or a menu item, with the resource ID  */
+/* of IDOK (1).  If you do not need to do, or do not want to do, any         */
+/* processing here, you can delete this method.  The ooDialog framework      */
+/* provides the correct implementation for you.  The framework also provides */
+/* a default implementation of the validate method.  By default validate()   */
+/* returns true.  If you want to have a chance to validate the user's input, */
+/* and perhaps prevent the dialog from closing, then over-ride the validate  */
+/* method.  From validate() return true to close the dialog, or false to     */
+/* prevent the dialog from closing.                                          */
 
                         /* ------------------------------------------------- */
-                        /* add code here to run after the windows dialog     */
-                        /* object is displayed, & before it handles messages */
+                        /* If you want to do your validation here, you can   */
+                        /* add the valdiation code here.  Then, if you want  */
+                        /* to allow the dialog to close normally, invoke the */
+                        /* super class's ok() method.  If you want to        */
+                        /* prevent dialog from closing, simply return 0 with */
+                        /* out invoking the super class ok.                  */
+                        /*                                                   */
+                        /* By invoking the super class ok() method you       */
+                        /* ensure the dialog is closed properly.  That is    */
+                        /* really the best way to end the dialog.  The best  */
+                        /* way to not end the dialog at this point is to     */
+                        /* simply return 0.                                  */
                         /* ------------------------------------------------- */
 
-  self~run:super               /* this handles message calls/key presses etc */
-
-                        /* ------------------------------------------------- */
-                        /* add code here to run just after OK/Cancel methods */
-                        /* ------------------------------------------------- */
+return self~oK:super
 
 /* ------------------------------------------------------------------------- */
-::method Ok
+::method cancel
 /* ------------------------------------------------------------------------- */
-/* If you do not need to add processing to this class you can delete it      */
-  self~OK:super                 /* call Self~Validate, set self~InitCode to 1*/
+/* The cancel() method is invoked automatically by the ooDialog framework    */
+/* when the user pushes or clicks a button, or a menu item, with the         */
+/* resource ID of IDCANCEL (2), or the user hits the escape key.  If you do  */
+/* not need to do, or do not want to do, any processing here, you can delete */
+/* this method.  The ooDialog framework provides the correct implementation  */
+/* of the cancel method for you.                                             */
 
                         /* ------------------------------------------------- */
-                        /* add code for closing with OK here                 */
-                        /* Self~Finished will be 0 if Self~Validate failed   */
-                        /* You can set self~Finished=0 to stop dlg closing   */
+                        /* You can add code for closing with cancel here, if */
+                        /* you want to.  Then, to prevent the dialog from    */
+                        /* closing at this point, simply return 0.  To       */
+                        /* continue with the normal closing of the dialog,   */
+                        /* invoke the super class's cancel method.           */
+                        /*                                                   */
+                        /* By invoking the super class cancel() method you   */
+                        /* ensure the dialog is closed properly.  That is    */
+                        /* really the best way to end the dialog.  The best  */
+                        /* to not end the dialog at this point is to simply  */
+                        /* return 0.                                         */
                         /* ------------------------------------------------- */
+return self~cancel:super
 
-return self~finished
 /* ------------------------------------------------------------------------- */
-::method Cancel
+::method validate
 /* ------------------------------------------------------------------------- */
-/* If you do not need to add processing to this class you can delete it      */
-  self~Cancel:super             /*call Self~Validate, set self~InitCode to 2 */
-
-                        /* ------------------------------------------------- */
-                        /* add code for closing with cancel here             */
-                        /* Self~Finished will be 0 if Self~Validate failed   */
-                        /* You can set self~Finished=0 to stop dlg closing   */
-                        /* ------------------------------------------------- */
-return self~finished
-/* ------------------------------------------------------------------------- */
-::method Validate
-/* ------------------------------------------------------------------------- */
-/* This is called by the OK:Super Method.  Returning 0 stops dialog closing. */
-/* If you do not need this method - delete it.                               */
-valid=1
+/* This is called by the ok:super method.  Returning .false stops the dialog */
+/* from closing.  Returning .true allows the dialog to close. If you do not  */
+/* need this method - delete it                                              */
+valid=.true
 
 /*
-  valid=0
+  valid=.false
   select
      when [error_condition] then call errorDialog [error_condition_message]
      when [error_condition] then call errorDialog [error_condition_message]
      otherwise
-        valid=1
+        valid=.true
   end /* select */
 */
 

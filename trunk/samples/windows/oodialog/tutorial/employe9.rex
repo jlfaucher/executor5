@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2006 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2012 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -35,152 +35,162 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.               */
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
-/****************************************************************************/
-/* Name: EMPLOYE9.REX                                                       */
-/* Type: Object REXX Script                                                 */
-/*                                                                          */
-/* Description:                                                             */
-/* This examples demonstrates the use of the WindowsRegistry class to read  */
-/* and manipulate the Windows registry                                      */
-/*                                                                          */
-/****************************************************************************/
 
-signal on any name CleanUp
+/**
+ * Name: employe9.rex
+ * Type: Open Object REXX Script
+ */
 
-dlg = .MyDialogClass~new
-if dlg~InitCode <> 0 then exit
-dlg~Execute("SHOWTOP")
-dlg~deinstall
+dlg = .MyDialogClass~new("employe6.rc", 100)
+if dlg~initCode <> 0 then exit
+dlg~execute("SHOWTOP")
+
 exit
 
-/* ------- signal handler to destroy dialog if condition trap happens  -----*/
-CleanUp:
-   call errorDialog "Error" rc "occurred at line" sigl":" errortext(rc),
-                     || "a"x || condition("o")~message
-   if dlg~IsDialogActive then dlg~StopIt
+::requires "ooDialog.cls"
+
+::class MyDialogClass subclass RcDialog
+
+::attribute employees
+::attribute empCount
+::attribute empCurrent
+
+::method init
+
+    forward class (super) continue
+    if self~initCode <> 0 then return self~initCode
+
+    self~employees = .array~new(10)
+    self~empCount = 1
+    self~empCurrent = 1
+    self~connectButtonEvent(10, "CLICKED", "print")   /* connect button 10 with a method */
+    self~connectButtonEvent(12, "CLICKED", "add")     /* connect button 12 with a method */
+    self~connectUpDownEvent(11, "DELTAPOS", onEmpChange)
+    self~connectButtonEvent(13, "CLICKED", "empList")
+
+    return self~initCode
 
 
-::requires "OODIALOG.CLS"
+::method initDialog
+    self~city = "New York"
+    self~male = 1
+    self~female = 0
+    self~addComboEntry(22, "Munich")
+    self~addComboEntry(22, "New York")
+    self~addComboEntry(22, "San Francisco")
+    self~addComboEntry(22, "Stuttgart")
+    self~addListEntry(23, "Business Manager")
+    self~addListEntry(23, "Software Developer")
+    self~addListEntry(23, "Broker")
+    self~addListEntry(23, "Police Man")
+    self~addListEntry(23, "Lawyer")
+    self~disableItem(11)
+    self~disableItem(13)
 
-::class MyDialogClass subclass UserDialog
 
-::method Employees attribute
-::method Emp_count attribute
-::method Emp_current attribute
+::method onEmpChange
+    use arg curPos, increment
 
-::method Init
-    ret = self~init:super;
-    if ret = 0 then ret = self~Load("EMPLOYE6.RC", 100)
-    if ret = 0 then self~Employees = .array~new(10)
-    if ret = 0 then do
-        self~Emp_count = 1
-        self~Emp_current = 1
-        self~ConnectButton(10, "Print")   /* connect button 10 with a method */
-        self~ConnectButton(12, "Add")     /* connect button 12 with a method */
-        self~ConnectButton(13, "Emp_List")
+    if increment > 0 then self~empNext
+    else self~empPrev
+
+    return .UpDown~deltaPosReply
+
+
+::method print
+    self~getData
+
+    if self~male = 1 then title = "Mr."
+    else title = "Ms."
+    if self~married = 1 then addition = " (married) "
+    else addition = ""
+
+    call infoDialog title self~name addition || "A"x || "City:" self~city || "A"x ||  -
+                     "Profession:" self~name
+
+::method add
+    self~employees[self~empCount] = .directory~new
+    self~employees[self~empCount]['NAME'] = self~getControlData(21)
+    self~employees[self~empCount]['CITY'] = self~getControlData(22)
+    self~employees[self~empCount]['PROFESSION'] = self~getControlData(23)
+
+    if self~getControlData(31) = 1 then sex = 1
+    else sex = 2
+    self~employees[self~empCount]['SEX'] = sex
+
+    self~employees[self~empCount]['MARRIED'] = self~getControlData(41)
+    self~empCount = self~empCount + 1
+    self~empCurrent = self~empCount
+    self~setControlData(21, "");
+
+    self~newUpDown(11)~setRange(1, self~empCount)
+    self~newUpDown(11)~setPosition(self~empCount)
+
+    self~enableItem(11)
+    self~enableItem(13)
+
+
+::method set
+    self~setControlData(21, self~employees[self~empCurrent]['NAME'])
+    self~setControlData(22, self~employees[self~empCurrent]['CITY'])
+    self~setControlData(23, self~employees[self~empCurrent]['PROFESSION'])
+
+    if self~employees[self~empCurrent]['SEX'] = 1 then do
+       self~setControlData(31, 1)
+       self~setControlData(32, 0)
     end
-    self~InitCode = ret
-    return ret
-
-::method InitDialog
-    self~City = "New York"
-    self~Male = 1
-    self~Female = 0
-    self~AddComboEntry(22, "Munich")
-    self~AddComboEntry(22, "New York")
-    self~AddComboEntry(22, "San Francisco")
-    self~AddComboEntry(22, "Stuttgart")
-    self~AddListEntry(23, "Business Manager")
-    self~AddListEntry(23, "Software Developer")
-    self~AddListEntry(23, "Broker")
-    self~AddListEntry(23, "Police Man")
-    self~AddListEntry(23, "Lawyer")
-    self~ConnectScrollBar(11, "Emp_Previous", "Emp_Next")
-    self~DisableItem(11)
-    self~DisableItem(13)
-
-::method Print
-    self~GetData
-    if self~Male = 1 then title = "Mr."; else title = "Ms."
-    if self~Married = 1 then addition = " (married) "; else addition = ""
-    call infoDialog title self~Name addition || "A"x || "City:" self~City || "A"x ||,
-                     "Profession:" self~Profession
-
-::method Add
-    self~Employees[self~Emp_count] = .directory~new
-    self~Employees[self~Emp_count]['NAME'] = self~GetValue(21)
-    self~Employees[self~Emp_count]['CITY'] = self~GetValue(22)
-    self~Employees[self~Emp_count]['PROFESSION'] = self~GetValue(23)
-    if self~GetValue(31) = 1 then sex = 1; else sex = 2
-    self~Employees[self~Emp_count]['SEX'] = sex
-    self~Employees[self~Emp_count]['MARRIED'] = self~GetValue(41)
-    self~Emp_count = self~Emp_count +1
-    self~Emp_current = self~Emp_count
-    self~SetValue(21, "");
-    self~SetSBRange(11, 1, self~Emp_count)
-    self~SetSBPos(11, self~Emp_count)
-    self~EnableItem(11)
-    self~EnableItem(13)
-
-
-::method Set
-    self~SetValue(21, self~Employees[self~Emp_current]['NAME'])
-    self~SetValue(22, self~Employees[self~Emp_current]['CITY'])
-    self~SetValue(23, self~Employees[self~Emp_current]['PROFESSION'])
-    if self~Employees[self~Emp_current]['SEX'] = 1 then do
-       self~SetValue(31, 1);self~SetValue(32, 0); end
     else do
-       self~SetValue(31, 0);self~SetValue(32, 1); end
-    self~SetValue(41, self~Employees[self~Emp_current]['MARRIED'])
+       self~setControlData(31, 0)
+       self~setControlData(32, 1)
+    end
 
-::method Emp_Previous
-   if self~Emp_count = 1 then return
-   if self~Emp_current > 1 then do
-       self~Emp_current = self~Emp_current - 1
-       self~SetSBPos(11, self~Emp_current)
-       self~Set
-   end; else
-       call TimedMessage "You reached the top!","Info",1000
+    self~setControlData(41, self~employees[self~empCurrent]['MARRIED'])
 
-::method Emp_Next
-   if self~Emp_count = 1 then return
-   if self~Emp_current < self~Emp_count-1 then do
-       self~Emp_current = self~Emp_current + 1
-       self~SetSBPos(11, self~Emp_current)
-       self~Set
-   end; else
-       call TimedMessage "You reached the bottom!","Info",1000
+::method empPrev
+   if self~empCount = 1 then return
+   if self~empCurrent > 1 then do
+       self~empCurrent = self~empCurrent - 1
+       self~newUpDown(11)~setPosition(self~empCount)
+       self~set
+   end
+   else do
+       call TimedMessage "You reached the bottom.", "Info", 1000
+   end
 
-::method Emp_List
-   ldlg = .EmployeeListClass~new(self)
-   ldlg~Execute("SHOWTOP")
+::method empNext
+   if self~empCount = 1 then return
+   if self~empCurrent < self~empCount-1 then do
+       self~empCurrent = self~empCurrent + 1
+       self~newUpDown(11)~setPosition(self~empCount)
+       self~set
+   end
+   else do
+       call TimedMessage "You reached the top.", "Info", 1000
+   end
+
+::method empList
+   lDlg = .EmployeeListClass~new("employe6.rc", 101)
+   lDlg~parent = self
+   lDlg~execute("SHOWTOP")
 
 
-::method FillList
+::method fillList
    use arg subdlg, id
-   do i = 1 to self~Emp_count-1
-       if self~Employees[i]['SEX'] = 1 then title = "Mr."; else title = "Ms."
-       addstring = title self~Employees[i]['NAME']
-       addstring = addstring || "9"x || self~Employees[i]['PROFESSION']
-       addstring = addstring || "9"x || self~Employees[i]['CITY']
-       subdlg~AddListEntry(id, addstring)
+
+   do i = 1 to self~empCount - 1
+       if self~employees[i]['SEX'] = 1 then title = "Mr."
+       else title = "Ms."
+       addstring = title self~employees[i]['NAME']
+       addstring = addstring || "9"x || self~employees[i]['PROFESSION']
+       addstring = addstring || "9"x || self~employees[i]['CITY']
+       subdlg~addListEntry(id, addstring)
    end
 
 
+::class EmployeeListClass subclass RcDialog
 
+::method parent attribute
 
-::class EmployeeListClass subclass UserDialog
-
-::method Parent attribute
-
-::method Init
-   use arg ParentDlg
-   self~Parent = ParentDlg
-   ret = self~init:super
-   if ret = 0 then ret = self~Load("EMPLOYE6.RC", 101)
-   self~InitCode = ret
-   return ret
-
-::method InitDialog
-   self~parent~FillList(self, 101)
-   self~SetListTabulators(101, 98, 198)
+::method initDialog
+   self~parent~fillList(self, 101)
+   self~setListTabulators(101, 98, 198)

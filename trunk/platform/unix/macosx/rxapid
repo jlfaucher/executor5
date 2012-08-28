@@ -1,0 +1,70 @@
+#!/bin/sh
+
+# A version of rxapid for Mac OS X 10.5+
+
+# Make sure the user is running with root authority.
+ID=`id -u`
+if [ $ID != 0 ]
+then
+	echo;
+	echo "You must run `basename $0` as root, or via sudo.";
+	echo;
+	exit 4;
+fi
+
+# Check to see if the command was issued correctly.
+if [ $# -ne 1 ]
+then
+	echo;
+	echo "One and only one argument required.";
+	echo "Usage: `basename $0` {restart|start|status|stop}";
+	echo;
+	exit 4;
+fi
+
+# Get the process id (PID) of the last running rxapi
+if [ -e /var/run/ooRexx.pid ]
+then
+	pid=`cat /var/run/ooRexx.pid`;
+fi
+
+# Check the running processes to see if that PID is running.
+if [ $pid != "" ]
+then
+	running=`ps -p $pid | grep -v PID | cut -d'/' -f2- | sed -e "s.^./."`
+fi
+
+case $1 in
+	start)
+		if [ "$running" = "" ]
+		then
+			launchctl load -w /Library/LaunchDaemons/org.rexxla.oorexx.rxapid.plist;
+		else
+			echo;
+			echo "Rxapi, $running, is already running on PID=$pid.";
+			echo "Use: `basename $0` restart."
+			echo;
+		fi;;
+
+	status)
+		if [ "$running" != "" ]
+		then
+			echo;
+			echo "Rxapi, $running, is running on PID=$pid.";
+			echo;
+		else
+			echo;
+			echo "Rxapi doesn't appear to be running.";
+			echo;
+		fi;;
+
+	stop)
+		launchctl unload -w /Library/LaunchDaemons/org.rexxla.oorexx.rxapid.plist;
+	        killall rxapi;;
+
+	restart)
+		$0 stop;
+		$0 start;;
+esac
+
+exit 0

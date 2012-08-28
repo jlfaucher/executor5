@@ -1,0 +1,159 @@
+                             Open Object Rexx
+
+                              Release Notes
+                              Version 4.1.2
+
+  Copyright 2005-2012 Rexx Language Association.  All rights reserved.
+                               August 2012
+
+Note
+====
+ooRexx 4.1.2 is a bug fix only release.  There are no new features or
+enhancements in this release.  This, mostly empty, file is left as a
+template for future releases.
+
+Fixed bugs are listed in the CHANGES document.
+
+File List
+=========
+Linux rpm and deb packages contain the distribution name and version of
+the system they were built on.  For instance,
+ooRexx-4.1.3.opensuse1110.x86_64.rpm was built on OpenSuSE 11.10.
+
+All package names contain an indication if the package is built as a 32-bit
+or 64-bit binary.  Usually this indicator is x86_32 or x86_64.  For a 32-bit
+binary, these indicators are sometimes used: i386, i586, etc..
+
+Pick the package closest to the system you intend to install on.  If the
+package is not an exact match and will not install, or the interpreter will
+not run because of a conflict with the C / C++ libraries, it may be possible
+to get one of the developers to build a package for your system by opening
+up a support request in the tracker system.  Note that developer resources
+are constrained and this is neither a commitment nor a promise.
+
+_Readme.pdf
+Installation help and other relevant notes that should be read prior to
+installation.
+
+_Readme.html
+The same text as _Readme.pdf in HTML format.
+
+INSTALL
+Additional installation help in a text format.
+
+ReleaseNotes
+This file.
+
+ReadMe.txt
+A copy of this file because SourceForge will display the contents of a
+readme file in the file download section.
+
+ooRexx-4.1.2*
+The installation packages for various operating systems.
+
+ooRexx-4.1.2-source.tar.gz
+The source code for this version of ooRexx, suitable for building on an
+unix-like system.  Includes the configure script.
+
+ooRexx-4.1.2-source.zip
+The source code for this version of ooRexx, suitable for building and
+packaging on a Windows system.  Includes the PDF documentation files which
+are required for the packaging step.
+
+
+Installation and Configuration
+==============================
+
+Prior to Installation:
+----------------------
+
+Important: An "upgrade" type of installation is neither tested nor supported
+on any platform.  Please completely uninstall a prior version of ooRexx
+before installing a new version.  Installing over the top of an existing
+installation is likely to produce unpredictable results.
+
+Note:  On Windows only, the installer will detect a previous installation
+and launch the uninstalltion program automatically.  The uninstall program
+will completely uninstall the previous version of ooRexx and then return
+control to the installer.
+
+For installation help and other relevant notes, prior to installation,
+please read the "_ReadMe.pdf" PDF file which is placed with the downloadable
+files for this release on SourceForge.
+
+A Note on Linux packages:
+-------------------------
+
+The generically named rpm packages should install on any modern distribution
+that uses RPM as a package manager.  Likewise, the generically named deb
+packages will install on any modern debian-based systems.
+
+When it is known that the generic package has problems on a distribution,
+the ooRexx team may build an additional package for that specific
+distribution.  In which case, the installation package will have the
+targeted distribution in its file name.
+
+Please use the generically named rpm and deb packages.  If there is a
+problem on your distribution, report it by opening up a Tracker bug.
+Depending on resources, the ooRexx team may be able to build a specific
+package for that distribution.
+
+
+Changes in ooRexx 4.1.2
+=================================
+
+All platforms:
+==============
+
+Builtin Classes:
+----------------
+
+New class:
+------------
+
+    Class methods
+    -------------
+
+    Instance methods
+    ----------------
+
+
+New methods on x:
+------------------------
+
+
+New extensions classes:
+-----------------------
+
+New documentation:
+-------------------
+
+
+Unix platform:
+==============
+
+New extension library:
+----------------------
+
+  Functions:
+  ----------
+
+
+Windows platform:
+=================
+
+ooDialog :
+----------
+
+New samples :
+
+
+Windows Installation:
+=====================
+
+Major changes
+-------------
+
+Minor changes
+-------------
+

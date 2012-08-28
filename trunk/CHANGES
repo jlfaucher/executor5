@@ -1,0 +1,36 @@
+            Fixes in Open Object Rexx 4.1.2
+
+The following is the list of bug fixes added to ooRexx since the 4.1.1
+release.
+
+All Bugs
+=============
+
+ * 3544442  The oodraw.rex example in ooRexx 4.1.1 does not execute.
+
+ * 3541163  cyclic dependency error not giving good position.
+
+ * 3537339  Incorrect message for ::ATTRIBUTE errors
+
+ * 3535883  rexx abends when hostemu execio attempted
+
+ * 3534403  Inccorect message for mising end on LOOP instruction
+
+ * 3534402  do over not working with strings
+
+ * 3533899  Mutablebuffer string method not getting used correctly.
+
+ * 3532728  system breaks when string method has no Return
+
+ * 3529966  ReleaseLocalReference() causes ooRexx to abend
+
+ * 3523656  SAMP13 Does Not Work
+
+ * 3146828  Lines() / chars() return 1 for stdin when no data is present
+
+ * 2849375  redirect output to a /dev/tty
+
+Documentation
+=============
+
+ * 3530214  Value returned by WindowsRegistry r~getvalue() may be wrong

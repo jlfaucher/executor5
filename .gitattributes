@@ -38,7 +38,6 @@ trunk/platform/unix/macosx/postflight.in -text
 trunk/platform/unix/macosx/preflight.in -text
 trunk/platform/windows/hostemu.def -text
 trunk/platform/windows/hostemu.mak -text
-trunk/platform/windows/install/oorexx.nsi -text
 trunk/platform/windows/install/orange-uninstall.bmp -text svneol=unset#image/bmp
 trunk/platform/windows/install/orange.bmp -text svneol=unset#image/bmp
 trunk/platform/windows/install/uninstall.ico -text svneol=unset#applicatiion/octet-stream

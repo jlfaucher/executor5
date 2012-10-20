@@ -254,7 +254,7 @@ RexxObject *RexxObject::isInstanceOfRexx(RexxClass *other)
  */
 RexxMethod *RexxInternalObject::instanceMethod(RexxString  *method_name)
 {
-    return OREF_NULL;
+    return (RexxMethod *)TheNilObject;
 }
 
 
@@ -275,7 +275,7 @@ RexxMethod *RexxObject::instanceMethod(RexxString  *method_name)
     // this is an error if it doesn't exist
     if (method_object == OREF_NULL)
     {
-        reportException(Error_No_method_name, this, method_name);
+        return (RexxMethod *)TheNilObject;
     }
     return method_object;    // got a live one
 }

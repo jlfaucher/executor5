@@ -76,6 +76,9 @@
  */
 SysSemaphore::SysSemaphore(bool createSem)
 {
+    created = false;
+    postedCount = 0;
+
     if (createSem)
     {
         create();

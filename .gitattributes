@@ -82,7 +82,6 @@ trunk/samples/windows/oodialog/bmp/install.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/install2.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/kanguru.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/moose.bmp -text svneol=unset#image/bmp
-trunk/samples/windows/oodialog/bmp/oodtree.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/phileat.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/phileat2.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/phileata.bmp -text svneol=unset#image/bmp
@@ -115,8 +114,10 @@ trunk/samples/windows/oodialog/bmp/wlkfig5.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/wlkfig6.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/wlkfig7.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/bmp/wlkfig8.bmp -text svneol=unset#image/bmp
-trunk/samples/windows/oodialog/controls/userStringDTP.hlp -text
-trunk/samples/windows/oodialog/examples/columnClickListView.rex -text
+trunk/samples/windows/oodialog/controls/ListView/rc/columnIcons_16.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/controls/ListView/rc/columnIcons_32.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/controls/ToolTip/musicNote.ico -text
+trunk/samples/windows/oodialog/controls/TreeView/rc/treeViewCustomDraw.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/examples/resources/CheckIn.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/examples/resources/ClosePalette.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/examples/resources/CodeReview.bmp -text svneol=unset#image/bmp
@@ -142,19 +143,18 @@ trunk/samples/windows/oodialog/ooRexxTry/doc/Makefile.am -text
 trunk/samples/windows/oodialog/ooRexxTry/doc/ooRexxTry.pdf -text
 trunk/samples/windows/oodialog/ooRexxTry/ooRexxTry.rex -text
 trunk/samples/windows/oodialog/oophil.ico -text svneol=unset#applicatiion/octet-stream
-trunk/samples/windows/oodialog/propertySheet.tabs/rc/TabOwnerDemoListView.bmp -text svneol=unset#image/bmp
-trunk/samples/windows/oodialog/propertySheet.tabs/rc/TabOwnerDemoTab.bmp -text svneol=unset#image/bmp
-trunk/samples/windows/oodialog/propertySheet.tabs/rc/TabOwnerDemoTreeView.bmp -text svneol=unset#image/bmp
-trunk/samples/windows/oodialog/propertySheet.tabs/rc/oodListViews1.bmp -text svneol=unset#image/bmp
-trunk/samples/windows/oodialog/propertySheet.tabs/rc/oodListViews2.bmp -text svneol=unset#image/bmp
-trunk/samples/windows/oodialog/propertySheet.tabs/rc/propertySheetDemoListView.bmp -text svneol=unset#image/bmp
-trunk/samples/windows/oodialog/propertySheet.tabs/rc/propertySheetDemoTab.bmp -text svneol=unset#image/bmp
-trunk/samples/windows/oodialog/propertySheet.tabs/rc/propertySheetDemoTreeView.bmp -text svneol=unset#image/bmp
-trunk/samples/windows/oodialog/propertySheet.tabs/rc/ticketWizardMovie.bmp -text svneol=unset#image/bmp
-trunk/samples/windows/oodialog/propertySheet.tabs/rc/ticketWizardRexxLA.bmp -text svneol=unset#image/bmp
-trunk/samples/windows/oodialog/propertySheet.tabs/rc/ticketWizardTheater.bmp -text svneol=unset#image/bmp
-trunk/samples/windows/oodialog/propertySheet.tabs/rc/ticketWizardTicket.bmp -text svneol=unset#image/bmp
-trunk/samples/windows/oodialog/rc/oodtreeNewItem.rc -text
+trunk/samples/windows/oodialog/propertysheet.tabControls/rc/TabOwnerDemoListView.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertysheet.tabControls/rc/TabOwnerDemoTab.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertysheet.tabControls/rc/TabOwnerDemoTreeView.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertysheet.tabControls/rc/oodListViews1.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertysheet.tabControls/rc/oodListViews2.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertysheet.tabControls/rc/propertySheetDemoListView.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertysheet.tabControls/rc/propertySheetDemoTab.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertysheet.tabControls/rc/propertySheetDemoTreeView.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertysheet.tabControls/rc/ticketWizardMovie.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertysheet.tabControls/rc/ticketWizardRexxLA.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertysheet.tabControls/rc/ticketWizardTheater.bmp -text svneol=unset#image/bmp
+trunk/samples/windows/oodialog/propertysheet.tabControls/rc/ticketWizardTicket.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/tutorial/add.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/tutorial/logo.bmp -text svneol=unset#image/bmp
 trunk/samples/windows/oodialog/userGuide/exercises/Exercise05/res/ProductIcon.bmp -text svneol=unset#image/bmp

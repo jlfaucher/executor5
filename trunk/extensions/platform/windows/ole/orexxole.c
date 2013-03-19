@@ -3561,7 +3561,6 @@ RexxMethod3(RexxObjectPtr, OLEObject_Unknown, OSELF, self, CSTRING, msgName, Rex
     hResult = pDispatch->QueryInterface(IID_IDispatchEx, (LPVOID*)&pDispatchEx);
     if ( pDispatchEx != NULL )
     {
-        printf("Have IDispatchEx interface method=%s\n", pszFunction);
         fFound = getDispatchIDByName(pszFunction, pDispatch, pDispatchEx, pTypeInfo, pClsInfo, &pFuncInfo, &MemId, &wFlags, iArgCount);
     }
     else

@@ -96,4 +96,4 @@ if \ gotPrice then say "Web page has likely changed format."
 
 exit
 
-::requires "orexxole.cls"
+

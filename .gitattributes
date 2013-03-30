@@ -110,6 +110,8 @@ samples/windows/oodialog/bmp/install.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/install2.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/kanguru.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/moose.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/bmp/oodStandardDialogs.ico -text
+samples/windows/oodialog/bmp/oodStandardRoutines.ico -text
 samples/windows/oodialog/bmp/phileat.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/phileat2.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/phileata.bmp -text svneol=unset#image/bmp
@@ -154,9 +156,6 @@ samples/windows/oodialog/controls/paidHolidays.rc -text
 samples/windows/oodialog/controls/upDown.h -text
 samples/windows/oodialog/controls/upDown.rc -text
 samples/windows/oodialog/controls/upDown.rex -text
-samples/windows/oodialog/dlgAreaUDemo.h -text
-samples/windows/oodialog/dlgAreaUDemoThree.rex -text
-samples/windows/oodialog/dlgAreaUDemoTwo.rex -text
 samples/windows/oodialog/examples/resources/CheckIn.bmp -text
 samples/windows/oodialog/examples/resources/ClosePalette.bmp -text
 samples/windows/oodialog/examples/resources/CodeReview.bmp -text
@@ -209,6 +208,9 @@ samples/windows/oodialog/propertysheet.tabControls/rc/ticketWizardRexxLA.bmp -te
 samples/windows/oodialog/propertysheet.tabControls/rc/ticketWizardTheater.bmp -text
 samples/windows/oodialog/propertysheet.tabControls/rc/ticketWizardTicket.bmp -text
 samples/windows/oodialog/propertysheet.tabControls/ticketWizard.rex -text
+samples/windows/oodialog/resizableDialogs/ResizingAdmin/rc/propertySheetDemoListView.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/resizableDialogs/ResizingAdmin/rc/propertySheetDemoTab.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/resizableDialogs/ResizingAdmin/rc/propertySheetDemoTreeView.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/simple/ChangeFont.rex -text
 samples/windows/oodialog/simple/Makefile.am -text
 samples/windows/oodialog/simple/ReadMe.txt -text
@@ -238,6 +240,17 @@ samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProdList.bmp
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProdList.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/Product.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProductIcon.bmp -text
+samples/windows/oodialog/userGuide/exercises/Exercise07/Customer/bmp/CustList.BMP -text svneol=unset#image/bmp
+samples/windows/oodialog/userGuide/exercises/Exercise07/Customer/bmp/CustList.ico -text
+samples/windows/oodialog/userGuide/exercises/Exercise07/Customer/bmp/Customer.ico -text
+samples/windows/oodialog/userGuide/exercises/Exercise07/Order/bmp/OrderForm.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/userGuide/exercises/Exercise07/Order/bmp/OrderForm.ico -text
+samples/windows/oodialog/userGuide/exercises/Exercise07/Order/bmp/OrderList.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/userGuide/exercises/Exercise07/Order/bmp/OrderList.ico -text
+samples/windows/oodialog/userGuide/exercises/Exercise07/Product/res/ProdList.BMP -text svneol=unset#image/bmp
+samples/windows/oodialog/userGuide/exercises/Exercise07/Product/res/ProdList.ico -text
+samples/windows/oodialog/userGuide/exercises/Exercise07/Product/res/Product.ico -text
+samples/windows/oodialog/userGuide/exercises/Exercise07/Product/res/ProductIcon.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/userGuide/exercises/Samples/Popups svnc_bugtraq_003anumber=true
 samples/windows/oodialog/wav/byebye.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/cancel.wav -text svneol=unset#audio/x-wav

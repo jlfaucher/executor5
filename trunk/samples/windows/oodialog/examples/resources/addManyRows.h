@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
-/* Copyright (c) 2011-2013 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2013-2013 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -35,54 +35,35 @@
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 
-#include <windows.h>
-#include <commctrl.h>
-#include <richedit.h>
-#include "OrderMgrBaseView.h"
+#ifndef IDC_STATIC
+#define IDC_STATIC (-1)
+#endif
 
-
-
-LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
-IDR_ORDMGR_MENU MENU
-{
-    POPUP "Orders"
-    {
-        MENUITEM "New Order...", IDM_ORDMGR_NEWORDER
-        MENUITEM "Order List...", IDM_ORDMGR_ORDERLIST
-        MENUITEM "Order Search...", IDM_ORDMGR_ORDERSEARCH
-    }
-    POPUP "Customers"
-    {
-        MENUITEM "Customer List...", IDM_ORDMGR_CUSTLIST
-        MENUITEM "Customer Search...", IDM_ORDMGR_CUSTSEARCH
-    }
-    POPUP "Products"
-    {
-        MENUITEM "Product List...", IDM_ORDMGR_PRODLIST
-        MENUITEM SEPARATOR
-        MENUITEM "Product Search...", IDM_ORDMGR_PRODSEARCH
-    }
-    POPUP "New"
-    {
-        MENUITEM "Product...", IDM_ORDMGR_PRODNEW
-        MENUITEM "Customer...", IDM_ORDMGR_CUSTNEW
-        MENUITEM "Order...", IDM_ORDMGR_ORDERNEW
-    }
-    POPUP "Help"
-    {
-        MENUITEM "About", IDM_ORDMGR_ABOUT
-    }
-}
-
-
-
-LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
-IDD_ORDMGR DIALOG 0, 0, 310, 220
-STYLE DS_3DLOOK | DS_CENTER | DS_MODALFRAME | DS_SHELLFONT | WS_CAPTION | WS_VISIBLE | WS_POPUP | WS_SYSMENU
-CAPTION "Dialog"
-FONT 8, "Ms Shell Dlg"
-{
-    PUSHBUTTON      "Exit Application", IDC_ORDMGR_EXIT, 253, 183, 53, 14
-    PUSHBUTTON      "Reset Icons", IDC_ORDMGR_RESET, 5, 183, 43, 14
-    CONTROL         "", IDC_ORDMGR_ICONS, WC_LISTVIEW, WS_TABSTOP | WS_BORDER | LVS_ALIGNLEFT | LVS_NOCOLUMNHEADER | LVS_ICON, 5, 5, 300, 175
-}
+#define IDD_ADD_ROWS                            101
+#define IDD_INTRO                               103
+#define IDD_SORT_PARAMS                         105
+#define IDC_ST_CREATE                           1000
+#define IDC_RB_ITEM                             1001
+#define IDC_LV                                  1002
+#define IDC_PB_SORT_INTERN                      1003
+#define IDC_RB_SUBITEM                          1003
+#define IDC_PB_SORT_REXX                        1004
+#define IDC_ED_COL                              1005
+#define IDC_ST_INSERT                           1006
+#define IDC_SP_COL                              1007
+#define IDC_SP_ITEMS                            1010
+#define IDC_ED_ITEMS                            1011
+#define IDC_CK_FREEFORM                         1013
+#define IDC_RB_1000                             1020
+#define IDC_RB_2000                             1021
+#define IDC_RB_5000                             1022
+#define IDC_RB_10000                            1023
+#define IDC_RB_15000                            1024
+#define IDC_RB_25000                            1025
+#define IDC_GB_TIMES                            1027
+#define IDC_ST_INTERNAL                         1028
+#define IDC_ST_REXXSORT                         1029
+#define IDC_RB_ASCENDING                        1030
+#define IDC_RB_DESCENDING                       1031
+#define IDC_RB_CASELESS                         1034
+#define IDC_RB_CASE                             1035

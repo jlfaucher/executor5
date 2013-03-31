@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
-/* Copyright (c) 2011-2013 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2013-2013 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -34,23 +34,49 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.               */
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
-#ifndef IDC_STATIC
-#define IDC_STATIC (-1)
-#endif
 
-#define IDD_ORDMGR                             100
-#define IDR_ORDMGR_MENU                        102
-#define IDC_ORDMGR_RESET                       1000
-#define IDC_ORDMGR_EXIT                        1001
-#define IDC_ORDMGR_ICONS                       1002
-#define IDM_ORDMGR_NEWORDER                    40000
-#define IDM_ORDMGR_ORDERLIST                   40001
-#define IDM_ORDMGR_CUSTLIST                    40002
-#define IDM_ORDMGR_CUSTSEARCH                  40003
-#define IDM_ORDMGR_PRODLIST                    40004
-#define IDM_ORDMGR_PRODSEARCH                  40005
-#define IDM_ORDMGR_ORDERSEARCH                 40006
-#define IDM_ORDMGR_PRODNEW                     40007
-#define IDM_ORDMGR_CUSTNEW                     40008
-#define IDM_ORDMGR_ORDERNEW                    40009
-#define IDM_ORDMGR_ABOUT                       40010
+/**
+ * oodKeyboard.cpp
+ *
+ * This module contains functions and methods for classes related to the
+ * keyboard.
+ *
+ */
+#include "ooDialog.hpp"     // Must be first, includes windows.h, commctrl.h, and oorexxapi.h
+#include "APICommon.hpp"
+
+
+/**
+ *  Methods for the .Keyboard class.
+ */
+#define KEYBOARD_CLASS        "Keyboard"
+
+
+/** Keyboard::getAysncKeyState()     [class]
+ *
+ *
+ * @param _info
+ */
+RexxMethod2(RexxObjectPtr, kb_getAsyncKeyState_cls, uint8_t, vKey, OPTIONAL_RexxObjectPtr, _info)
+{
+    int16_t       ret    = GetAsyncKeyState(vKey);
+    RexxObjectPtr result = (ret & ISDOWN) ? TheTrueObj : TheFalseObj;
+
+    if ( argumentExists(2) )
+    {
+        if ( ! requiredClass(context->threadContext, _info, "Directory", 2) )
+        {
+            goto done_out;
+        }
+        RexxDirectoryObject info = (RexxDirectoryObject)_info;
+
+        RexxMethodContext *c = context;
+        c->DirectoryPut(info, result, "ISDOWN");
+        c->DirectoryPut(info, (ret & WASPRESSED) ? TheTrueObj : TheFalseObj, "WASPRESSED");
+    }
+
+done_out:
+    return result;
+}
+
+

@@ -3702,6 +3702,7 @@ RexxMethod3(RexxObjectPtr, OLEObject_Unknown, OSELF, self, CSTRING, msgName, Rex
         dp.rgdispidNamedArgs = NULL;
     }
 
+    ZeroMemory(&sResult, sizeof(VARIANT));
     dp.cArgs = (UINT)iArgCount;
     dp.rgvarg = pVarArgs;
     VariantInit(&sResult);

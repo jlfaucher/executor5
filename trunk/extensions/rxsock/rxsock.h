@@ -52,119 +52,214 @@ typedef struct in_addr     in_addr;
 typedef int socklen_t;
 #endif
 
-/*------------------------------------------------------------------
- * declare external functions
- *------------------------------------------------------------------*/
+class StemManager;
 
-RexxRoutineHandler SockDropFuncs                  ;
-RexxRoutineHandler SockVersion                    ;
-RexxRoutineHandler SockDie                        ;
-RexxRoutineHandler SockException                  ;
-RexxRoutineHandler SockAccept                     ;
-RexxRoutineHandler SockBind                       ;
-RexxRoutineHandler SockClose                      ;
-RexxRoutineHandler SockConnect                    ;
-RexxRoutineHandler SockGetHostByAddr              ;
-RexxRoutineHandler SockGetHostByName              ;
-RexxRoutineHandler SockGetHostId                  ;
-RexxRoutineHandler SockGetPeerName                ;
-RexxRoutineHandler SockGetSockName                ;
-RexxRoutineHandler SockGetSockOpt                 ;
-RexxRoutineHandler SockInit                       ;
-RexxRoutineHandler SockIoctl                      ;
-RexxRoutineHandler SockListen                     ;
-RexxRoutineHandler SockPSock_Errno                ;
-RexxRoutineHandler SockRecv                       ;
-RexxRoutineHandler SockRecvFrom                   ;
-RexxRoutineHandler SockSelect                     ;
-RexxRoutineHandler SockSend                       ;
-RexxRoutineHandler SockSendTo                     ;
-RexxRoutineHandler SockSetSockOpt                 ;
-RexxRoutineHandler SockShutDown                   ;
-RexxRoutineHandler SockSock_Errno                 ;
-RexxRoutineHandler SockSocket                     ;
-RexxRoutineHandler SockSoClose                    ;
 
 /*------------------------------------------------------------------
  * strip blanks from a line
  *------------------------------------------------------------------*/
-void StripBlanks(
-   char *string
-);
-
-/*------------------------------------------------------------------
- * set a rexx variable
- *------------------------------------------------------------------*/
-void RxVarSet(const char *pszStem, const char *pszTail, const char *pszValue);
-
-/*------------------------------------------------------------------
- * get a rexx variable - return value must be freed by caller
- *------------------------------------------------------------------*/
-char *RxVarGet(const char *pszStem, const char *pszTail);
-
-/*------------------------------------------------------------------
- * convert a rexx string to an unsigned int
- *------------------------------------------------------------------*/
-size_t rxs2size_t(PCONSTRXSTRING  pRxStr, int *rc);
-
-/*------------------------------------------------------------------
- * convert a rexx string to a LONG
- *------------------------------------------------------------------*/
-int rxs2int(PCONSTRXSTRING  pRxStr, int *rc);
-
-/*------------------------------------------------------------------
- * convert an int to a rexx string (already allocated)
- *------------------------------------------------------------------*/
-void int2rxs(int i, PRXSTRING  pRxStr);
+void stripBlanks(char *string);
 
 /*------------------------------------------------------------------
  * convert a stem variable to an array of ints
  *------------------------------------------------------------------*/
-void rxstem2intarray(PCONSTRXSTRING pRxStr, int *count, int **arr);
+void stemToIntArray(RexxCallContext *context, RexxObjectPtr stem, int &count, int *&arr);
 
 /*------------------------------------------------------------------
  * convert an array of ints to a stem variable
  *------------------------------------------------------------------*/
-void intarray2rxstem(PCONSTRXSTRING pRxStr, int count, int *arr);
+void intArrayToStem(RexxCallContext *context, RexxObjectPtr stem, int count, int *arr);
 
 /*------------------------------------------------------------------
  * convert a stemmed variable to a sockaddr
  *------------------------------------------------------------------*/
-void stem2sockaddr(const char *pszStem, sockaddr_in *pSockAddr);
+void stemToSockAddr(RexxCallContext *context, StemManager &stem, sockaddr_in *pSockAddr);
 
 /*------------------------------------------------------------------
  * convert a sockaddr to a stemmed variable
  *------------------------------------------------------------------*/
-void sockaddr2stem(sockaddr_in *pSockAddr, const char *pszStem);
+void sockAddrToStem(RexxCallContext *context, sockaddr_in *pSockAddr, StemManager &stem);
 
 /*------------------------------------------------------------------
  * convert a hostent to a stemmed variable
  *------------------------------------------------------------------*/
-void hostent2stem(struct hostent *pHostEnt, const char *pszStem);
+void hostEntToStem(RexxCallContext *context, struct hostent *pHostEnt, StemManager &stem);
 
 /*------------------------------------------------------------------
  * convert a string sock option to an integer
  *------------------------------------------------------------------*/
-int rxs2SockOpt(const char *pszOptName);
+int stringToSockOpt(const char *pszOptName);
 
 /*------------------------------------------------------------------
  * set errno
  *------------------------------------------------------------------*/
-void SetErrno(void);
+void setErrno(RexxCallContext *context);
 
 /*------------------------------------------------------------------
  * set h_errno
  *------------------------------------------------------------------*/
-void SetH_Errno(void);
+void SetH_Errno(RexxCallContext *context);
 
 /*------------------------------------------------------------------
  * perform end-of-function processing (mostly setting error info
  *------------------------------------------------------------------*/
-void cleanup();
+void cleanup(RexxCallContext *context);
 
-#if defined(OPSYS_AIX) || defined(OPSYS_LINUX)
 /*------------------------------------------------------------------
- * string compare ignore upper and lower case
+ * portable caseless compare function.
  *------------------------------------------------------------------*/
-int stricmp(const char *op1, const char *op2 );
-#endif
+int caselessCompare(const char *op1, const char *op2);
+
+
+class StemManager
+{
+public:
+    StemManager(RexxCallContext *c) : context(c), stem(NULL), prefix(NULL) { }
+    ~StemManager()
+    {
+        if (prefix != NULL)
+        {
+            free(prefix);
+        }
+    }
+
+    /**
+     * Resolve the stem object that was passed as an argument.
+     *
+     * @param source The source argument object.
+     *
+     * @return true if the stem could be resolved, false for any errors
+     *         resolving the stem object.
+     */
+    bool resolveStem(RexxObjectPtr source)
+    {
+        // handle the case where no stem was provided at all 
+        if (source == NULL) {
+            return false;
+        }
+        // this is the simplest solution
+        if (context->IsStem(source))
+        {
+            stem = (RexxStemObject)source;
+        }
+        else
+        {
+            const char *stemName = context->ObjectToStringValue(source);
+            const char *dotPos = strchr(stemName, '.');
+            // if no dot or the dot is the last character, this is a standard
+            // stem value
+            if (dotPos == NULL || dotPos == (stemName + strlen(stemName) - 1))
+            {
+                stem = context->ResolveStemVariable(source);
+            }
+            else
+            {
+                prefix = strdup(dotPos + 1);
+                if (prefix == NULL)
+                {
+                    context->InvalidRoutine();
+                    return false;
+                }
+
+                // uppercase the rest of the prefix value
+                char *scanner = prefix;
+                while (*scanner != '\0')
+                {
+                    *scanner = toupper(*scanner);
+                    scanner++;
+                }
+                RexxStringObject stemPortion = context->String(stemName, (dotPos - stemName) + 1);
+                stem = context->ResolveStemVariable(stemPortion);
+            }
+            if (stem == NULL)
+            {
+                // context->InvalidRoutine();
+                // don't call context->InvalidRoutine() because we 
+                // want to allow an empty string as a parm
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Set a value in the argument stem.
+     *
+     * @param name   The name to set.
+     * @param value
+     */
+    void setValue(const char *name, RexxObjectPtr value)
+    {
+        if (prefix == NULL)
+        {
+            context->SetStemElement(stem, name, value);
+        }
+        else
+        {
+            char fullName[256];
+            sprintf(fullName, "%s%s", prefix, name);
+            context->SetStemElement(stem, fullName, value);
+        }
+    }
+
+    /**
+     * Set a value in the argument stem.
+     *
+     * @param index  The index to set.
+     * @param value
+     */
+    void setValue(size_t index, RexxObjectPtr value)
+    {
+        if (prefix == NULL)
+        {
+            context->SetStemArrayElement(stem, index, value);
+        }
+        else
+        {
+            char fullName[256];
+            sprintf(fullName, "%s.%d", prefix, (int)index);
+            context->SetStemElement(stem, fullName, value);
+        }
+    }
+
+    /**
+     * Retrieve a value from an argument stem.
+     *
+     * @param name   The argument stem name.
+     *
+     * @return The retrieved object, if any.
+     */
+    RexxObjectPtr getValue(const char *name)
+    {
+        if (prefix == NULL)
+        {
+            return context->GetStemElement(stem, name);
+        }
+        else
+        {
+            char fullName[256];
+            sprintf(fullName, "%s%s", prefix, name);
+            return context->GetStemElement(stem, fullName);
+        }
+    }
+
+    RexxObjectPtr getValue(size_t index)
+    {
+        if (prefix == NULL)
+        {
+            return context->GetStemArrayElement(stem, index);
+        }
+        else
+        {
+            char fullName[256];
+            sprintf(fullName, "%s.%d", prefix, (int)index);
+            return context->GetStemElement(stem, fullName);
+        }
+    }
+
+
+protected:
+    RexxCallContext *context; // the context pointer
+    RexxStemObject stem;      // the target stem
+    char *prefix;             // extra prefix to use on the stem
+};

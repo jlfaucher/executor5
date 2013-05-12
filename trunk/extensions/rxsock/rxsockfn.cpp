@@ -105,12 +105,11 @@
 /*------------------------------------------------------------------
  * sock_errno()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockSock_Errno(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine0(int, SockSock_Errno)
 {
-    retStr->strlength = 0;
-    int2rxs(sock_errno(),retStr);
-    return 0;
+    return sock_errno();
 }
+
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
 /*-\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/-*/
@@ -118,20 +117,21 @@ size_t RexxEntry SockSock_Errno(const char *name, size_t argc, PCONSTRXSTRING ar
 /*------------------------------------------------------------------
  * psock_errno()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockPSock_Errno(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine1(CSTRING, SockPSock_Errno, OPTIONAL_CSTRING, type)
 {
-    retStr->strlength = 0;
-    if (argc == 1)
-        psock_errno(argv[0].strptr);
-    else
-        psock_errno("");
-    return 0;
+    if (type == NULL)
+    {
+        type = "";
+    }
+    psock_errno(type);
+    return "";
 }
+
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
 /*-\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/-*/
 
-/*============------------------------------------------------------------------
+/*------------------------------------------------------------------------------
  * accept()
  *
  * @remarks  The sockAddrToStem() function calls both htons() and inet_ntoa().
@@ -140,61 +140,35 @@ size_t RexxEntry SockPSock_Errno(const char *name, size_t argc, PCONSTRXSTRING a
  *           accept fails.  Because of this, we call cleanup() immediately after
  *           the accept call in the belief that the Rexx programmer is more
  *           interested in the result of accept().
-* ------------==========------------------------------------------------------*/
-size_t RexxEntry SockAccept(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+* ----------------------------------------------------------------------------*/
+RexxRoutine2(int, SockAccept, int, sock, OPTIONAL_RexxObjectPtr, stemSource)
 {
     sockaddr_in  addr;
-    int          sock;
-    int          rc;
     socklen_t    nameLen;
 
-    /*---------------------------------------------------------------
-     * initialize return value, check parms
-     *---------------------------------------------------------------*/
-    retStr->strlength = 0;
-
-    if ((argc < 1) || (argc > 2))
-    {
-        return 40;
-    }
-
-    /* check for omitted arguments that might cause a trap*/
-    if (!argv[0].strptr || ((argc == 2) && !argv[1].strptr))
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * get sock
-     *---------------------------------------------------------------*/
-    sock = rxs2int(&(argv[0]),&rc);
-    if (!rc)
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * call function
-     *---------------------------------------------------------------*/
     nameLen = sizeof(addr);
-    rc = accept(sock,(struct sockaddr *)&addr,&nameLen);
+    int rc = accept(sock, (struct sockaddr *)&addr, &nameLen);
 
-    /*---------------------------------------------------------------
-     * set return code and errno information
-     *---------------------------------------------------------------*/
-    int2rxs(rc,retStr);
-    cleanup();
+    // set the errno variables
+    cleanup(context);
 
     /*---------------------------------------------------------------
      * set addr, if asked for
      *---------------------------------------------------------------*/
-    if (2 == argc)
+    if (stemSource != NULLOBJECT)
     {
-        sockaddr2stem(&addr,argv[1].strptr);
+        StemManager stem(context);
+
+        if (!stem.resolveStem(stemSource))
+        {
+            return 0;
+        }
+        sockAddrToStem(context, &addr, stem);
     }
 
-    return 0;
+    return rc;
 }
+
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
 /*-\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/-*/
@@ -202,56 +176,31 @@ size_t RexxEntry SockAccept(const char *name, size_t argc, PCONSTRXSTRING argv, 
 /*------------------------------------------------------------------
  * bind()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockBind(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine2(int, SockBind, int, sock, RexxObjectPtr, stemSource)
 {
+    StemManager stem(context);
+
+    if (!stem.resolveStem(stemSource))
+    {
+        return 0;
+    }
+
     sockaddr_in  addr;
-    int          sock;
-    int          rc;
-
-    /*---------------------------------------------------------------
-     * initialize return value, check parms
-     *---------------------------------------------------------------*/
-    retStr->strlength = 0;
-
-    if (argc != 2)
-    {
-        return 40;
-    }
-
-    /* check for omitted arguments that might cause a trap*/
-    if (!argv[0].strptr || !argv[1].strptr)
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * get sock
-     *---------------------------------------------------------------*/
-    sock = rxs2int(&(argv[0]),&rc);
-    if (!rc)
-    {
-        return 40;
-    }
 
     /*---------------------------------------------------------------
      * get addr
      *---------------------------------------------------------------*/
-    stem2sockaddr(argv[1].strptr,&addr);
+    stemToSockAddr(context, stem, &addr);
 
     /*---------------------------------------------------------------
      * call function
      *---------------------------------------------------------------*/
-    rc = bind(sock,(struct sockaddr *)&addr,sizeof(addr));
-
-    /*---------------------------------------------------------------
-     * set return code
-     *---------------------------------------------------------------*/
-    int2rxs(rc,retStr);
-    // set the errno information
-    cleanup();
-
-    return 0;
+    int rc = bind(sock, (struct sockaddr *)&addr, sizeof(addr));
+    // make sure the errno variables are set
+    cleanup(context);
+    return rc;
 }
+
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
 /*-\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/-*/
@@ -259,9 +208,20 @@ size_t RexxEntry SockBind(const char *name, size_t argc, PCONSTRXSTRING argv, co
 /*------------------------------------------------------------------
  * close()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockClose(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine1(int, SockClose, int, sock)
 {
-    return SockSoClose(name,argc,argv,qName,retStr);
+    /*---------------------------------------------------------------
+     * call function
+     *---------------------------------------------------------------*/
+#if defined(WIN32)
+    int rc = closesocket(sock);
+#else
+    int rc = close(sock);
+#endif
+    // set the errno information
+    cleanup(context);
+
+    return rc;
 }
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
@@ -270,54 +230,30 @@ size_t RexxEntry SockClose(const char *name, size_t argc, PCONSTRXSTRING argv, c
 /*------------------------------------------------------------------
  * connect()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockConnect(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine2(int, SockConnect, int, sock, RexxObjectPtr, stemSource)
 {
+    StemManager stem(context);
+
+    if (!stem.resolveStem(stemSource))
+    {
+        return 0;
+    }
+
     sockaddr_in  addr;
-    int          sock;
-    int          rc;
-
-    /*---------------------------------------------------------------
-     * initialize return value, check parms
-     *---------------------------------------------------------------*/
-    retStr->strlength = 0;
-
-    if (argc != 2)
-    {
-        return 40;
-    }
-
-    /* check for omitted arguments that might cause a trap*/
-    if (!argv[0].strptr || !argv[1].strptr)
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * get sock
-     *---------------------------------------------------------------*/
-    sock = rxs2int(&(argv[0]),&rc);
-    if (!rc)
-    {
-        return 40;
-    }
 
     /*---------------------------------------------------------------
      * get addr
      *---------------------------------------------------------------*/
-    stem2sockaddr(argv[1].strptr,&addr);
+    stemToSockAddr(context, stem, &addr);
 
     /*---------------------------------------------------------------
      * call function
      *---------------------------------------------------------------*/
-    rc = connect(sock,(struct sockaddr *)&addr,sizeof(addr));
-
-    /*---------------------------------------------------------------
-     * set return code
-     *---------------------------------------------------------------*/
-    int2rxs(rc,retStr);
+    int rc = connect(sock,(struct sockaddr *)&addr, sizeof(addr));
     // set the errno information
-    cleanup();
-    return 0;
+    cleanup(context);
+
+    return rc;
 }
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
@@ -326,68 +262,41 @@ size_t RexxEntry SockConnect(const char *name, size_t argc, PCONSTRXSTRING argv,
 /*------------------------------------------------------------------
  * gethostbyaddr()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockGetHostByAddr(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine3(int, SockGetHostByAddr, CSTRING, addrArg, RexxObjectPtr, stemSource, OPTIONAL_int, domain)
 {
-
     struct hostent *pHostEnt;
-    int             domain;
-    in_addr         addr;
-    int             rc;
-    const char *    pszStem;
+    in_addr addr;
 
-    /*---------------------------------------------------------------
-     * initialize return value to empty string
-     *---------------------------------------------------------------*/
-    retStr->strlength = 0;
+    StemManager stem(context);
 
-    /*---------------------------------------------------------------
-     * get parms
-     *---------------------------------------------------------------*/
-    if ((argc < 2) | (argc > 3))
+    if (!stem.resolveStem(stemSource))
     {
-        return 40;
+        return 0;
     }
 
-    /* check for omitted arguments that might cause a trap*/
-    if (!argv[0].strptr || !argv[1].strptr ||
-        ((argc == 3) && !argv[2].strptr))
-    {
-        return 40;
-    }
+    addr.s_addr = inet_addr(addrArg);
 
-    addr.s_addr = inet_addr(argv[0].strptr);
-
-    pszStem = argv[1].strptr;
-
-    if (2 == argc)
+    if (argumentOmitted(3))
     {
         domain = AF_INET;
-    }
-    else
-    {
-        domain = rxs2int(&(argv[2]),&rc);
     }
 
     /*---------------------------------------------------------------
      * call function
      *---------------------------------------------------------------*/
-    pHostEnt = gethostbyaddr((char*)&addr,sizeof(addr),domain);
+    pHostEnt = gethostbyaddr((char*)&addr, sizeof(addr), domain);
+    // set the errno information
+    cleanup(context);
 
     if (!pHostEnt)
     {
-        int2rxs(0,retStr);
+        return 0;
     }
-
     else
     {
-        hostent2stem(pHostEnt,pszStem);
-        int2rxs(1,retStr);
+        hostEntToStem(context, pHostEnt, stem);
+        return 1;
     }
-
-    // set the errno information
-    cleanup();
-
-    return 0;
 }
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
@@ -396,53 +305,32 @@ size_t RexxEntry SockGetHostByAddr(const char *name, size_t argc, PCONSTRXSTRING
 /*------------------------------------------------------------------
  *  gethostbyname()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockGetHostByName(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine2(int, SockGetHostByName, CSTRING, name, RexxObjectPtr, stemSource)
 {
+    StemManager stem(context);
+
+    if (!stem.resolveStem(stemSource))
+    {
+        return 0;
+    }
     struct hostent *pHostEnt;
-    const char *    pszName;
-    const char *    pszStem;
-
-    /*---------------------------------------------------------------
-     * initialize return value to empty string
-     *---------------------------------------------------------------*/
-    retStr->strlength = 0;
-
-    /*---------------------------------------------------------------
-     * get parms
-     *---------------------------------------------------------------*/
-    if (argc != 2)
-    {
-        return 40;
-    }
-
-    pszName = argv[0].strptr;
-    pszStem = argv[1].strptr;
-
-    /* check for omitted arguments that might cause a trap*/
-    if (!pszName || !pszStem || !argv[0].strlength || !argv[1].strlength)
-    {
-        return 40;
-    }
 
     /*---------------------------------------------------------------
      * call function
      *---------------------------------------------------------------*/
-    pHostEnt = gethostbyname(pszName);
+    pHostEnt = gethostbyname(name);
+    // set the errno information
+    cleanup(context);
 
     if (!pHostEnt)
     {
-        int2rxs(0,retStr);
+        return 0;
     }
     else
     {
-        hostent2stem(pHostEnt,pszStem);
-        int2rxs(1,retStr);
+        hostEntToStem(context, pHostEnt, stem);
+        return 1;
     }
-
-    // set the errno information
-    cleanup();
-
-    return 0;
 }
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
@@ -451,11 +339,9 @@ size_t RexxEntry SockGetHostByName(const char *name, size_t argc, PCONSTRXSTRING
 /*------------------------------------------------------------------
  *  gethostid()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockGetHostId(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine0(RexxStringObject, SockGetHostId)
 {
     in_addr ia;
-    char    *addr;
-
 #ifdef WIN32
     char     pszBuff[64];                    // buffer for ip address
     PHOSTENT pHostEnt;                       // ptr to hostent structure
@@ -465,23 +351,19 @@ size_t RexxEntry SockGetHostId(const char *name, size_t argc, PCONSTRXSTRING arg
      */                                      //get our name
     if (gethostname(pszBuff, sizeof(pszBuff)))
     {
-        strcpy(retStr->strptr,"0.0.0.0");
-        retStr->strlength = strlen(retStr->strptr);
         // set the errno information
-        cleanup();
-        return 0;
+        cleanup(context);
+        return context->String("0.0.0.0");
     }
     pHostEnt = gethostbyname(pszBuff);       // get our ip address
     if (!pHostEnt)
     {
-        strcpy(retStr->strptr,"0.0.0.0");
-        retStr->strlength = strlen(retStr->strptr);
         // set the errno information
-        cleanup();
-        return 0;
+        cleanup(context);
+        return context->String("0.0.0.0");
     }
     ia.s_addr = (*(uint32_t *)pHostEnt->h_addr);// in network byte order already
-    addr = inet_ntoa(ia);
+    return context->String(inet_ntoa(ia));
 #else
 #if defined(OPSYS_AIX) || defined(OPSYS_LINUX)
 #define h_addr h_addr_list[0]
@@ -492,35 +374,49 @@ size_t RexxEntry SockGetHostId(const char *name, size_t argc, PCONSTRXSTRING arg
     /*get our name*/
     if (gethostname(pszBuff, sizeof(pszBuff)))
     {
-        strcpy(retStr->strptr,"0.0.0.0");
-        retStr->strlength = strlen(retStr->strptr);
         // set the errno information
-        cleanup();
-        return 0;
+        cleanup(context);
+        return context->String("0.0.0.0");
     }
     pHostEnt = gethostbyname(pszBuff);     /* get our ip address */
+    // set the errno information
+    cleanup(context);
     if (!pHostEnt)
     {
-        strcpy(retStr->strptr,"0.0.0.0");
-        retStr->strlength = strlen(retStr->strptr);
-        // set the errno information
-        cleanup();
-        return 0;
+        return context->String("0.0.0.0");
     }
     ia.s_addr = (*(uint32_t *)pHostEnt->h_addr);// in network byte order already
-    addr = inet_ntoa(ia);
+    return context->String(inet_ntoa(ia));
 #else
     ia.s_addr = htonl(gethostid());
-    addr = inet_ntoa(ia);
-#endif
-#endif
-
-    sprintf(retStr->strptr,"%s",addr);
-    retStr->strlength = strlen(retStr->strptr);
     // set the errno information
-    cleanup();
+    cleanup(context);
+    return context->String(inet_ntoa(ia));
+#endif
+#endif
+}
 
-    return 0;
+/*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
+/*-\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/-*/
+
+/*------------------------------------------------------------------
+ *  gethostname()
+ *------------------------------------------------------------------*/
+RexxRoutine0(RexxStringObject, SockGetHostName)
+{
+    char pszBuff[256];             /* host names are limited to 255 bytes */
+    *pszBuff = '\0';
+
+    /*
+     *   Assuming the hosts file in
+     *   in %systemroot%/system/drivers/etc/hosts contains my computer name.
+     */
+    int rc = gethostname(pszBuff, sizeof(pszBuff));
+
+    // set the errno information
+    cleanup(context);
+
+    return context->String(pszBuff);
 }
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
@@ -529,57 +425,35 @@ size_t RexxEntry SockGetHostId(const char *name, size_t argc, PCONSTRXSTRING arg
 /*------------------------------------------------------------------
  * getpeername()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockGetPeerName(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine2(int, SockGetPeerName, int, sock, RexxObjectPtr, stemSource)
 {
+    StemManager stem(context);
+
+    if (!stem.resolveStem(stemSource))
+    {
+        return 0;
+    }
     sockaddr_in  addr;
-    int          sock;
-    int          rc;
     socklen_t    nameLen;
-
-    /*---------------------------------------------------------------
-     * initialize return value, check parms
-     *---------------------------------------------------------------*/
-    retStr->strlength = 0;
-
-    if (argc != 2)
-    {
-        return 40;
-    }
-
-    /* check for omitted arguments that might cause a trap*/
-    if (!argv[0].strptr || !argv[1].strptr || !argv[1].strlength)
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * get sock
-     *---------------------------------------------------------------*/
-    sock = rxs2int(&(argv[0]),&rc);
-    if (!rc)
-    {
-        return 40;
-    }
 
     /*---------------------------------------------------------------
      * call function
      *---------------------------------------------------------------*/
     nameLen = sizeof(addr);
-    rc = getpeername(sock,(struct sockaddr *)&addr,&nameLen);
+    int rc = getpeername(sock,(struct sockaddr *)&addr,&nameLen);
+
+    // set the errno information
+    cleanup(context);
 
     /*---------------------------------------------------------------
      * write address to stem
      *---------------------------------------------------------------*/
-    sockaddr2stem(&addr,argv[1].strptr);
+    sockAddrToStem(context, &addr, stem);
 
     /*---------------------------------------------------------------
      * set return code
      *---------------------------------------------------------------*/
-    int2rxs(rc,retStr);
-    // set the errno information
-    cleanup();
-
-    return 0;
+    return rc;
 }
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
@@ -588,57 +462,34 @@ size_t RexxEntry SockGetPeerName(const char *name, size_t argc, PCONSTRXSTRING a
 /*------------------------------------------------------------------
  *  getsockname()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockGetSockName(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine2(int, SockGetSockName, int, sock, RexxObjectPtr, stemSource)
 {
+    StemManager stem(context);
+
+    if (!stem.resolveStem(stemSource))
+    {
+        return 0;
+    }
     sockaddr_in  addr;
-    int          sock;
-    int          rc;
     socklen_t    nameLen;
-
-    /*---------------------------------------------------------------
-     * initialize return value, check parms
-     *---------------------------------------------------------------*/
-    retStr->strlength = 0;
-
-    if (argc != 2)
-    {
-        return 40;
-    }
-
-    /* check for omitted arguments that might cause a trap*/
-    if (!argv[0].strptr || !argv[1].strptr || !argv[1].strlength)
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * get sock
-     *---------------------------------------------------------------*/
-    sock = rxs2int(&(argv[0]),&rc);
-    if (!rc)
-    {
-        return 40;
-    }
 
     /*---------------------------------------------------------------
      * call function
      *---------------------------------------------------------------*/
     nameLen = sizeof(addr);
-    rc = getsockname(sock,(struct sockaddr *)&addr,&nameLen);
+    int rc = getsockname(sock,(struct sockaddr *)&addr,&nameLen);
+    // set the errno information
+    cleanup(context);
 
     /*---------------------------------------------------------------
      * write address to stem
      *---------------------------------------------------------------*/
-    sockaddr2stem(&addr,argv[1].strptr);
+    sockAddrToStem(context, &addr, stem);
 
     /*---------------------------------------------------------------
      * set return code
      *---------------------------------------------------------------*/
-    int2rxs(rc,retStr);
-    // set the errno information
-    cleanup();
-
-    return 0;
+    return rc;
 }
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
@@ -647,99 +498,49 @@ size_t RexxEntry SockGetSockName(const char *name, size_t argc, PCONSTRXSTRING a
 /*------------------------------------------------------------------
  *  getsockopt()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockGetSockOpt(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine4(int, SockGetSockOpt, int, sock, CSTRING, level, CSTRING, option, CSTRING, var)
 {
-    int            sock;
-    int            rc;
-    int            opt;
     struct linger  lingStruct;
-    int            intVal;
-    socklen_t      lenVal;
     socklen_t      len;
-    char          *ptr;
-    CONSTRXSTRING  rxVar;
-    char           pBuffer[30];
-    SHVBLOCK       shv;
+    void          *ptr;
+    char           buffer[30];
 
-    /*---------------------------------------------------------------
-     * initialize return value, check parms
-     *---------------------------------------------------------------*/
-    retStr->strlength = 0;
 
-    if (argc != 4)
+    if (caselessCompare("SOL_SOCKET", level) != 0)
     {
-        return 40;
-    }
-
-    /* check for omitted arguments that might cause a trap*/
-    if (!argv[0].strptr || !argv[2].strptr || !argv[1].strlength)
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * get sock
-     *---------------------------------------------------------------*/
-    sock = rxs2int(&(argv[0]),&rc);
-    if (!rc)
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * check level
-     *---------------------------------------------------------------*/
-    if (!argv[1].strptr)
-    {
-        return 40;
-    }
-
-    if (stricmp("SOL_SOCKET",argv[1].strptr))
-    {
-        return 40;
+        context->InvalidRoutine();
+        return 0;
     }
 
     /*---------------------------------------------------------------
      * get option name
      *---------------------------------------------------------------*/
-    opt = rxs2SockOpt(argv[2].strptr);
-
-    /*---------------------------------------------------------------
-     * get variable name
-     *---------------------------------------------------------------*/
-    rxVar = argv[3];
-    if (!rxVar.strptr || !rxVar.strlength)
-    {
-        return 40;
-    }
+    int opt = stringToSockOpt(option);
 
     /*---------------------------------------------------------------
      * set up buffer
      *---------------------------------------------------------------*/
-    lenVal = intVal = 0; /* to eliminate compiler warning */
+    int intVal = 0;
 
     switch (opt)
     {
         case SO_LINGER:
-            ptr = (char *)&lingStruct;
+            ptr = &lingStruct;
             len = sizeof(lingStruct);
             break;
 
-        case SO_RCVBUF:
-        case SO_SNDBUF:
-            ptr = (char *)&lenVal;
-            len = sizeof(lenVal);
-            break;
-
         default:
-            ptr = (char *)&intVal;
+            ptr = &intVal;
             len = sizeof(int);
     }
 
     /*---------------------------------------------------------------
      * make call
      *---------------------------------------------------------------*/
-    rc = getsockopt(sock,SOL_SOCKET,opt,ptr,&len);
+    int rc = getsockopt(sock,SOL_SOCKET,opt,(char *)ptr,&len);
+
+    // set the errno information
+    cleanup(context);
 
     /*---------------------------------------------------------------
      * set return value
@@ -747,48 +548,26 @@ size_t RexxEntry SockGetSockOpt(const char *name, size_t argc, PCONSTRXSTRING ar
     switch (opt)
     {
         case SO_LINGER:
-            sprintf(pBuffer,"%d %d", lingStruct.l_onoff, lingStruct.l_linger);
+            sprintf(buffer,"%d %d", lingStruct.l_onoff, lingStruct.l_linger);
             break;
 
         case SO_TYPE:
             switch (intVal)
             {
-                case SOCK_STREAM: strcpy(pBuffer,"STREAM"); break;
-                case SOCK_DGRAM:  strcpy(pBuffer,"DGRAM");  break;
-                case SOCK_RAW:    strcpy(pBuffer,"RAW");    break;
-                default:          strcpy(pBuffer,"UNKNOWN");
+                case SOCK_STREAM: strcpy(buffer,"STREAM"); break;
+                case SOCK_DGRAM:  strcpy(buffer,"DGRAM");  break;
+                case SOCK_RAW:    strcpy(buffer,"RAW");    break;
+                default:          strcpy(buffer,"UNKNOWN");
             }
             break;
 
-        case SO_RCVBUF:
-        case SO_SNDBUF:
-            sprintf(pBuffer, "%d", lenVal);
-            break;
-
         default:
-            sprintf(pBuffer, "%d", intVal);
+            sprintf(buffer,"%d", intVal);
     }
 
-    /*---------------------------------------------------------------
-     * set variable
-     *---------------------------------------------------------------*/
-    shv.shvcode            = RXSHV_SYSET;
-    shv.shvnext            = NULL;
-    shv.shvname            = rxVar;
-    shv.shvvalue.strptr    = pBuffer;
-    shv.shvvalue.strlength = strlen(pBuffer);
-
-    RexxVariablePool(&shv);
-
-    /*---------------------------------------------------------------
-     * set return code
-     *---------------------------------------------------------------*/
-    int2rxs(rc,retStr);
-
-    // set the errno information
-    cleanup();
-
-    return 0;
+    // set the variable
+    context->SetContextVariable(var, context->String(buffer));
+    return rc;
 }
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
@@ -797,77 +576,37 @@ size_t RexxEntry SockGetSockOpt(const char *name, size_t argc, PCONSTRXSTRING ar
 /*------------------------------------------------------------------
  *  ioctl()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockIoctl(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine3(int, SockIoctl, int, sock, CSTRING, command, RexxObjectPtr, var)
 {
-    int        sock;
-    int        cmd;
+    int        cmd = 0;
     void      *data;
     int        dataBuff;
     int        len;
     int        rc;
-    SHVBLOCK   shv;
-    char       pBuffer[20];
 
-    /*---------------------------------------------------------------
-     * initialize return value, check parms
-     *---------------------------------------------------------------*/
-    retStr->strlength = 0;
-
-    if (argc != 3)
+    if (!caselessCompare(command, "FIONBIO"))
     {
-        return 40;
-    }
+        cmd = FIONBIO;
+        int32_t temp;
 
-    /* check for omitted arguments that might cause a trap*/
-    if (!argv[0].strptr)
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * get sock
-     *---------------------------------------------------------------*/
-    sock = rxs2int(&(argv[0]),&rc);
-    if (!rc)
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * get command and data
-     *---------------------------------------------------------------*/
-    if (!argv[1].strptr || !argv[1].strlength)
-    {
-        return 40;
-    }
-
-    if (!argv[2].strptr || !argv[2].strlength)
-    {
-        return 40;
-    }
-
-    cmd = 0; /* to eliminate compiler warning */
-
-    if (!stricmp(argv[1].strptr,"FIONBIO"))
-    {
-        cmd      = FIONBIO;
-        dataBuff = rxs2int(&(argv[2]),&rc);
+        if (!context->Int32(var, &temp))
+        {
+            context->InvalidRoutine();
+            return 0;
+        }
+        dataBuff = (int)temp;
         data     = &dataBuff;
         len      = sizeof(int);
     }
-
-    else if (!stricmp(argv[1].strptr,"FIONREAD"))
+    else if (!caselessCompare(command, "FIONREAD"))
     {
         cmd  = FIONREAD;
         data = &dataBuff;
         len  = sizeof(dataBuff);
     }
-
     else
     {
-        strcpy(retStr->strptr,"-1");
-        retStr->strlength = strlen(retStr->strptr);
-        return 0;
+        return -1;
     }
 
     /*---------------------------------------------------------------
@@ -879,31 +618,18 @@ size_t RexxEntry SockIoctl(const char *name, size_t argc, PCONSTRXSTRING argv, c
     rc = ioctl(sock,cmd,data,len);
 #endif
 
+    // set the errno information
+    cleanup(context);
+
     /*---------------------------------------------------------------
      * set output for FIONREAD
      *---------------------------------------------------------------*/
     if (cmd == FIONREAD)
     {
-        sprintf(pBuffer,"%ld",(long) dataBuff);
-
-        shv.shvcode            = RXSHV_SYSET;
-        shv.shvnext            = NULL;
-        shv.shvname.strptr     = argv[2].strptr;
-        shv.shvname.strlength  = argv[2].strlength;
-        shv.shvvalue.strptr    = pBuffer;
-        shv.shvvalue.strlength = strlen(pBuffer);
-
-        RexxVariablePool(&shv);
+        context->SetContextVariable(context->ObjectToStringValue(var), context->Int32(dataBuff));
     }
 
-    /*---------------------------------------------------------------
-     * set return code
-     *---------------------------------------------------------------*/
-    int2rxs(rc,retStr);
-    // set the errno information
-    cleanup();
-
-    return 0;
+    return rc;
 }
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
@@ -912,59 +638,16 @@ size_t RexxEntry SockIoctl(const char *name, size_t argc, PCONSTRXSTRING argv, c
 /*------------------------------------------------------------------
  *  listen()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockListen(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine2(int, SockListen, int, sock, int, backlog)
 {
-    int  sock;
-    int  rc;
-    int  backlog;
-
-    /*---------------------------------------------------------------
-     * initialize return value, check parms
-     *---------------------------------------------------------------*/
-    retStr->strlength = 0;
-
-    if (argc != 2)
-    {
-        return 40;
-    }
-
-    /* check for omitted arguments that might cause a trap*/
-    if (!argv[0].strptr || !argv[1].strptr)
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * get sock
-     *---------------------------------------------------------------*/
-    sock = rxs2int(&(argv[0]),&rc);
-    if (!rc)
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * get addr
-     *---------------------------------------------------------------*/
-    backlog = rxs2int(&(argv[1]),&rc);
-    if (!rc)
-    {
-        return 40;
-    }
-
     /*---------------------------------------------------------------
      * call function
      *---------------------------------------------------------------*/
-    rc = listen(sock,backlog);
-
-    /*---------------------------------------------------------------
-     * set return code
-     *---------------------------------------------------------------*/
-    int2rxs(rc,retStr);
+    int rc = listen(sock, backlog);
 
     // set the errno information
-    cleanup();
-    return 0;
+    cleanup(context);
+    return rc;
 }
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
@@ -973,74 +656,29 @@ size_t RexxEntry SockListen(const char *name, size_t argc, PCONSTRXSTRING argv, 
 /*------------------------------------------------------------------
  *  recv()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockRecv(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine4(int, SockRecv, int, sock, CSTRING, var, int, dataLen, OPTIONAL_CSTRING, flagVal)
 {
-    int       sock;
-    int       dataLen;
     int       flags;
-    CONSTRXSTRING  rxVar;
-    int       rc;
-    char *    pBuffer;
-    SHVBLOCK  shv;
-    int       chk;
-
-    /*---------------------------------------------------------------
-     * initialize return value to empty string
-     *---------------------------------------------------------------*/
-    retStr->strlength = 0;
-
-    if ((argc < 3) || (argc > 4))
-    {
-        return 40;
-    }
-
-    /* check for omitted arguments that might cause a trap*/
-    if (!argv[0].strptr || !argv[1].strptr || !argv[2].strptr ||
-        ((argc == 4) && (!argv[3].strptr || !argv[3].strlength)))
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * get sock
-     *---------------------------------------------------------------*/
-    sock = rxs2int(&(argv[0]),&chk);
-    if (!chk)
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * get variable name
-     *---------------------------------------------------------------*/
-    rxVar = argv[1];
-
-    /*---------------------------------------------------------------
-     * get data length
-     *---------------------------------------------------------------*/
-    dataLen = rxs2int(&(argv[2]),&chk);
-    if (!chk)
-    {
-        return 40;
-    }
+    long      rc;
+    char     *pBuffer;
 
     /*---------------------------------------------------------------
      * get flags
      *---------------------------------------------------------------*/
     flags = 0;
-    if (4 == argc)
+    if (flagVal != NULL)
     {
-        const char *pszWord;
-
-        // strtok modifies the tokenized string.  That's against the rules of
-        // usage here, so we need to make a copy first.
-        char *flagStr = strdup(argv[3].strptr);
-
-        pszWord = strtok(flagStr," ");
+        char *flagStr = strdup(flagVal);
+        if (flagStr == NULL)
+        {
+            context->InvalidRoutine();
+            return 0;
+        }
+        const char *pszWord = strtok(flagStr, " ");
         while (pszWord)
         {
-            if (!stricmp(pszWord,"MSG_OOB"))  flags |= MSG_OOB;
-            else if (!stricmp(pszWord,"MSG_PEEK")) flags |= MSG_PEEK;
+            if (!caselessCompare(pszWord,"MSG_OOB"))  flags |= MSG_OOB;
+            else if (!caselessCompare(pszWord,"MSG_PEEK")) flags |= MSG_PEEK;
             pszWord = strtok(NULL," ");
         }
         free(flagStr);
@@ -1052,13 +690,17 @@ size_t RexxEntry SockRecv(const char *name, size_t argc, PCONSTRXSTRING argv, co
     pBuffer = (char *)malloc(dataLen);
     if (!pBuffer)
     {
-        return 5;
+        context->InvalidRoutine();
+        return 0;
     }
 
     /*---------------------------------------------------------------
      * call function
      *---------------------------------------------------------------*/
-    rc = recv(sock,pBuffer,dataLen,flags);
+    rc = recv(sock, pBuffer, dataLen, flags);
+
+    // set the errno information
+    cleanup(context);
 
     if (-1 == rc)
     {
@@ -1068,28 +710,17 @@ size_t RexxEntry SockRecv(const char *name, size_t argc, PCONSTRXSTRING argv, co
     {
         dataLen = rc;
     }
-    /*---------------------------------------------------------------
-     * set variable
-     *---------------------------------------------------------------*/
-    shv.shvcode            = RXSHV_SYSET;
-    shv.shvnext            = NULL;
-    shv.shvname            = rxVar;
-    shv.shvvalue.strptr    = pBuffer;
-    shv.shvvalue.strlength = dataLen;
 
-    RexxVariablePool(&shv);
+    context->SetContextVariable(var, context->String(pBuffer, dataLen));
 
     free(pBuffer);
 
     /*---------------------------------------------------------------
      * set return code
      *---------------------------------------------------------------*/
-    int2rxs(rc,retStr);
-    // set the errno information
-    cleanup();
-
-    return 0;
+    return rc;
 }
+
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
 /*-\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/-*/
@@ -1097,111 +728,77 @@ size_t RexxEntry SockRecv(const char *name, size_t argc, PCONSTRXSTRING argv, co
 /*------------------------------------------------------------------
  *  recvfrom()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockRecvFrom(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine5(int, SockRecvFrom, int, sock, CSTRING, var, int, dataLen, RexxObjectPtr, flagArg, OPTIONAL_RexxObjectPtr, stemSource)
 {
-    int       sock;
-    int       dataLen;
-    int       flags;
-    CONSTRXSTRING  rxVar;
-    int       rc;
-    char     *pBuffer;
-    const char *pStem;
-    SHVBLOCK  shv;
-    int       chk;
+    StemManager stem(context);
+
+    if (!stem.resolveStem(stemSource))
+    {
+        return 0;
+    }
+
     sockaddr_in addr;
     socklen_t   addr_size;
 
-    /*---------------------------------------------------------------
-     * initialize return value to empty string
-     *---------------------------------------------------------------*/
-    retStr->strlength = 0;
-
-    if ((argc < 4) || (argc > 5))
-    {
-        return 40;
-    }
-
-    /* check for omitted arguments that might cause a trap*/
-    if (!argv[0].strptr || !argv[1].strptr || !argv[2].strptr ||
-        !argv[3].strptr || !argv[3].strlength ||
-        ((argc == 5) && (!argv[4].strptr || !argv[4].strlength)))
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * get sock
-     *---------------------------------------------------------------*/
-    sock = rxs2int(&(argv[0]),&chk);
-    if (!chk)
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * get variable name
-     *---------------------------------------------------------------*/
-    rxVar = argv[1];
-
-    /*---------------------------------------------------------------
-     * get data length
-     *---------------------------------------------------------------*/
-    dataLen = rxs2int(&(argv[2]),&chk);
-    if (!chk)
-    {
-        return 40;
-    }
 
     /*---------------------------------------------------------------
      * get flags
      *---------------------------------------------------------------*/
-    flags = 0;
-    if (5 == argc)
+    int flags = 0;
+    // if we have a 5th argument, then the 4th argument is a flag value
+    if (stemSource != NULL)
     {
-        const char *pszWord;
+        if (!stem.resolveStem(stemSource))
+        {
+            return 0;
+        }
 
-        // strtok modifies the tokenized string.  That's against the rules of
-        // usage here, so we need to make a copy first.
-        char *flagStr = strdup(argv[3].strptr);
+        char *flagStr = strdup(context->ObjectToStringValue(flagArg));
 
-        pszWord = strtok(flagStr," ");
+        const char *pszWord = strtok(flagStr, " ");
         while (pszWord)
         {
-            if (!stricmp(pszWord,"MSG_OOB"))  flags |= MSG_OOB;
-            else if (!stricmp(pszWord,"MSG_PEEK")) flags |= MSG_PEEK;
-
+            if (!caselessCompare(pszWord,"MSG_OOB"))
+            {
+                flags |= MSG_OOB;
+            }
+            else if (!caselessCompare(pszWord,"MSG_PEEK"))
+            {
+                flags |= MSG_PEEK;
+            }
             pszWord = strtok(NULL," ");
         }
         free(flagStr);
     }
-    /*---------------------------------------------------------------
-     * get address
-     *---------------------------------------------------------------*/
-
-    if (argc == 5)
-    {
-        pStem=argv[4].strptr;
-    }
     else
     {
-        pStem=argv[3].strptr;
+        // the 4th argument is a stem variable
+        if (!stem.resolveStem(flagArg))
+        {
+            return 0;
+        }
     }
-    stem2sockaddr(pStem,&addr);
+
+    stemToSockAddr(context, stem, &addr);
     addr_size=sizeof(addr);
 
     /*---------------------------------------------------------------
      * allocate memory for data
      *---------------------------------------------------------------*/
-    pBuffer = (char *)malloc(dataLen);
+    char *pBuffer = (char *)malloc(dataLen);
     if (!pBuffer)
     {
-        return 5;
+        context->InvalidRoutine();
+        return 0;
     }
 
     /*---------------------------------------------------------------
      * call function
      *---------------------------------------------------------------*/
-    rc = recvfrom(sock,pBuffer,dataLen,flags,(struct sockaddr *)&addr,&addr_size);
+    int rc = recvfrom(sock,pBuffer,dataLen,flags,(struct sockaddr *)&addr,&addr_size);
+
+    // set the errno information
+    cleanup(context);
 
     if (-1 == rc)
     {
@@ -1212,47 +809,35 @@ size_t RexxEntry SockRecvFrom(const char *name, size_t argc, PCONSTRXSTRING argv
         dataLen = rc;
     }
 
+    sockAddrToStem(context, &addr, stem);
 
-    sockaddr2stem(&addr,pStem);
-
-    /*---------------------------------------------------------------
-     * set variable
-     *---------------------------------------------------------------*/
-    shv.shvcode            = RXSHV_SYSET;
-    shv.shvnext            = NULL;
-    shv.shvname            = rxVar;
-    shv.shvvalue.strptr    = pBuffer;
-    shv.shvvalue.strlength = dataLen;
-
-    RexxVariablePool(&shv);
+    context->SetContextVariable(var, context->String(pBuffer, dataLen));
 
     free(pBuffer);
 
     /*---------------------------------------------------------------
      * set return code
      *---------------------------------------------------------------*/
-    int2rxs(rc,retStr);
-    // set the errno information
-    cleanup();
-
-    return 0;
+    return rc;
 }
+
+
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
 /*-\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/-*/
 /*------------------------------------------------------------------
  *  select()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockSelect(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine4(int, SockSelect, OPTIONAL_RexxObjectPtr, array1, OPTIONAL_RexxObjectPtr, array2, OPTIONAL_RexxObjectPtr, array3, OPTIONAL_int, timeout)
 {
     struct timeval  timeOutS;
     struct timeval *timeOutP;
-    int             rCount;
-    int             wCount;
-    int             eCount;
-    int            *rArray;
-    int            *wArray;
-    int            *eArray;
+    int             rCount = 0;
+    int             wCount = 0;
+    int             eCount = 0;
+    int            *rArray = NULL;
+    int            *wArray = NULL;
+    int            *eArray = NULL;
     int             i;
     int             j;
     int             rc;
@@ -1268,32 +853,20 @@ size_t RexxEntry SockSelect(const char *name, size_t argc, PCONSTRXSTRING argv, 
     int             max;
 
     /*---------------------------------------------------------------
-     * initialize return value to empty string
-     *---------------------------------------------------------------*/
-    retStr->strlength = 0;
-
-    if ((argc < 3) || (argc > 4))
-        return 40;
-
-    /*---------------------------------------------------------------
      * get timeout value
      *---------------------------------------------------------------*/
-    if ((argc == 3) || !argv[3].strptr || !argv[3].strlength)
+    if (argumentOmitted(4))
     {
         timeOutP = NULL;
     }
     else
     {
-        long to;
-
-        to = strtol(argv[3].strptr,NULL,10);
-
-        if (to < 0)
+        if (timeout < 0)
         {
-            to = 0;
+            timeout = 0;
         }
 
-        timeOutS.tv_sec  = to;
+        timeOutS.tv_sec  = timeout;
         timeOutS.tv_usec = 0;
         timeOutP = &timeOutS;
     }
@@ -1301,35 +874,9 @@ size_t RexxEntry SockSelect(const char *name, size_t argc, PCONSTRXSTRING argv, 
     /*---------------------------------------------------------------
      * get arrays of sockets
      *---------------------------------------------------------------*/
-    if (argv[0].strptr && argv[0].strlength)
-    {
-        rxstem2intarray(&(argv[0]),&rCount,&rArray);
-    }
-    else
-    {
-        rCount = 0;
-        rArray = NULL;
-    }
-
-    if (argv[1].strptr && argv[1].strlength)
-    {
-        rxstem2intarray(&(argv[1]),&wCount,&wArray);
-    }
-    else
-    {
-        wCount = 0;
-        wArray = NULL;
-    }
-
-    if (argv[2].strptr && argv[2].strlength)
-    {
-        rxstem2intarray(&(argv[2]),&eCount,&eArray);
-    }
-    else
-    {
-        eCount = 0;
-        eArray = NULL;
-    }
+    stemToIntArray(context, array1, rCount, rArray);
+    stemToIntArray(context, array2, wCount, wArray);
+    stemToIntArray(context, array3, eCount, eArray);
 
 /*------------------------------------------------------------------
  * unix-specific stuff
@@ -1341,22 +888,54 @@ size_t RexxEntry SockSelect(const char *name, size_t argc, PCONSTRXSTRING argv, 
     FD_ZERO(wSet);
     FD_ZERO(eSet);
 
-    for (i=0; i<rCount; i++) FD_SET(rArray[i],rSet);
-    for (i=0; i<wCount; i++) FD_SET(wArray[i],wSet);
-    for (i=0; i<eCount; i++) FD_SET(eArray[i],eSet);
+    for (i=0; i<rCount; i++)
+    {
+        FD_SET(rArray[i],rSet);
+    }
+    for (i=0; i<wCount; i++)
+    {
+        FD_SET(wArray[i],wSet);
+    }
+    for (i=0; i<eCount; i++)
+    {
+        FD_SET(eArray[i],eSet);
+    }
 
     /*---------------------------------------------------------------
      * get max number
      *---------------------------------------------------------------*/
     max = 0;
-    for (i=0; i<rCount; i++) if (rArray[i] > max) max = rArray[i];
-    for (i=0; i<wCount; i++) if (wArray[i] > max) max = wArray[i];
-    for (i=0; i<eCount; i++) if (eArray[i] > max) max = eArray[i];
+    for (i=0; i<rCount; i++)
+    {
+        if (rArray[i] > max)
+        {
+            max = rArray[i];
+        }
+    }
+
+    for (i=0; i<wCount; i++)
+    {
+        if (wArray[i] > max)
+        {
+            max = wArray[i];
+        }
+    }
+
+    for (i=0; i<eCount; i++)
+    {
+        if (eArray[i] > max)
+        {
+            max = eArray[i];
+        }
+    }
 
         /*---------------------------------------------------------------
          * make the call
          *---------------------------------------------------------------*/
     rc = select(max+1,rSet,wSet,eSet,timeOutP);
+
+    // set the errno information
+    cleanup(context);
 
     /*---------------------------------------------------------------
      * fix up the socket arrays
@@ -1401,25 +980,39 @@ size_t RexxEntry SockSelect(const char *name, size_t argc, PCONSTRXSTRING argv, 
     /*---------------------------------------------------------------
      * reset the stem variables
      *---------------------------------------------------------------*/
-    if (rArray) intarray2rxstem(&(argv[0]),rCount,rArray);
-    if (wArray) intarray2rxstem(&(argv[1]),wCount,wArray);
-    if (eArray) intarray2rxstem(&(argv[2]),eCount,eArray);
+    if (rArray)
+    {
+        intArrayToStem(context, array1, rCount, rArray);
+    }
+    if (wArray)
+    {
+        intArrayToStem(context, array2, wCount, wArray);
+    }
+    if (eArray)
+    {
+        intArrayToStem(context, array3, eCount, eArray);
+    }
 
     /*---------------------------------------------------------------
      * free arrays
      *---------------------------------------------------------------*/
-    if (rArray) free(rArray);
-    if (wArray) free(wArray);
-    if (eArray) free(eArray);
+    if (rArray)
+    {
+        free(rArray);
+    }
+    if (wArray)
+    {
+        free(wArray);
+    }
+    if (eArray)
+    {
+        free(eArray);
+    }
 
     /*---------------------------------------------------------------
      * set return code
      *---------------------------------------------------------------*/
-    int2rxs(rc,retStr);
-    // set the errno information
-    cleanup();
-
-    return 0;
+    return rc;
 }
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
@@ -1428,67 +1021,38 @@ size_t RexxEntry SockSelect(const char *name, size_t argc, PCONSTRXSTRING argv, 
 /*------------------------------------------------------------------
  * send()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockSend(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine3(int, SockSend, int, sock, RexxStringObject, dataObj, OPTIONAL_CSTRING, flagArg)
 {
-    int      sock;
-    size_t   dataLen;
-    const char *data;
-    int      flags;
-    RexxReturnCode   rc;
-    int      chk;
-
-    /*---------------------------------------------------------------
-     * initialize return value to empty string
-     *---------------------------------------------------------------*/
-    retStr->strlength = 0;
-
-    if ((argc < 2) || (argc > 3))
-    {
-        return 40;
-    }
-
-    /* check for omitted arguments that might cause a trap*/
-    if (!argv[0].strptr ||
-        ((argc == 3) && (!argv[2].strptr || !argv[2].strlength)))
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * get sock
-     *---------------------------------------------------------------*/
-    sock = rxs2int(&(argv[0]),&chk);
-    if (!chk)
-    {
-        return 40;
-    }
-
     /*---------------------------------------------------------------
      * get data length
      *---------------------------------------------------------------*/
-    dataLen = argv[1].strlength;
-    data    = argv[1].strptr;
-    if (!data || !dataLen)
-    {
-        return 40;
-    }
+    size_t dataLen = context->StringLength(dataObj);
+    const char *data    = context->StringData(dataObj);
 
     /*---------------------------------------------------------------
      * get flags
      *---------------------------------------------------------------*/
-    flags = 0;
-    if (3 == argc)
+    int flags = 0;
+    if (flagArg != NULL)
     {
-        const char *pszWord;
-        // strtok modifies the tokenized string.  That's against the rules of
-        // usage here, so we need to make a copy first.
-        char *flagStr = strdup(argv[2].strptr);
+        char *flagStr = strdup(flagArg);
+        if (flagStr == NULL)
+        {
+            context->InvalidRoutine();
+            return 0;
+        }
 
-        pszWord = strtok(flagStr," ");
+        const char *pszWord = strtok(flagStr, " ");
         while (pszWord)
         {
-            if (!stricmp(pszWord,"MSG_OOB"))       flags |= MSG_OOB;
-            else if (!stricmp(pszWord,"MSG_DONTROUTE")) flags |= MSG_DONTROUTE;
+            if (!caselessCompare(pszWord,"MSG_OOB"))
+            {
+                flags |= MSG_OOB;
+            }
+            else if (!caselessCompare(pszWord,"MSG_DONTROUTE"))
+            {
+                flags |= MSG_DONTROUTE;
+            }
 
             pszWord = strtok(NULL," ");
         }
@@ -1498,16 +1062,15 @@ size_t RexxEntry SockSend(const char *name, size_t argc, PCONSTRXSTRING argv, co
     /*---------------------------------------------------------------
      * call function
      *---------------------------------------------------------------*/
-    rc = send(sock,data,dataLen,flags);
+    int rc = send(sock,data,dataLen,flags);
+
+    // set the errno information
+    cleanup(context);
 
     /*---------------------------------------------------------------
      * set return code
      *---------------------------------------------------------------*/
-    int2rxs(rc,retStr);
-    // set the errno information
-    cleanup();
-
-    return 0;
+    return rc;
 }
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
@@ -1516,104 +1079,69 @@ size_t RexxEntry SockSend(const char *name, size_t argc, PCONSTRXSTRING argv, co
 /*------------------------------------------------------------------
  * sendto()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockSendTo(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine4(int, SockSendTo, int, sock, RexxStringObject, dataObj, RexxObjectPtr, flagsOrStem, OPTIONAL_RexxObjectPtr, stemSource)
 {
-    int      sock;
-    size_t   dataLen;
-    const char *data;
-    int      flags;
-    RexxReturnCode   rc;
-    int      chk;
+    StemManager stem(context);
+
     sockaddr_in addr;
-    const char *pStem;
-
-    /*---------------------------------------------------------------
-     * initialize return value to empty string
-     *---------------------------------------------------------------*/
-    retStr->strlength = 0;
-
-    if ((argc < 3) || (argc > 4))
-    {
-        return 40;
-    }
-
-    /* check for omitted arguments that might cause a trap*/
-    if (!argv[0].strptr || !argv[2].strptr || !argv[2].strlength ||
-        ((argc == 4) && (!argv[3].strptr || !argv[3].strlength)))
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * get sock
-     *---------------------------------------------------------------*/
-    sock = rxs2int(&(argv[0]),&chk);
-    if (!chk)
-    {
-        return 40;
-    }
 
     /*---------------------------------------------------------------
      * get data length
      *---------------------------------------------------------------*/
-    dataLen = argv[1].strlength;
-    data    = argv[1].strptr;
-    if (!data || !dataLen)
-    {
-        return 40;
-    }
+    int dataLen = context->StringLength(dataObj);
+    const char *data    = context->StringData(dataObj);
 
     /*---------------------------------------------------------------
      * get flags
      *---------------------------------------------------------------*/
-    flags = 0;
-    if (4 == argc)
+    int flags = 0;
+    if (stemSource != NULLOBJECT)
     {
-        const char *pszWord;
-        // strtok modifies the tokenized string.  That's against the rules of
-        // usage here, so we need to make a copy first.
-        char *flagStr = strdup(argv[2].strptr);
+        if (!stem.resolveStem(stemSource))
+        {
+            return 0;
+        }
 
-        pszWord = strtok(flagStr," ");
+        char *flagStr = strdup(context->ObjectToStringValue(flagsOrStem));
+        if (flagStr == NULL)
+        {
+            context->InvalidRoutine();
+            return 0;
+        }
 
+        const char *pszWord = strtok(flagStr, " ");
         while (pszWord)
         {
-            if (!stricmp(pszWord,"MSG_DONTROUTE"))
+            if (!caselessCompare(pszWord,"MSG_DONTROUTE"))
             {
                 flags |= MSG_DONTROUTE;
             }
             pszWord = strtok(NULL," ");
         }
-        free(flagStr);
-    }
 
-    /*---------------------------------------------------------------
-     * get address
-     *---------------------------------------------------------------*/
-
-    if (argc == 4)
-    {
-        pStem=argv[3].strptr;
     }
     else
     {
-        pStem=argv[2].strptr;
+        if (!stem.resolveStem(flagsOrStem))
+        {
+            return 0;
+        }
     }
-    stem2sockaddr(pStem,&addr);
+
+    stemToSockAddr(context, stem, &addr);
 
     /*---------------------------------------------------------------
      * call function
      *---------------------------------------------------------------*/
-    rc = sendto(sock,data,dataLen,flags,(struct sockaddr *)&addr,sizeof(addr));
+    int rc = sendto(sock,data,dataLen,flags,(struct sockaddr *)&addr,sizeof(addr));
+
+    // set the errno information
+    cleanup(context);
 
     /*---------------------------------------------------------------
      * set return code
      *---------------------------------------------------------------*/
-    int2rxs(rc,retStr);
-    // set the errno information
-    cleanup();
-
-    return 0;
+    return rc;
 }
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
@@ -1621,70 +1149,26 @@ size_t RexxEntry SockSendTo(const char *name, size_t argc, PCONSTRXSTRING argv, 
 /*------------------------------------------------------------------
  * setsockopt()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockSetSockOpt(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine4(int, SockSetSockOpt, int, sock, CSTRING, target, CSTRING, option, CSTRING, arg)
 {
-    int            sock;
-    int            rc;
-    int            opt;
     struct linger  lingStruct;
     int            intVal;
-    socklen_t      lenVal;
-    int            intVal1;
     int            intVal2;
+    socklen_t      lenVal;
     int            len;
-    char          *ptr;
+    void          *ptr;
 
-    /*---------------------------------------------------------------
-     * initialize return value, check parms
-     *---------------------------------------------------------------*/
-    retStr->strlength = 0;
 
-    if (argc != 4)
+    if (caselessCompare("SOL_SOCKET", target))
     {
-        return 40;
-    }
-
-    /* check for omitted arguments that might cause a trap*/
-    if (!argv[0].strptr || !argv[2].strptr ||
-        !argv[1].strlength || !argv[2].strlength)
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * get sock
-     *---------------------------------------------------------------*/
-    sock = rxs2int(&(argv[0]),&rc);
-    if (!rc)
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * check level
-     *---------------------------------------------------------------*/
-    if (!argv[1].strptr)
-    {
-        return 40;
-    }
-
-    if (stricmp("SOL_SOCKET",argv[1].strptr))
-    {
-        return 40;
+        context->InvalidRoutine();
+        return 0;
     }
 
     /*---------------------------------------------------------------
      * get option name
      *---------------------------------------------------------------*/
-    opt = rxs2SockOpt(argv[2].strptr);
-
-    /*---------------------------------------------------------------
-     * check value for a valid string
-     *---------------------------------------------------------------*/
-    if (!argv[3].strptr || !argv[3].strlength)
-    {
-        return 40;
-    }
+    int opt = stringToSockOpt(option);
 
     /*---------------------------------------------------------------
      * get option value
@@ -1692,50 +1176,46 @@ size_t RexxEntry SockSetSockOpt(const char *name, size_t argc, PCONSTRXSTRING ar
     switch (opt)
     {
         default:
-            ptr = (char *)&intVal;
+            ptr = &intVal;
             len = sizeof(int);
-
-            intVal = (int) rxs2int(&(argv[3]),&rc);
+            sscanf(arg, "%d", &intVal);
             break;
 
         case SO_LINGER:
-            ptr = (char *)&lingStruct;
+            ptr = &lingStruct;
             len = sizeof(lingStruct);
 
-            sscanf(argv[3].strptr,"%d %d",&intVal1,&intVal2);
-            lingStruct.l_onoff  = (u_short)intVal1;
+            sscanf(arg,"%d %d", &intVal,&intVal2);
+            lingStruct.l_onoff  = (u_short)intVal;
             lingStruct.l_linger = (u_short)intVal2;
 
             break;
 
         case SO_RCVBUF:
         case SO_SNDBUF:
-            ptr = (char *)&lenVal;
+            ptr = &lenVal;
             len = sizeof(lenVal);
 
-            lenVal = rxs2int(&(argv[3]),&rc);
+            sscanf(arg, "%d", &lenVal);
             break;
 
         case SO_ERROR:
         case SO_TYPE:
-            strcpy(retStr->strptr,"-1");
-            retStr->strlength = strlen(retStr->strptr);
-            return 0;
+            return -1;
     }
 
     /*---------------------------------------------------------------
      * make call
      *---------------------------------------------------------------*/
-    rc = setsockopt(sock,SOL_SOCKET,opt,ptr,len);
+    int rc = setsockopt(sock,SOL_SOCKET,opt,(const char *)ptr,len);
+
+    // set the errno information
+    cleanup(context);
 
     /*---------------------------------------------------------------
      * set return code
      *---------------------------------------------------------------*/
-    int2rxs(rc,retStr);
-    // set the errno information
-    cleanup();
-
-    return 0;
+    return rc;
 }
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
@@ -1744,59 +1224,20 @@ size_t RexxEntry SockSetSockOpt(const char *name, size_t argc, PCONSTRXSTRING ar
 /*------------------------------------------------------------------
  * shutdown()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockShutDown(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine2(int, SockShutDown, int, sock, int, how)
 {
-    int sock;
-    int how;
-    int rc;
-
-    /*---------------------------------------------------------------
-     * initialize return value to empty string
-     *---------------------------------------------------------------*/
-    retStr->strlength = 0;
-
-    if (argc != 2)
-    {
-        return 40;
-    }
-
-    /* check for omitted arguments that might cause a trap*/
-    if (!argv[0].strptr || !argv[1].strptr)
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * get sock
-     *---------------------------------------------------------------*/
-    sock = rxs2int(&(argv[0]),&rc);
-    if (!rc)
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * get how
-     *---------------------------------------------------------------*/
-    how = rxs2int(&(argv[1]),&rc);
-    if (!rc)
-    {
-        return 40;
-    }
-
     /*---------------------------------------------------------------
      * call function
      *---------------------------------------------------------------*/
-    rc = shutdown(sock,how);
+    int rc = shutdown(sock, how);
+
+    // set the errno information
+    cleanup(context);
 
     /*---------------------------------------------------------------
      * set return code
      *---------------------------------------------------------------*/
-    int2rxs(rc,retStr);
-
-    // set the errno information
-    cleanup();
-    return 0;
+    return rc;
 }
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
@@ -1805,35 +1246,23 @@ size_t RexxEntry SockShutDown(const char *name, size_t argc, PCONSTRXSTRING argv
 /*------------------------------------------------------------------
  *  sock_init()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockInit(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine0(int, SockInit)
 {
-    int rc;
 #ifdef WIN32
     WORD wVersionRequested;
     WSADATA wsaData;
-#endif
-    /*---------------------------------------------------------------
-     * initialize return value to empty string
-     *---------------------------------------------------------------*/
-    retStr->strlength = 0;
-
-    if (argc)
-    {
-        return 40;
-    }
-
-#if defined(WIN32)
     wVersionRequested = MAKEWORD( 1, 1 );
-    rc = WSAStartup( wVersionRequested, &wsaData );
+    int rc = WSAStartup( wVersionRequested, &wsaData );
 #else
-    rc = 0;
+    int rc = 0;
 #endif
-
-    int2rxs(rc,retStr);
-
     // set the errno information
-    cleanup();
-    return 0;
+    cleanup(context);
+
+    /*---------------------------------------------------------------
+     * set return code
+     *---------------------------------------------------------------*/
+    return rc;
 }
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
@@ -1842,100 +1271,68 @@ size_t RexxEntry SockInit(const char *name, size_t argc, PCONSTRXSTRING argv, co
 /*------------------------------------------------------------------
  * socket()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockSocket(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine3(int, SockSocket, CSTRING, domainArg, CSTRING, typeArg, CSTRING, protocolArg)
 {
     int domain;
     int type;
     int protocol;
-    const char *pszDomain;
-    const char *pszType;
-    const char *pszProtocol;
-    int sock;
-
-    /*---------------------------------------------------------------
-     * initialize return value to empty string
-     *---------------------------------------------------------------*/
-    retStr->strlength = 0;
-
-    if (argc != 3)
-    {
-        return 40;
-    }
+    char *pszDomain;
+    char *pszType;
+    char *pszProtocol;
 
     /*---------------------------------------------------------------
      * get parms
      *---------------------------------------------------------------*/
-    pszDomain   = argv[0].strptr;
-    pszType     = argv[1].strptr;
-    pszProtocol = argv[2].strptr;
+    pszDomain   = strdup(domainArg);
+    pszType     = strdup(typeArg);
+    pszProtocol = strdup(protocolArg);
 
-    if (!pszDomain || !pszType || !pszProtocol)
-    {
-        return 40;
-    }
+    stripBlanks(pszDomain);
+    stripBlanks(pszType);
+    stripBlanks(pszProtocol);
 
-    /* check for omitted arguments that might cause a trap*/
-    if (!argv[0].strlength || !argv[1].strlength || !argv[2].strlength)
-    {
-        return 40;
-    }
-
-    if (!stricmp(pszDomain,"AF_INET"))
+    if (!caselessCompare(pszDomain,"AF_INET"))
     {
         domain = AF_INET;
     }
     else
     {
-        return 40;
+        context->InvalidRoutine();
+        return 0;
     }
 
-    if (!stricmp(pszType,"SOCK_STREAM"))
-    {
-        type = SOCK_STREAM;
-    }
-    else if (!stricmp(pszType,"SOCK_DGRAM" ))
-    {
-        type = SOCK_DGRAM;
-    }
-    else if (!stricmp(pszType,"SOCK_RAW"   ))
-    {
-        type = SOCK_RAW;
-    }
+    if (!caselessCompare(pszType,"SOCK_STREAM")) type = SOCK_STREAM;
+    else if (!caselessCompare(pszType,"SOCK_DGRAM" )) type = SOCK_DGRAM;
+    else if (!caselessCompare(pszType,"SOCK_RAW"   )) type = SOCK_RAW;
     else
     {
-        return 40;
+        context->InvalidRoutine();
+        return 0;
     }
 
-    if (!stricmp(pszProtocol,"IPPROTO_UDP"))
-    {
+    if (!caselessCompare(pszProtocol,"IPPROTO_UDP"))
         protocol = IPPROTO_UDP;
-    }
-    else if (!stricmp(pszProtocol,"IPPROTO_TCP"))
-    {
+    else if (!caselessCompare(pszProtocol,"IPPROTO_TCP"))
         protocol = IPPROTO_TCP;
-    }
-    else if (!stricmp(pszProtocol,"0"          ))
-    {
+    else if (!caselessCompare(pszProtocol,"0"          ))
         protocol = 0;
-    }
     else
     {
-        return 40;
+        context->InvalidRoutine();
+        return 0;
     }
 
     /*---------------------------------------------------------------
      * call function
      *---------------------------------------------------------------*/
-    sock = socket(domain,type,protocol);
+    int rc = socket(domain,type,protocol);
+    // set the errno information
+    cleanup(context);
 
     /*---------------------------------------------------------------
      * set return code
      *---------------------------------------------------------------*/
-    int2rxs(sock,retStr);
-    // set the errno information
-    cleanup();
-
-    return 0;
+    return rc;
 }
 
 /*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
@@ -1944,52 +1341,18 @@ size_t RexxEntry SockSocket(const char *name, size_t argc, PCONSTRXSTRING argv, 
 /*------------------------------------------------------------------
  * soclose()
  *------------------------------------------------------------------*/
-size_t RexxEntry SockSoClose(const char *name, size_t argc, PCONSTRXSTRING argv, const char *qName, PRXSTRING  retStr)
+RexxRoutine1(int, SockSoClose, int, sock)
 {
-    int sock;
-    int rc;
-
-    /*---------------------------------------------------------------
-     * initialize return value to empty string
-     *---------------------------------------------------------------*/
-    retStr->strlength = 0;
-
-    if (argc != 1)
-    {
-        return 40;
-    }
-
-    /* check for omitted arguments that might cause a trap*/
-    if (!argv[0].strptr)
-    {
-        return 40;
-    }
-
-    /*---------------------------------------------------------------
-     * get sock
-     *---------------------------------------------------------------*/
-    sock = rxs2int(&(argv[0]),&rc);
-    if (!rc)
-    {
-        return 40;
-    }
-
     /*---------------------------------------------------------------
      * call function
      *---------------------------------------------------------------*/
 #if defined(WIN32)
-    rc = closesocket(sock);
+    int rc = closesocket(sock);
 #else
-    rc = close(sock);
+    int rc = close(sock);
 #endif
-
-    /*---------------------------------------------------------------
-     * set return code
-     *---------------------------------------------------------------*/
-    int2rxs(rc,retStr);
     // set the errno information
-    cleanup();
-
-    return 0;
+    cleanup(context);
+    return rc;
 }
 

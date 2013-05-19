@@ -1,14 +1,14 @@
                              Open Object Rexx
 
                               Release Notes
-                              Version 4.1.3
+                              Version 4.1.4
 
-  Copyright 2005-2012 Rexx Language Association.  All rights reserved.
-                               December 2012
+  Copyright 2005-2013 Rexx Language Association.  All rights reserved.
+                               December 2013
 
 Note
 ====
-ooRexx 4.1.3 is a bug fix only release.  There are no new features or
+ooRexx 4.1.4 is a bug fix only release.  There are no new features or
 enhancements in this release.  This, mostly empty, file is left as a
 template for future releases.
 
@@ -18,7 +18,7 @@ File List
 =========
 Linux rpm and deb packages contain the distribution name and version of
 the system they were built on.  For instance,
-ooRexx-4.1.3.opensuse1110.x86_64.rpm was built on OpenSuSE 11.10.
+ooRexx-4.1.4.opensuse1110.x86_64.rpm was built on OpenSuSE 11.10.
 
 All package names contain an indication if the package is built as a 32-bit
 or 64-bit binary.  Usually this indicator is x86_32 or x86_64.  For a 32-bit
@@ -48,14 +48,14 @@ ReadMe.txt
 A copy of this file because SourceForge will display the contents of a
 readme file in the file download section.
 
-ooRexx-4.1.3*
+ooRexx-4.1.4*
 The installation packages for various operating systems.
 
-ooRexx-4.1.3-source.tar.gz
+ooRexx-4.1.4-source.tar.gz
 The source code for this version of ooRexx, suitable for building on an
 unix-like system.  Includes the configure script.
 
-ooRexx-4.1.3-source.zip
+ooRexx-4.1.4-source.zip
 The source code for this version of ooRexx, suitable for building and
 packaging on a Windows system.  Includes the PDF documentation files which
 are required for the packaging step.
@@ -99,7 +99,7 @@ Depending on resources, the ooRexx team may be able to build a specific
 package for that distribution.
 
 
-Changes in ooRexx 4.1.3
+Changes in ooRexx 4.1.4
 =================================
 
 All platforms:

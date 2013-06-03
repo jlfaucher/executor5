@@ -469,6 +469,7 @@ AC_CONFIG_FILES([
         samples/windows/oodialog/propertysheet.tabControls/rc/Makefile
         samples/windows/oodialog/rc/Makefile
         samples/windows/oodialog/res/Makefile
+        samples/windows/oodialog/resizableDialogs/Makefile
         samples/windows/oodialog/simple/Makefile
         samples/windows/oodialog/sysinfo/Makefile
         samples/windows/oodialog/tutorial/Makefile

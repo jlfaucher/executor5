@@ -454,6 +454,7 @@ AC_CONFIG_FILES([
         samples/windows/oodialog/controls/Makefile
         samples/windows/oodialog/controls/ListView/Makefile
         samples/windows/oodialog/controls/ListView/rc/Makefile
+        samples/windows/oodialog/controls/ListView/subitem.editing/Makefile
         samples/windows/oodialog/controls/ToolTip/Makefile
         samples/windows/oodialog/controls/TreeView/Makefile
         samples/windows/oodialog/controls/TreeView/rc/Makefile

@@ -470,6 +470,9 @@ AC_CONFIG_FILES([
         samples/windows/oodialog/rc/Makefile
         samples/windows/oodialog/res/Makefile
         samples/windows/oodialog/resizableDialogs/Makefile
+        samples/windows/oodialog/resizableDialogs/DialogAreaU/Makefile
+        samples/windows/oodialog/resizableDialogs/ResizingAdmin/Makefile
+        samples/windows/oodialog/resizableDialogs/ResizingAdmin/rc/Makefile
         samples/windows/oodialog/simple/Makefile
         samples/windows/oodialog/sysinfo/Makefile
         samples/windows/oodialog/tutorial/Makefile

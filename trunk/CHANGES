@@ -28,8 +28,20 @@ Bug Fixes
 
 * #1165	oleObject using click or submit methods fails in IE9
 
+* #1177 ooRexx Interpreter Crash
+
+* #1178 Long External Command Will Crash ooRex
+
+* #1180 x2b/x2c/x2d Don't Accept Whitespace
+
 Documentation Fixes
 ===================
+
+* #157 Description of precision parameter
+
+* #162 RxCalcxxx must fail when precision>16
+
+* #175 Text for Time offset incorrect
 
 * #197	Doc: Rexx PG 10.3.3.3 Example: example does not compile
 

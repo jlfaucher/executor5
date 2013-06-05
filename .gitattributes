@@ -146,7 +146,6 @@ samples/windows/oodialog/bmp/wlkfig7.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/wlkfig8.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/controls/ListView/rc/columnIcons_16.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/controls/ListView/rc/columnIcons_32.bmp -text svneol=unset#image/bmp
-samples/windows/oodialog/controls/Makefile.am -text
 samples/windows/oodialog/controls/PaidHolidays.rex -text
 samples/windows/oodialog/controls/ReadMe.txt -text
 samples/windows/oodialog/controls/ToolTip/musicNote.ico -text
@@ -176,7 +175,6 @@ samples/windows/oodialog/examples/resources/Update.bmp -text
 samples/windows/oodialog/examples/resources/useTools.h -text
 samples/windows/oodialog/examples/useTools.rex -text
 samples/windows/oodialog/menus/BinaryMenuBar.rex -text
-samples/windows/oodialog/menus/Makefile.am -text
 samples/windows/oodialog/menus/UserMenuBar.bmp -text
 samples/windows/oodialog/menus/UserMenuBar.h -text
 samples/windows/oodialog/menus/UserMenuBar.rc -text
@@ -184,8 +182,6 @@ samples/windows/oodialog/menus/UserMenuBar.rex -text
 samples/windows/oodialog/mouse/dragging.cur -text
 samples/windows/oodialog/oleinfo/icons.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/ooDraw.h -text
-samples/windows/oodialog/ooRexxTry/Makefile.am -text
-samples/windows/oodialog/ooRexxTry/doc/Makefile.am -text
 samples/windows/oodialog/ooRexxTry/doc/ooRexxTry.pdf -text
 samples/windows/oodialog/ooRexxTry/ooRexxTry.rex -text
 samples/windows/oodialog/oophil.ico -text svneol=unset#applicatiion/octet-stream
@@ -212,7 +208,6 @@ samples/windows/oodialog/resizableDialogs/ResizingAdmin/rc/propertySheetDemoList
 samples/windows/oodialog/resizableDialogs/ResizingAdmin/rc/propertySheetDemoTab.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/resizableDialogs/ResizingAdmin/rc/propertySheetDemoTreeView.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/simple/ChangeFont.rex -text
-samples/windows/oodialog/simple/Makefile.am -text
 samples/windows/oodialog/simple/ReadMe.txt -text
 samples/windows/oodialog/simple/SimpleMonthCalendar.h -text
 samples/windows/oodialog/simple/SimpleMonthCalendar.rc -text

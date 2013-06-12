@@ -1,4 +1,4 @@
-            Fixes in Open Object Rexx 4.1.3
+			Fixes in Open Object Rexx 4.1.3
 
 The following is the list of bug fixes added to ooRexx since the 4.1.2
 release.
@@ -8,25 +8,27 @@ Bug Fixes
 
 * #814 date, time, size missing from SysFileTree result
 
-* #935	alarm doesn't
+* #935  alarm doesn't
 
-* #973	SysFileTree causes Segmentation fault
+* #973  SysFileTree causes Segmentation fault
 
-* #1021	SysFileTree usage Access Violation
+* #1021 SysFileTree usage Access Violation
 
-* #1087	ooRexx SysFileTree Performance Problem
+* #1087 ooRexx SysFileTree Performance Problem
 
-* #1129	alarm still doesn't
+* #1129 alarm still doesn't
 
-* #1134	instancemethod does not return .nil if expected
+* #1134 instancemethod does not return .nil if expected
 
-* #1139	Seg Fault in RxSockSelect
+* #1139 Seg Fault in RxSockSelect
 
-* #1143	Some confusion about ISO date format in rexxref
+* #1143 Some confusion about ISO date format in rexxref
 
-* #1164	RxMath Functions
+* #1161 Crash from object overlay usually during PackageClass::newRexx()
 
-* #1165	oleObject using click or submit methods fails in IE9
+* #1164 RxMath Functions
+
+* #1165 oleObject using click or submit methods fails in IE9
 
 * #1177 ooRexx Interpreter Crash
 
@@ -43,8 +45,8 @@ Documentation Fixes
 
 * #175 Text for Time offset incorrect
 
-* #197	Doc: Rexx PG 10.3.3.3 Example: example does not compile
+* #197  Doc: Rexx PG 10.3.3.3 Example: example does not compile
 
-* #198	RxMessageBox argument NONE is no button
+* #198  RxMessageBox argument NONE is no button
 
 

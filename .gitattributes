@@ -15,6 +15,7 @@ extensions/platform/windows/oodialog/0_READ_ME_FIRST.txt -text
 extensions/platform/windows/oodialog/AppIcon.ico -text
 extensions/platform/windows/oodialog/AppIcon2.ico -text
 extensions/platform/windows/oodialog/ControlDialog.cls -text
+extensions/platform/windows/oodialog/ooDialog.ver.incl -text
 extensions/platform/windows/oodialog/oodBaseDialog.cpp -text
 extensions/platform/windows/oodialog/oodCommon.hpp -text
 extensions/platform/windows/oodialog/oodControl.cpp -text

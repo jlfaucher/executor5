@@ -13,6 +13,7 @@ trunk/extensions/platform/unix/rxunixsys/rxunixsys.cpp -text
 trunk/extensions/platform/unix/rxunixsys/rxunixsys.h -text
 trunk/extensions/platform/windows/oodialog/AppIcon.ico -text
 trunk/extensions/platform/windows/oodialog/AppIcon2.ico -text
+trunk/extensions/platform/windows/oodialog/ooDialog.ver.incl -text
 trunk/extensions/platform/windows/oodialog/oodialog.ico -text svneol=unset#applicatiion/octet-stream
 trunk/extensions/platform/windows/oodialog/rexx.ico -text
 trunk/extensions/platform/windows/oodialog/rexx32.exe.manifest -text

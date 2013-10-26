@@ -2092,34 +2092,23 @@ static bool formatFile(RexxCallContext *c, char *path, RXTREEDATA *treeData, int
 {
     SYSTEMTIME systime;
     FILETIME   ftLocal;
-    uint32_t   changedAttr;    // New file attributes.
-
-    // The file attributes need to be changed before we format the found file
-    // line.
-
-    changedAttr = newAttr(newMask, wfd->dwFileAttributes);
-    if ( changedAttr != wfd->dwFileAttributes )
-    {
-        // try to set the attributes, but if it fails, just use the exsiting.
-        if ( ! setAttr(treeData->foundFile, changedAttr & ~FILE_ATTRIBUTE_DIRECTORY) )
-        {
-            changedAttr = wfd->dwFileAttributes;
-        }
-    }
 
     char   *dFoundFile = treeData->foundFile;
     size_t  nFoundFile = sizeof(treeData->foundFile);
 
-    int len = _snprintf(treeData->foundFile, sizeof(treeData->foundFile), "%s%s", path, wfd->cFileName);
+    int len = _snprintf(dFoundFile, nFoundFile, "%s%s", path, wfd->cFileName);
     if ( len < 0 || len == nFoundFile )
     {
-        nFoundFile = strlen(path) + strlen(wfd->cFileName);
+        nFoundFile = strlen(path) + strlen(wfd->cFileName) + 1;
         dFoundFile = (char *)LocalAlloc(LPTR, nFoundFile);
         if ( dFoundFile == NULL )
         {
             outOfMemoryException(c->threadContext);
             return false;
         }
+
+        // Buffer is sure to be big enough now, we we don't check the return.
+        _snprintf(dFoundFile, nFoundFile, "%s%s", path, wfd->cFileName);
     }
 
     if ( options & NAME_ONLY )
@@ -2136,6 +2125,19 @@ static bool formatFile(RexxCallContext *c, char *path, RXTREEDATA *treeData, int
             LocalFree(dFoundFile);
         }
         return true;
+    }
+
+    // The file attributes need to be changed before we format the found file
+    // line.
+
+    uint32_t changedAttr = newAttr(newMask, wfd->dwFileAttributes);
+    if ( changedAttr != wfd->dwFileAttributes )
+    {
+        // try to set the attributes, but if it fails, just use the exsiting.
+        if ( ! setAttr(treeData->foundFile, changedAttr & ~FILE_ATTRIBUTE_DIRECTORY) )
+        {
+            changedAttr = wfd->dwFileAttributes;
+        }
     }
 
     // Convert UTC to local file time, and then to system format.
@@ -2211,6 +2213,8 @@ static bool formatFile(RexxCallContext *c, char *path, RXTREEDATA *treeData, int
             }
             return false;
         }
+        // Buffer is sure to be big enough now so we don't check return.
+        _snprintf(dFoundFileLine, nFoundFileLine, "%s%s%s", treeData->fileTime, treeData->fileAttr, dFoundFile);
     }
 
     // Place found file line in the stem.
@@ -2308,6 +2312,8 @@ static bool recursiveFindFile(RexxCallContext *c, char *path, RXTREEDATA *treeDa
           result = false;
           goto done_out;
       }
+      // buffer is sure to be big enough now, so we don't check the return.
+      _snprintf(dTmpFileName, nTmpFileName, "%s%s", path, treeData->dFNameSpec);
   }
 
   fHandle = FindFirstFile(dTmpFileName, &wfd);
@@ -2373,6 +2379,9 @@ static bool recursiveFindFile(RexxCallContext *c, char *path, RXTREEDATA *treeDa
                       result = false;
                       goto done_out;
                   }
+                  // buffer is sure to be big enough now, so we don't check the
+                  // return.
+                  _snprintf(dTmpFileName, nTmpFileName, "%s%s\\", path, wfd.cFileName);
               }
 
               // Search the next level.

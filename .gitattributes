@@ -14,7 +14,12 @@ extensions/platform/unix/rxunixsys/rxunixsys.h -text
 extensions/platform/windows/oodialog/0_READ_ME_FIRST.txt -text
 extensions/platform/windows/oodialog/AppIcon.ico -text
 extensions/platform/windows/oodialog/AppIcon2.ico -text
+extensions/platform/windows/oodialog/AppIconBlueBeaker.ico -text
 extensions/platform/windows/oodialog/ControlDialog.cls -text
+extensions/platform/windows/oodialog/_deleteX.ico -text
+extensions/platform/windows/oodialog/_deleteXX.ico -text
+extensions/platform/windows/oodialog/_downArrowBlue.ico -text
+extensions/platform/windows/oodialog/_upArrowBlue.ico -text
 extensions/platform/windows/oodialog/ooDialog.ver.incl -text
 extensions/platform/windows/oodialog/oodBaseDialog.cpp -text
 extensions/platform/windows/oodialog/oodCommon.hpp -text
@@ -156,6 +161,7 @@ samples/windows/oodialog/controls/paidHolidays.rc -text
 samples/windows/oodialog/controls/upDown.h -text
 samples/windows/oodialog/controls/upDown.rc -text
 samples/windows/oodialog/controls/upDown.rex -text
+samples/windows/oodialog/controls/userStringDTP.hlp -text
 samples/windows/oodialog/examples/resources/CheckIn.bmp -text
 samples/windows/oodialog/examples/resources/ClosePalette.bmp -text
 samples/windows/oodialog/examples/resources/CodeReview.bmp -text
@@ -247,7 +253,19 @@ samples/windows/oodialog/userGuide/exercises/Exercise07/Product/res/ProdList.BMP
 samples/windows/oodialog/userGuide/exercises/Exercise07/Product/res/ProdList.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise07/Product/res/Product.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise07/Product/res/ProductIcon.bmp -text svneol=unset#image/bmp
-samples/windows/oodialog/userGuide/exercises/Samples/Popups svnc_bugtraq_003anumber=true
+samples/windows/oodialog/userGuide/exercises/Exercise08/Customer/bmp/CustList.BMP -text svneol=unset#image/bmp
+samples/windows/oodialog/userGuide/exercises/Exercise08/Customer/bmp/CustList.ico -text
+samples/windows/oodialog/userGuide/exercises/Exercise08/Customer/bmp/Customer.cur -text
+samples/windows/oodialog/userGuide/exercises/Exercise08/Customer/bmp/Customer.ico -text
+samples/windows/oodialog/userGuide/exercises/Exercise08/Order/bmp/OrderForm.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/userGuide/exercises/Exercise08/Order/bmp/OrderForm.ico -text
+samples/windows/oodialog/userGuide/exercises/Exercise08/Order/bmp/OrderList.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/userGuide/exercises/Exercise08/Order/bmp/OrderList.ico -text
+samples/windows/oodialog/userGuide/exercises/Exercise08/Product/res/ProdList.BMP -text svneol=unset#image/bmp
+samples/windows/oodialog/userGuide/exercises/Exercise08/Product/res/ProdList.ico -text
+samples/windows/oodialog/userGuide/exercises/Exercise08/Product/res/Product.cur -text
+samples/windows/oodialog/userGuide/exercises/Exercise08/Product/res/Product.ico -text
+samples/windows/oodialog/userGuide/exercises/Exercise08/Product/res/ProductIcon.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/wav/byebye.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/cancel.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/clap.wav -text svneol=unset#audio/x-wav

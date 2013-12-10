@@ -38,7 +38,6 @@ trunk/extensions/platform/windows/oodialog/oodialog.ico -text svneol=unset#appli
 trunk/extensions/platform/windows/oodialog/rexx.ico -text
 trunk/extensions/platform/windows/oodialog/rexx32.exe.manifest -text
 trunk/extensions/platform/windows/oodialog/rexx64.exe.manifest -text
-trunk/interpreter/RexxClasses/Serializable.orx -text
 trunk/interpreter/platform/unix/SysNativeMethods.h -text
 trunk/platform/unix/debian/changelog.in -text svnc_snv_003aeol_002dstyle=native
 trunk/platform/unix/debian/compat -text svnc_snv_003aeol_002dstyle=native

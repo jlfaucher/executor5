@@ -63,6 +63,14 @@ SourceForge.  I.e., the Gugs tracker the, Feature Requests tracker, etc..
 
   * 1216	x2c not recognizing invalid leading or trailing tabs
 
+  * 1217    x2b not recognizing embedded tabs as whitespace
+
+  * 1219    linein() Gives Error or Crashes Interpreter
+
+  * 1220    Statement might be overflowing a buffer in strncat
+
+  * 1221    18-Digit Exponent Not Supported on 64-Bit Syste
+
 
   Requests For Enhancement
   ------------------------

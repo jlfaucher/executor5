@@ -78,6 +78,11 @@ ver_str = -DOOD_VER_STR=\""ooDialog $(OOD_MAJOR).$(OOD_MINOR).$(OOD_MOD_LVL).$(O
 ood_ver_strings = $(copy_year_str) $(ver_str)
 ood_ver_def = -DOOD_VER=$(OOD_MAJOR) -DOOD_REL=$(OOD_MINOR) -DOOD_MOD=$(OOD_MOD_LVL) -DOOD_BLD=$(OOD_BLD_LVL) $(ood_ver_strings)
 
+!ifdef OODIALOG_WINSDK_6_1
+!message OODIALOG_WINSDK_6_1 $(OODIALOG_WINSDK_6_1)
+cflags_common = $(cflags_common) -DOODIALOG_WINSDK_6_1
+!endif
+
 # We use our own rc flags version.
 rcflags_oodialog = rc /DWIN32 -dOODIALOG_VER=$(OOD_MAJOR) -dOODIALOG_REL=$(OOD_MINOR) -dOODIALOG_SUB=$(OOD_MOD_LVL) -dOODIALOG_BLD=$(OOD_BLD_LVL) -dOODIALOG_VER_STR=\"$(OOD_VER_STR)\" -dOODIALOG_COPY_YEAR=\"$(OOD_COPY_YEAR)\" -dMANIFEST_FILE=$(M_FILE)
 

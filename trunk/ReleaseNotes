@@ -3,8 +3,8 @@
                               Release Notes
                               Version 4.2.0
 
-  Copyright 2005-2013 Rexx Language Association.  All rights reserved.
-                               December 2013
+  Copyright 2005-2014 Rexx Language Association.  All rights reserved.
+                               January 2014
 
 Note
 ====
@@ -19,7 +19,7 @@ File List
 
 Linux rpm and deb packages contain the distribution name, version of the
 system they were built on, and an indicator of the bitness of the interpreter.
-For instance, ooRexx-4.2.0-9643.opensuse1230.x86_64.rpm was built on
+For instance, ooRexx-4.2.0-9643.opensuse1330.x86_64.rpm was built on
 OpenSuSE 13.30 and is a 64 bit interpreter.
 
 All package names contain an indication if the package is built as a 32-bit

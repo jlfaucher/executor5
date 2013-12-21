@@ -254,7 +254,7 @@ ln -sf %{_libdir}/librxunixsys.so %{_libdir}/librxunixsys.so.3
 ln -sf %{_datadir}/ooRexx/rexxtry.rex %{_bindir}/rexxtry.rex
 # Add the rxapi service
 if [ -x /usr/bin/systemctl ]; then
-   systemctl link %{_datadir}/ooRexx/rxapid.service
+   ln -s %{_datadir}/ooRexx/rxapid.service /etc/systend/system/multi-user.target.wants
    systemctl --system daemon-reload
    systemctl start rxapid.service
 elif [ -x /sbin/insserv ]; then
@@ -275,7 +275,7 @@ fi
 # Remove rxapi service
 if [ -x /usr/bin/systemctl ]; then
    systemctl stop rxapid.service
-   rm -f /etc/systemd/system/rxapid.service
+   rm -f /etc/systemd/system/multi-user.target.wants/rxapid.service
    systemctl --system daemon-reload
 elif [ -x /sbin/insserv ]; then
    service rxapid stop

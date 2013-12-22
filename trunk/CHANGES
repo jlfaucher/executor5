@@ -8,6 +8,8 @@ SourceForge.  I.e., the Bugs tracker the, Feature Requests tracker, etc..
   Bugs
   ----
 
+  * 978      OLE Outlook issue - Windows 7
+
   * 1023	charin(file,pos,len) for length(pos)>9 fails
 
   * 1086	Stackspace check on 64-bit platform not large enough
@@ -70,6 +72,10 @@ SourceForge.  I.e., the Bugs tracker the, Feature Requests tracker, etc..
   * 1220    Statement might be overflowing a buffer in strncat
 
   * 1221    18-Digit Exponent Not Supported on 64-Bit Syste
+
+  * 1223    RexxUtil "SysRmDir" always returns code 0
+
+  * 1224    ooRexx creates files with the wrong permissions
 
 
   Requests For Enhancement
@@ -144,6 +150,8 @@ SourceForge.  I.e., the Bugs tracker the, Feature Requests tracker, etc..
 
   * 511	The array class new method should allow an array of dimensions.
 
+  * 516 Windows installation detect 64bit installer on 32-bit OS
+
   * 539	Add systemd support
 
   * 547	Use NSIS build with support for longer than 1024 strings
@@ -158,6 +166,8 @@ SourceForge.  I.e., the Bugs tracker the, Feature Requests tracker, etc..
   * 563	Allow the stack frames to be retrieved from the .context object.
 
   * 564	Add string method to the StackFrame class
+
+  * 567 Windows install should add a Desktop icon
 
 
   Documentation Bugs

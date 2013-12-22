@@ -70,9 +70,9 @@ ${UnStrTok}
 !define MUI_FINISHPAGE_RUN_TEXT "Create ${LONGNAME} Desktop Shortcut"
 !define MUI_FINISHPAGE_RUN_FUNCTION CreateDesktopShortcut
 
-!define MUI_FINISHPAGE_SHOWREADME $INSTDIR\CPLv1.0.txt
+!define MUI_FINISHPAGE_SHOWREADME $INSTDIR\doc\ReleaseNotes.txt
 !define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
-!define MUI_FINISHPAGE_SHOWREADME_TEXT "Show ${LONGNAME} License"
+!define MUI_FINISHPAGE_SHOWREADME_TEXT "Show ${LONGNAME} Release Notes"
 ;!define MUI_FINISHPAGE_SHOWREADME_FUNCTION SomeFunctionToBeCreated
 
 !define MUI_FINISHPAGE_LINK "Getting started with Windows ${LONGNAME}"

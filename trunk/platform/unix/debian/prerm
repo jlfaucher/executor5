@@ -73,7 +73,7 @@ rm -rf /usr/share/ooRexx
 # Debian specific removal of rxapid
 if [ -x /usr/bin/systemctl ] || [ -x /usr/sbin/systemctl ]; then
    systemctl stop rxapid.service
-   rm /etc/systemd/system/rxapid.service
+   rm -f /etc/systemd/system/multi-user.target.wants/rxapid.service
    systemctl --system daemon-reload
 else
    if [ -e /etc/init.d/rxapid ]; then

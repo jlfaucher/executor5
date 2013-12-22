@@ -90,7 +90,7 @@ ln -sf ${data_dir}/rexxtry.rex ${bin_dir}/rexxtry.rex
 
 # Debian specific set up for rxapid
 if [ -x /usr/bin/systemctl ] || [ -x /usr/sbin/systemctl ]; then
-   systemctl link /usr/share/ooRexx/rxapid.service
+   ln -s %{_datadir}/ooRexx/rxapid.service /etc/systemd/system/multi-user.target.wants/rxapid.service
    systemctl --system daemon-reload
    systemctl start rxapid.service
 else

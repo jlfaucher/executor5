@@ -41,6 +41,10 @@
 
 # NMAKE-compatible MAKE file for ooDialog
 
+# If you are using this make file and your version of rc does not support the
+# /nologo flag, comment out this next define:
+RC_NOLOGO = /nologo
+
 # If OOD_INDEPENDENT is defined we are operating outside of the interpreter
 # build.  In that case, OOD_OUTDIR, OOD_OODIALOGSRC, and OOD_INCLUDE_File are
 # defined in the parent make file that calls us.  When called in the interpreter
@@ -56,9 +60,11 @@ REXXAPI_LIBS = $(REXX_LIBS)
 # build, the ooDialog source will be the latest released version of ooDialog.
 # That released version will have a static ooDialog.ver.incl file that reflects
 # the exact version at the time of release.
-!IF [generateVersionFile.bat] != 0
-!  ERROR Build error: could not gerate version file, ooDialog.ver.incl
-!ENDIF
+#
+# svn revision frozen at 9852 for 4.2.3
+#!IF [generateVersionFile.bat] != 0
+#!  ERROR Build error: could not gerate version file, ooDialog.ver.incl
+#!ENDIF
 
 !else
 
@@ -84,7 +90,7 @@ cflags_common = $(cflags_common) -DOODIALOG_WINSDK_6_1
 !endif
 
 # We use our own rc flags version.
-rcflags_oodialog = rc /DWIN32 -dOODIALOG_VER=$(OOD_MAJOR) -dOODIALOG_REL=$(OOD_MINOR) -dOODIALOG_SUB=$(OOD_MOD_LVL) -dOODIALOG_BLD=$(OOD_BLD_LVL) -dOODIALOG_VER_STR=\"$(OOD_VER_STR)\" -dOODIALOG_COPY_YEAR=\"$(OOD_COPY_YEAR)\" -dMANIFEST_FILE=$(M_FILE)
+rcflags_oodialog = rc $(RC_NOLOGO) /DWIN32 -dOODIALOG_VER=$(OOD_MAJOR) -dOODIALOG_REL=$(OOD_MINOR) -dOODIALOG_SUB=$(OOD_MOD_LVL) -dOODIALOG_BLD=$(OOD_BLD_LVL) -dOODIALOG_VER_STR=\"$(OOD_VER_STR)\" -dOODIALOG_COPY_YEAR=\"$(OOD_COPY_YEAR)\" -dMANIFEST_FILE=$(M_FILE)
 
 C=cl
 OPTIONS= $(cflags_common) $(ood_ver_def) $(cflags_dll) $(OR_ORYXINCL)

@@ -77,6 +77,10 @@ SourceForge.  I.e., the Bugs tracker the, Feature Requests tracker, etc..
 
   * 1224    ooRexx creates files with the wrong permissions
 
+  * 1230    Missing stackframe entries with native code calls
+
+  * 1237    Rexx crashes
+
 
   Requests For Enhancement
   ------------------------

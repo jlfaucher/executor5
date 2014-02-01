@@ -81,6 +81,12 @@ SourceForge.  I.e., the Bugs tracker the, Feature Requests tracker, etc..
 
   * 1237    Rexx crashes
 
+  * 1238	Windows installer fails to detect that uninstaller failed
+
+  * 1239	rxapi stops working
+
+  * 1242	MS Access Sample Program Failure
+
 
   Requests For Enhancement
   ------------------------

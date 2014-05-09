@@ -68,6 +68,7 @@ rexxapi/common/RegistrationTable.cpp -text
 rexxapi/common/RegistrationTable.hpp -text
 rexxapi/server/platform/unix/rxapid -text
 rexxapi/server/platform/windows/rxapi.ico -text
+samples/CMakeLists.txt -text
 samples/native.api/Makefile.am -text
 samples/native.api/ReadMe.txt -text
 samples/native.api/call.example/HelloWorld.rex -text
@@ -81,7 +82,14 @@ samples/native.api/call.example/stackOverflow.cpp -text
 samples/native.api/call.example/tooRecursiveTrapped.rex -text
 samples/native.api/call.example/tooRecursiveUnhandled.rex -text
 samples/sscclient.rex -text
+samples/unix/CMakeLists.txt -text
+samples/unix/api/CMakeLists.txt -text
+samples/unix/api/callrexx/CMakeLists.txt -text
+samples/unix/api/wpipe1/CMakeLists.txt -text
+samples/unix/api/wpipe2/CMakeLists.txt -text
+samples/unix/api/wpipe3/CMakeLists.txt -text
 samples/windows/0ReadMe.first -text
+samples/windows/CMakeLists.txt -text
 samples/windows/api/callrxnt/callrxnt.ico -text svneol=unset#applicatiion/octet-stream
 samples/windows/api/callrxwn/callrxwn.ico -text svneol=unset#applicatiion/octet-stream
 samples/windows/api/rexxexit/rexxexit.ico -text svneol=unset#applicatiion/octet-stream

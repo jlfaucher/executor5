@@ -42,6 +42,8 @@ extensions/platform/windows/oodialog/rexx64.exe.manifest -text
 interpreter/RexxClasses/Serializable.orx -text
 interpreter/platform/unix/SysNativeMethods.h -text
 platform/unix/debian/changelog.in -text svnc_snv_003aeol_002dstyle=native
+platform/unix/debian/cmake_postinst -text
+platform/unix/debian/cmake_prerm -text
 platform/unix/debian/compat -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/control -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/copyright -text svnc_snv_003aeol_002dstyle=native

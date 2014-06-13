@@ -94,7 +94,7 @@ samples/unix/api/callrexx/CMakeLists.txt -text
 samples/unix/api/wpipe1/CMakeLists.txt -text
 samples/unix/api/wpipe2/CMakeLists.txt -text
 samples/unix/api/wpipe3/CMakeLists.txt -text
-samples/usetree.rexx -text
+samples/usetree.rex -text
 samples/windows/0ReadMe.first -text
 samples/windows/CMakeLists.txt -text
 samples/windows/api/callrxnt/callrxnt.ico -text svneol=unset#applicatiion/octet-stream

@@ -60,7 +60,7 @@ platform/unix/macosx/PackageInfo.in -text
 platform/unix/macosx/org.rexxla.oorexx.rxapid.plist -text
 platform/unix/macosx/postflight.in -text
 platform/unix/macosx/preflight.in -text
-platform/unix/menu/rexxtry.desktop -text
+platform/unix/menu/rexxtry.desktop.in -text
 platform/unix/menu/rexxtry.xml svneol=native#text
 platform/unix/oorexx.png -text svneol=unset#image/png
 platform/unix/rpm_preun -text

@@ -66,7 +66,6 @@ platform/unix/oorexx.png -text svneol=unset#image/png
 platform/unix/rpm_preun -text
 platform/unix/rxapid.service -text
 platform/windows/hostemu.def -text
-platform/windows/hostemu.mak -text
 platform/windows/install/BuildComponentManifests.cmake -text
 platform/windows/install/orange-uninstall.bmp -text svneol=unset#image/bmp
 platform/windows/install/orange.bmp -text svneol=unset#image/bmp
@@ -318,4 +317,3 @@ samples/windows/oodialog/wav/tiger.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/whistle.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/yourgood.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/winsystem/windowsSystem.frm -text
-utilities/rexx/platform/windows/rexx.mak -text

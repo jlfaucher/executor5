@@ -1,8 +1,6 @@
 * text=auto !eol
 /CONTRIBUTORS -text
-/Makefile.am -text
 /NOTICE -text
-/RPM_build_notes.txt -text
 /config.h.in.cmake -text
 extensions/csvStream/csvStream.cls -text
 extensions/hostemu/cmdparse.cpp -text
@@ -77,7 +75,6 @@ rexxapi/common/RegistrationTable.hpp -text
 rexxapi/server/platform/unix/rxapid -text
 rexxapi/server/platform/windows/rxapi.ico -text
 samples/CMakeLists.txt -text
-samples/native.api/Makefile.am -text
 samples/native.api/ReadMe.txt -text
 samples/native.api/call.example/HelloWorld.rex -text
 samples/native.api/call.example/Makefile.am -text

@@ -332,4 +332,3 @@ samples/windows/oodialog/wav/tiger.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/whistle.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/yourgood.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/winsystem/windowsSystem.frm -text
-testbinaries/Makefile.linux -text

@@ -9,9 +9,9 @@ except those for Unicode (too many impacted files).
 
 Miscellaneous notes:
 
-- [Sandbox diary][sandbox_diary]
+- [JLF diary][jlf_diary]
 - [Internal notes][internal_notes]
 
 [executor]: https://github.com/jlfaucher/executor "Executor"
-[jlf_diary]: https://github.com/jlfaucher/executor5/blob/trunk/jlf_diary.txt "JLF diary"
+[jlf_diary]: https://github.com/jlfaucher/executor5/blob/master/_jlf_diary.txt "JLF diary"
 [internal_notes]: https://github.com/jlfaucher/executor/tree/master/sandbox/jlf/internals/notes "Internal notes"

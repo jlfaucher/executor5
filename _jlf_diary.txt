@@ -1,0 +1,19 @@
+ooRexx5 has too many changes, compared to ooRexx4.
+Not possible to merge the changes for ooRexx5 into the Github repository Executor.
+Hence the creation of a new Github repository Executor5...
+
+
+===============================================================================
+2014 nov 11
+
+Creation of the Github repository Executor5.
+Procedure :
+Using SmartGit, clone svn+ssh://jfaucher@svn.code.sf.net/p/oorexx/code-0/main (svn)
+Add the remote git@github.com:jlfaucher/executor5.git (origin)
+Push svn to origin
+
+
+===============================================================================
+History of merges.
+
+rev 10688

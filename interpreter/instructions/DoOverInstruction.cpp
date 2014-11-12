@@ -247,7 +247,7 @@ void RexxInstructionDoOverFor::setup(RexxActivation *context, ExpressionStack *s
     // perform the DO OVER initialization
     overLoop.setup(context, stack, doblock);
     // perform the DO COUNT initialization
-    forLoop.setup(context, stack, doblock, false);
+    forLoop.setup(context, stack, doblock, true);
 }
 
 
@@ -513,7 +513,7 @@ bool RexxInstructionDoOverForUntil::iterate(RexxActivation *context, ExpressionS
         return doblock->checkOver(context, stack) && doblock->checkFor();
     }
 
-    return !whileLoop.checkUntil(context, stack) && doblock->checkFor() && doblock->checkOver(context, stack);
+    return !whileLoop.checkUntil(context, stack) && doblock->checkOver(context, stack) && doblock->checkFor();
 }
 
 

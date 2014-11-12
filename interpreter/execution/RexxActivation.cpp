@@ -1187,6 +1187,35 @@ void RexxActivation::expose(RexxVariableBase **variables, size_t count)
 
 
 /**
+ * Turn on autoexpose as the result of a USE LOCAL instruction.
+ *
+ * @param variables The list of variables to declose as local
+ *                  variables.
+ * @param count     The variable count.
+ */
+void RexxActivation::autoExpose(RexxVariableBase **variables, size_t count)
+{
+    // we just request the value for each of these variables now, which will
+    // force them to be created as local variables.
+    for (size_t i = 0; i < count; i++)
+    {
+        variables[i]->getRealValue(this);
+    }
+
+    // now explicitly make RC, RESULT, SIGL, SELF, and SUPER local
+    getLocalVariable(GlobalNames::SELF, VARIABLE_SELF);
+    getLocalVariable(GlobalNames::SUPER, VARIABLE_SUPER);
+    getLocalVariable(GlobalNames::RC, VARIABLE_RC);
+    getLocalVariable(GlobalNames::SIGL, VARIABLE_SIGL);
+    getLocalVariable(GlobalNames::RESULT, VARIABLE_RESULT);
+
+    // now switch modes with the local variables so that every new variable
+    // is created as an object variable.
+    settings.localVariables.setAutoExpose(getObjectVariables());
+}
+
+
+/**
  * Process a forward instruction.
  *
  * @param target     The target object.
@@ -1691,7 +1720,8 @@ RexxObject *RexxActivation::resolveStream(RexxString *name, bool input, Protecte
             // create an instance of the stream class and create a new
             // instance
             RexxClass *streamClass = TheRexxPackage->findClass(GlobalNames::STREAM);
-            stream = streamClass->sendMessage(GlobalNames::NEW, name);
+            ProtectedObject result;
+            stream = streamClass->sendMessage(GlobalNames::NEW, name, result);
 
             // if we're requested to add this to the table, add it in and return the indicator.
             if (added != NULL)
@@ -2682,25 +2712,28 @@ RexxObject *RexxActivation::externalCall(RexxString *target, RexxObject **argume
 bool RexxActivation::callExternalRexx(RexxString *target, RexxObject **arguments,
     size_t argcount, RexxString *calltype, ProtectedObject  &resultObj)
 {
-    // Get full name including path
-    RexxString *filename = resolveProgramName(target);
-    if (filename != OREF_NULL)
+    // the interpreted package is created in memory and doesn't have the original program
+    // name source information.  Forward this to the parent for processing if it is an
+    // interpreted external call
+    if (isInterpret())
     {
-        // protect the file name on stack
-        stack.push(filename);
+        return parent->callExternalRexx(target, arguments, argcount, calltype, resultObj);
+    }
+
+    // Get full name including path
+    Protected<RexxString> filename = resolveProgramName(target);
+    if (!filename.isNull())
+    {
         // try for a saved program or translate a anew
 
-        RoutineClass *routine = LanguageParser::createProgramFromFile(filename);
-        // remove the protected name
-        stack.pop();
+        Protected<RoutineClass> routine = LanguageParser::createProgramFromFile(filename);
         // do we have something?  return not found
-        if (routine == OREF_NULL)
+        if (routine.isNull())
         {
             return false;
         }
         else
         {
-            ProtectedObject p(routine);
             // run as a call
             routine->call(activity, target, arguments, argcount, calltype, settings.currentAddress, EXTERNALCALL, resultObj);
             // merge all of the public info
@@ -3998,6 +4031,18 @@ RexxString *RexxActivation::getProgramName()
 
 
 /**
+ * Handy method for displaying the current program name in the
+ * debugger.
+ *
+ * @return The string name of the program source.
+ */
+const char *RexxActivation::displayProgramName()
+{
+    return code->getProgramName()->getStringData();
+}
+
+
+/**
  * Return the directory of labels for this block of code.
  *
  * @return The string table of labels (returns null if there are no labels in this code section)
@@ -4134,7 +4179,8 @@ void RexxActivation::closeStreams()
             // send each of the streams in the table a CLOSE message.
             for (HashContents::TableIterator iterator = streams->iterator(); iterator.isAvailable(); iterator.next())
             {
-                ((RexxObject *)iterator.value())->sendMessage(GlobalNames::CLOSE);
+                ProtectedObject result;
+                ((RexxObject *)iterator.value())->sendMessage(GlobalNames::CLOSE, result);
             }
         }
     }
@@ -4165,7 +4211,8 @@ RexxObject *RexxActivation::novalueHandler(RexxString *name)
     RexxObject *novalue_handler = getLocalEnvironment(GlobalNames::NOVALUE);
     if (novalue_handler != OREF_NULL)
     {
-        return resultOrNil(novalue_handler->sendMessage(GlobalNames::NOVALUE, name));
+        ProtectedObject result;
+        return resultOrNil(novalue_handler->sendMessage(GlobalNames::NOVALUE, name, result));
     }
     return TheNilObject;
 }

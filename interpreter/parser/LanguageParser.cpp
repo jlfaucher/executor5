@@ -269,7 +269,7 @@ RoutineClass *LanguageParser::createProgram(RexxString *name)
 RoutineClass *LanguageParser::createProgramFromFile(RexxString *filename)
 {
     // load the file into a buffer
-    BufferClass *program_buffer = SystemInterpreter::readProgram(filename->getStringData());
+    Protected<BufferClass> program_buffer = SystemInterpreter::readProgram(filename->getStringData());
     // if this failed, report an error now.
     if (program_buffer == OREF_NULL)
     {
@@ -345,13 +345,13 @@ PackageClass *LanguageParser::createPackage(RexxString *filename)
  *
  * @return The interpreted code.
  */
-RexxCode *LanguageParser::translateInterpret(RexxString *interpretString, StringTable *labels, size_t lineNumber)
+RexxCode *LanguageParser::translateInterpret(RexxString *interpretString, PackageClass *sourceContext, StringTable *labels, size_t lineNumber)
 {
     // create the appropriate array source, then the parser, then generate the
     // code.
     ProgramSource *programSource = new ArrayProgramSource(new_array(interpretString), lineNumber);
     Protected<LanguageParser> parser = new LanguageParser(GlobalNames::NULLSTRING, programSource);
-    return parser->translateInterpret(labels);
+    return parser->translateInterpret(sourceContext, labels);
 }
 
 
@@ -410,6 +410,7 @@ void LanguageParser::live(size_t liveMark)
     memory_mark(strings);
     memory_mark(guardVariables);
     memory_mark(exposedVariables);
+    memory_mark(localVariables);
     memory_mark(control);
     memory_mark(terms);
     memory_mark(subTerms);
@@ -455,6 +456,7 @@ void LanguageParser::liveGeneral(MarkReason reason)
     memory_mark_general(strings);
     memory_mark_general(guardVariables);
     memory_mark_general(exposedVariables);
+    memory_mark_general(localVariables);
     memory_mark_general(control);
     memory_mark_general(terms);
     memory_mark_general(subTerms);
@@ -576,7 +578,7 @@ RoutineClass *LanguageParser::generateProgram(PackageClass *sourceContext)
  * @return A RexxCode object resulting from the compilation of
  *         this interpret line.
  */
-RexxCode *LanguageParser::translateInterpret(StringTable *contextLabels)
+RexxCode *LanguageParser::translateInterpret(PackageClass *sourceContext, StringTable *contextLabels)
 {
     // to translate this, we use the labels from the parent context.
     labels = contextLabels;
@@ -584,6 +586,11 @@ RexxCode *LanguageParser::translateInterpret(StringTable *contextLabels)
     setInterpret();
     // initialize, and compile all of the source.
     compileSource();
+
+    // if we have a source context, then we need to inherit this
+    // context before doing the install so that anything from the parent
+    // context is visible during the install processing.
+    package->inheritPackageContext(sourceContext);
 
     //. the package ends up with neither a init section or a main executable.
     // we just return the main code section
@@ -1040,8 +1047,9 @@ RexxCode *LanguageParser::translateBlock()
 
     // until we need guard variables, we don't need the table
     guardVariables = OREF_NULL;
-    // and we need a new set of exposed variables for each code section
-    exposedVariables = new_string_table();
+    // and we reset the exposed/local variables for each code section
+    exposedVariables = OREF_NULL;
+    localVariables = OREF_NULL;
 
     // clear the stack accounting fields
     maxStack = 0;
@@ -1399,6 +1407,12 @@ RexxCode *LanguageParser::translateBlock()
             case KEYWORD_LOOP_OVER_FOR:
             case KEYWORD_LOOP_OVER_FOR_UNTIL:
             case KEYWORD_LOOP_OVER_FOR_WHILE:
+            case KEYWORD_LOOP_WITH:
+            case KEYWORD_LOOP_WITH_UNTIL:
+            case KEYWORD_LOOP_WITH_WHILE:
+            case KEYWORD_LOOP_WITH_FOR:
+            case KEYWORD_LOOP_WITH_FOR_UNTIL:
+            case KEYWORD_LOOP_WITH_FOR_WHILE:
             case KEYWORD_LOOP_CONTROLLED:
             case KEYWORD_LOOP_CONTROLLED_UNTIL:
             case KEYWORD_LOOP_CONTROLLED_WHILE:
@@ -1715,8 +1729,21 @@ void LanguageParser::flushControl(RexxInstruction *instruction)
  */
 bool LanguageParser::isExposed(RexxString *varName)
 {
-    return exposedVariables != OREF_NULL && exposedVariables->hasIndex(varName);
+    // if we had an explicit EXPOSE instruction, check if this was listed
+    if (exposedVariables != OREF_NULL)
+    {
+        return exposedVariables->hasIndex(varName);
+    }
+    // had a USE ARG instruction specified?  Variable is exposed
+
+    else if (localVariables != OREF_NULL)
+    {
+        return !localVariables->hasIndex(varName);
+    }
+    // neither situation, not an exposed variable
+    return false;
 }
+
 
 /**
  * Perform a variable capture operation if we're
@@ -1937,8 +1964,41 @@ RexxCompoundVariable *LanguageParser::addCompound(RexxString *name)
  */
 void LanguageParser::expose(RexxString *name )
 {
-
+    // create the table on the first expose
+    if (exposedVariables == OREF_NULL)
+    {
+        exposedVariables = new_string_table();
+    }
     exposedVariables->put(name, name);
+}
+
+
+/**
+ * We have a USE LOCAL specified, so turn on the auto expose.
+ */
+void LanguageParser::autoExpose()
+{
+    localVariables = new_string_table();
+    // add the special local variables to the list
+    localVariables->put(GlobalNames::SUPER, GlobalNames::SUPER);
+    localVariables->put(GlobalNames::SELF, GlobalNames::SELF);
+    localVariables->put(GlobalNames::RC, GlobalNames::RC);
+    localVariables->put(GlobalNames::RESULT, GlobalNames::RESULT);
+    localVariables->put(GlobalNames::SIGL, GlobalNames::SIGL);
+
+}
+
+
+/**
+ * Add a variable name to the list of explicitly declared to be
+ * local.
+ *
+ * @param name   The name of the variable.
+ */
+void LanguageParser::localVariable(RexxString *name )
+{
+
+    localVariables->put(name, name);
 }
 
 
@@ -1987,6 +2047,30 @@ RexxVariableBase *LanguageParser::addVariable(RexxToken *token)
     // then create the variable retriever object.
     return (RexxVariableBase *)addText(token);
 }
+
+
+/**
+ * Handle adding a variable to a program.  This verifies that
+ * the token is a valid variable, then creates a retriever that
+ * can be used in an expression to obtain the variable value.
+ *
+ * @param token  The token holding the variable name.
+ *
+ * @return A retriever object that can be used as an expression
+ *         term.
+ */
+RexxVariableBase *LanguageParser::requiredVariable(RexxToken *token, const char *keyword)
+{
+    // first verify that this is a symbol
+    if (!token->isSymbol())
+    {
+        syntaxError(Error_Symbol_expected_after_keyword, new_string(keyword));
+    }
+
+    // now process the variable
+    return addVariable(token);
+}
+
 
 // generate a retriever for a specific token type.  Note that we
 // keep two caches of retrievers here.  There are tokens that true

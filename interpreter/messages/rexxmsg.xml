@@ -1229,6 +1229,42 @@ special character (such as a parenthesis).
         <SymbolicName>Error_Symbol_expected_form</SymbolicName>
         <Text>Symbol expected after the FORM keyword.</Text>
       </SubMessage>
+      <SubMessage>
+        <Code>20</Code>
+        <Subcode>926</Subcode>
+        <MessageNumber>775</MessageNumber>
+        <Component>Rexx</Component>
+        <Severity>Warning</Severity>
+        <SymbolicName>Error_Symbol_expected_delegate</SymbolicName>
+        <Text>Symbol expected after the DELEGATE keyword.</Text>
+      </SubMessage>
+      <SubMessage>
+        <Code>20</Code>
+        <Subcode>927</Subcode>
+        <MessageNumber>777</MessageNumber>
+        <Component>Rexx</Component>
+        <Severity>Warning</Severity>
+        <SymbolicName>Error_Symbol_expected_use_local</SymbolicName>
+        <Text>Symbol expected after USE LOCAL.</Text>
+      </SubMessage>
+      <SubMessage>
+        <Code>20</Code>
+        <Subcode>928</Subcode>
+        <MessageNumber>779</MessageNumber>
+        <Component>Rexx</Component>
+        <Severity>Warning</Severity>
+        <SymbolicName>Error_Symbol_expected_indirect</SymbolicName>
+        <Text>Symbol expected as an indirect variable name; found <q><Sub position="1" name="token"/></q>.</Text>
+      </SubMessage>
+      <SubMessage>
+        <Code>20</Code>
+        <Subcode>929</Subcode>
+        <MessageNumber>784</MessageNumber>
+        <Component>Rexx</Component>
+        <Severity>Warning</Severity>
+        <SymbolicName>Error_Symbol_expected_after_keyword</SymbolicName>
+        <Text>Symbol expected after <Sub position="1" name="keyword"/> keyword.</Text>
+      </SubMessage>
     </Subcodes>
   </Message>
   <Message>
@@ -1813,7 +1849,7 @@ special character (such as a parenthesis).
     <itemizedlist>
     <listitem><para>The positional patterns in parsing templates (including variable positional patterns)</para></listitem>
     <listitem><para>The operand to the right of the power operator</para></listitem>
-    <listitem><para>The values of exprr and exprf in the DO instruction</para></listitem>
+    <listitem><para>The values of exprr and exprf in the DO and LOOP instructions</para></listitem>
     <listitem><para>The values given for DIGITS or FUZZ in the NUMERIC instruction</para></listitem>
     <listitem><para>The number used in the option of the TRACE setting This error is also raised if the value is not permitted (for example, a negative repetition count in a DO instruction), or the division performed during an integer divide or remainder operation does not result in a whole number.</para></listitem>
     </itemizedlist>
@@ -1835,7 +1871,7 @@ special character (such as a parenthesis).
         <Component>Rexx</Component>
         <Severity>Warning</Severity>
         <SymbolicName>Error_Invalid_whole_number_repeat</SymbolicName>
-        <Text>Value of repetition count expression in DO instruction must be zero or a positive whole number; found <q><Sub position="1" name="value"/></q>.</Text>
+        <Text>Value of repetition count expression in DO or LOOP instruction must be zero or a positive whole number; found <q><Sub position="1" name="value"/></q>.</Text>
       </SubMessage>
       <SubMessage>
         <Code>26</Code>
@@ -1844,7 +1880,7 @@ special character (such as a parenthesis).
         <Component>Rexx</Component>
         <Severity>Warning</Severity>
         <SymbolicName>Error_Invalid_whole_number_for</SymbolicName>
-        <Text>Value of FOR expression in DO instruction must be zero or a positive whole number; found <q><Sub position="1" name="value"/></q>.</Text>
+        <Text>Value of FOR expression in DO or LOOP instruction must be zero or a positive whole number; found <q><Sub position="1" name="value"/></q>.</Text>
       </SubMessage>
       <SubMessage>
         <Code>26</Code>
@@ -1945,8 +1981,8 @@ special character (such as a parenthesis).
     <Component>Rexx</Component>
     <Severity>Warning</Severity>
     <SymbolicName>Error_Invalid_do</SymbolicName>
-    <Text>Invalid DO syntax.</Text>
-    <Explanation><para>A syntax error was found in the DO instruction.  You probably used BY, TO, FOR, WHILE, or UNTIL twice, used a WHILE and an UNTIL, or used BY, TO, or FOR when there is no control variable specified.</para></Explanation>
+    <Text>Invalid DO or LOOP syntax.</Text>
+    <Explanation><para>A syntax error was found in a DO or LOOP instruction.  You probably used BY, TO, FOR, WHILE, or UNTIL twice, used a WHILE and an UNTIL, or used BY, TO, or FOR when there is no control variable specified.</para></Explanation>
     <Subcodes>
       <SubMessage>
         <Code>27</Code>
@@ -1955,7 +1991,7 @@ special character (such as a parenthesis).
         <Component>Rexx</Component>
         <Severity>Warning</Severity>
         <SymbolicName>Error_Invalid_do_whileuntil</SymbolicName>
-        <Text>WHILE and UNTIL keywords cannot be used on the same DO loop.</Text>
+        <Text>Only one WHILE or UNTIL condition can be used on the same loop.</Text>
       </SubMessage>
       <SubMessage>
         <Code>27</Code>
@@ -1964,7 +2000,7 @@ special character (such as a parenthesis).
         <Component>Rexx</Component>
         <Severity>Warning</Severity>
         <SymbolicName>Error_Invalid_do_forever</SymbolicName>
-        <Text>Incorrect data following FOREVER keyword on the DO loop; found <q><Sub position="1" name="data"/></q>.</Text>
+        <Text>Incorrect data following FOREVER keyword on the loop; found <q><Sub position="1" name="data"/></q>.</Text>
       </SubMessage>
       <SubMessage>
         <Code>27</Code>
@@ -1973,7 +2009,25 @@ special character (such as a parenthesis).
         <Component>Rexx</Component>
         <Severity>Warning</Severity>
         <SymbolicName>Error_Invalid_do_duplicate</SymbolicName>
-        <Text>DO keyword <Sub position="1" name="keyword"/> can be specified only once.</Text>
+        <Text>DO or LOOP keyword <Sub position="1" name="keyword"/> can be specified only once.</Text>
+      </SubMessage>
+      <SubMessage>
+        <Code>27</Code>
+        <Subcode>903</Subcode>
+        <MessageNumber>784</MessageNumber>
+        <Component>Rexx</Component>
+        <Severity>Warning</Severity>
+        <SymbolicName>Error_Invalid_do_with_no_control</SymbolicName>
+        <Text>No INDEX or ITEM control variable specified on a WITH loop.</Text>
+      </SubMessage>
+      <SubMessage>
+        <Code>27</Code>
+        <Subcode>904</Subcode>
+        <MessageNumber>786</MessageNumber>
+        <Component>Rexx</Component>
+        <Severity>Warning</Severity>
+        <SymbolicName>Error_Invalid_do_with_no_over</SymbolicName>
+        <Text>OVER keyword expected for a WITH loop.</Text>
       </SubMessage>
     </Subcodes>
   </Message>
@@ -1985,7 +2039,7 @@ special character (such as a parenthesis).
     <Severity>Warning</Severity>
     <SymbolicName>Error_Invalid_leave</SymbolicName>
     <Text>Invalid LEAVE or ITERATE.</Text>
-    <Explanation><para>A LEAVE or ITERATE instruction was found at an incorrect position.  Either no loop was active, or the name specified on the instruction did not match the control variable of any active loop. Note that internal routine calls and the INTERPRET instruction protect DO loops by making them inactive. Therefore, for example, a LEAVE instruction in a subroutine cannot affect a DO loop in the calling routine. You probably tried to use the SIGNAL instruction to transfer control within or into a loop. Because a SIGNAL instruction ends all active loops, any ITERATE or LEAVE instruction causes this message.</para></Explanation>
+    <Explanation><para>A LEAVE or ITERATE instruction was found at an incorrect position.  Either no loop was active, or the name specified on the instruction did not match the control variable of any active loop. Note that internal routine calls and the INTERPRET instruction protect loops by making them inactive. Therefore, for example, a LEAVE instruction in a subroutine cannot affect a DO loop in the calling routine. You probably tried to use the SIGNAL instruction to transfer control within or into a loop. Because a SIGNAL instruction ends all active loops, any ITERATE or LEAVE instruction causes this message.</para></Explanation>
     <Subcodes>
       <SubMessage>
         <Code>28</Code>
@@ -2244,7 +2298,7 @@ special character (such as a parenthesis).
     <Severity>Warning</Severity>
     <SymbolicName>Error_Logical_value</SymbolicName>
     <Text>Logical value not 0 or 1.</Text>
-    <Explanation><para>An expression was found in an IF, WHEN, DO WHILE, or DO UNTIL phrase that did not result in a 0 or 1. Any value operated on by a logical operator must result in a 0 or 1. For example, the phrase If result then exit rc fails if result has a value other than 0 or 1.</para></Explanation>
+    <Explanation><para>An expression was found in an IF, WHEN, WHILE, or UNTIL phrase that did not result in a 0 or 1. Any value operated on by a logical operator must result in a 0 or 1. For example, the phrase If result then exit rc fails if result has a value other than 0 or 1.</para></Explanation>
     <Subcodes>
       <SubMessage>
         <Code>34</Code>
@@ -2354,6 +2408,15 @@ special character (such as a parenthesis).
         <SymbolicName>Error_Logical_value_when_case</SymbolicName>
         <Text>SELECT CASE comparison result must be <q>0</q>, <q>1</q>, <q>true</q>, or <q>false</q>; found <q><Sub position="1" name="value"/></q>.</Text>
       </SubMessage>
+      <SubMessage>
+        <Code>34</Code>
+        <Subcode>906</Subcode>
+        <MessageNumber>782</MessageNumber>
+        <Component>Rexx</Component>
+        <Severity>Warning</Severity>
+        <SymbolicName>Error_Logical_value_supplier</SymbolicName>
+        <Text>Suppplier AVAILABLE method did not return exactly <q>0</q> or <q>1</q>; found <q><Sub position="1" name="value"/></q>.</Text>
+      </SubMessage>
     </Subcodes>
   </Message>
   <Message>
@@ -2427,7 +2490,7 @@ special character (such as a parenthesis).
         <Component>Rexx</Component>
         <Severity>Warning</Severity>
         <SymbolicName>Error_Invalid_expression_control</SymbolicName>
-        <Text>Missing initial expression for DO control variable.</Text>
+        <Text>Missing initial expression for DO or LOOP control variable.</Text>
       </SubMessage>
       <SubMessage>
         <Code>35</Code>
@@ -3241,7 +3304,7 @@ special character (such as a parenthesis).
         <Component>Rexx</Component>
         <Severity>Warning</Severity>
         <SymbolicName>Error_Conversion_to</SymbolicName>
-        <Text>Value of TO expression of DO instruction must be numeric; found <q><Sub position="1" name="value"/></q>.</Text>
+        <Text>Value of TO expression of DO or LOOP instruction must be numeric; found <q><Sub position="1" name="value"/></q>.</Text>
       </SubMessage>
       <SubMessage>
         <Code>41</Code>
@@ -3250,7 +3313,7 @@ special character (such as a parenthesis).
         <Component>Rexx</Component>
         <Severity>Warning</Severity>
         <SymbolicName>Error_Conversion_by</SymbolicName>
-        <Text>Value of BY expression of DO instruction must be numeric; found <q><Sub position="1" name="value"/></q>.</Text>
+        <Text>Value of BY expression of DO or LOOP instruction must be numeric; found <q><Sub position="1" name="value"/></q>.</Text>
       </SubMessage>
       <SubMessage>
         <Code>41</Code>
@@ -3259,7 +3322,7 @@ special character (such as a parenthesis).
         <Component>Rexx</Component>
         <Severity>Warning</Severity>
         <SymbolicName>Error_Conversion_control</SymbolicName>
-        <Text>Value of control variable expression of DO instruction must be numeric; found <q><Sub position="1" name="value"/></q>.</Text>
+        <Text>Value of control variable expression of DO or LOOP instruction must be numeric; found <q><Sub position="1" name="value"/></q>.</Text>
       </SubMessage>
       <SubMessage>
         <Code>41</Code>
@@ -3290,7 +3353,7 @@ special character (such as a parenthesis).
     <SymbolicName>Error_Overflow</SymbolicName>
     <Text>Arithmetic overflow/underflow.</Text>
     <Explanation><para>The result of an arithmetic operation requires an exponent that is greater than the platform limit of nine digits.</para>
-    <para>This error can occur during the evaluation of an expression (often as a result of trying to divide a number by 0) or while stepping a DO loop control variable.</para></Explanation>
+    <para>This error can occur during the evaluation of an expression (often as a result of trying to divide a number by 0) or while stepping a loop control variable.</para></Explanation>
     <Subcodes>
       <SubMessage>
         <Code>42</Code>
@@ -4674,6 +4737,15 @@ special character (such as a parenthesis).
         <SymbolicName>Error_Incorrect_method_message_name</SymbolicName>
         <Text>A message name argument must be a string or an array with 2 elements; found <q><Sub position="1" name="value"/></q>.</Text>
       </SubMessage>
+      <SubMessage>
+        <Code>93</Code>
+        <Subcode>974</Subcode>
+        <MessageNumber>539</MessageNumber>
+        <Component>Rexx</Component>
+        <Severity>Warning</Severity>
+        <SymbolicName>Error_Incorrect_method_no_method_type</SymbolicName>
+        <Text>The <Sub position="1" name="argument"/> argument must be a string, array, or method object.</Text>
+      </SubMessage>
     </Subcodes>
   </Message>
   <Message>
@@ -5130,6 +5202,42 @@ special character (such as a parenthesis).
         <SymbolicName>Error_Execution_abstract_metaclass</SymbolicName>
         <Text>Class <Sub position="1" name="name"/> is a metaclass and cannot be made ABSTRACT.</Text>
       </SubMessage>
+      <SubMessage>
+        <Code>98</Code>
+        <Subcode>991</Subcode>
+        <MessageNumber>773</MessageNumber>
+        <Component>Rexx</Component>
+        <Severity>Warning</Severity>
+        <SymbolicName>Error_Execution_private_access</SymbolicName>
+        <Text>Method <Sub position="1" name="name"/> may only be invoked from a method of the same object or one of its classes.</Text>
+      </SubMessage>
+      <SubMessage>
+        <Code>98</Code>
+        <Subcode>992</Subcode>
+        <MessageNumber>780</MessageNumber>
+        <Component>Rexx</Component>
+        <Severity>Warning</Severity>
+        <SymbolicName>Error_Execution_expose_method</SymbolicName>
+        <Text>The EXPOSE instruction may only be used from method invocations.</Text>
+      </SubMessage>
+      <SubMessage>
+        <Code>98</Code>
+        <Subcode>993</Subcode>
+        <MessageNumber>781</MessageNumber>
+        <Component>Rexx</Component>
+        <Severity>Warning</Severity>
+        <SymbolicName>Error_Execution_use_local_method</SymbolicName>
+        <Text>The USE LOCAL instruction may only be used from method invocations.</Text>
+      </SubMessage>
+      <SubMessage>
+        <Code>98</Code>
+        <Subcode>994</Subcode>
+        <MessageNumber>783</MessageNumber>
+        <Component>Rexx</Component>
+        <Severity>Warning</Severity>
+        <SymbolicName>Error_Execution_no_supplier</SymbolicName>
+        <Text>Unable to convert object <q><Sub position="1" name="object"/></q> to a supplier object.</Text>
+      </SubMessage>
     </Subcodes>
   </Message>
   <Message>
@@ -5528,6 +5636,33 @@ special character (such as a parenthesis).
         <Severity>Warning</Severity>
         <SymbolicName>Error_Translation_missing_annotation_target</SymbolicName>
         <Text>::ANNOTATION target <Sub position="1" name="type"/> <q><Sub position="2" name="name"/></q> not found.</Text>
+      </SubMessage>
+      <SubMessage>
+        <Code>99</Code>
+        <Subcode>946</Subcode>
+        <MessageNumber>774</MessageNumber>
+        <Component>Rexx</Component>
+        <Severity>Warning</Severity>
+        <SymbolicName>Error_Translation_delegate_method</SymbolicName>
+        <Text>Delegate methods cannot have a method body.</Text>
+      </SubMessage>
+      <SubMessage>
+        <Code>99</Code>
+        <Subcode>947</Subcode>
+        <MessageNumber>776</MessageNumber>
+        <Component>Rexx</Component>
+        <Severity>Warning</Severity>
+        <SymbolicName>Error_Translation_delegate_attribute</SymbolicName>
+        <Text>Delegate attributes cannot have a method body.</Text>
+      </SubMessage>
+      <SubMessage>
+        <Code>99</Code>
+        <Subcode>948</Subcode>
+        <MessageNumber>778</MessageNumber>
+        <Component>Rexx</Component>
+        <Severity>Warning</Severity>
+        <SymbolicName>Error_Translation_use_local_compound</SymbolicName>
+        <Text>USE LOCAL cannot process compound variables; found <q><Sub position="1" name="variable"/></q>.</Text>
       </SubMessage>
     </Subcodes>
   </Message>

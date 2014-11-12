@@ -46,7 +46,8 @@
 
 #include "RexxInstruction.hpp"
 
-class RexxInstructionExpose : public RexxInstruction {
+class RexxInstructionExpose : public RexxInstruction
+{
  public:
     RexxInstructionExpose(size_t, QueueClass *);
     inline RexxInstructionExpose(RESTORETYPE restoreType) { ; };

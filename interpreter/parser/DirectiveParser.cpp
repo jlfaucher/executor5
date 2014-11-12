@@ -643,6 +643,7 @@ void LanguageParser::methodDirective()
     bool isAttribute = false;
     bool isAbstract = false;
     RexxString *externalname = OREF_NULL;       // not an external method yet
+    RexxString *delegateName = OREF_NULL;       // no delegate target yet
 
     // method name must be a symbol or string
     RexxToken *token = nextReal();
@@ -650,6 +651,7 @@ void LanguageParser::methodDirective()
     {
         syntaxError(Error_Symbol_or_string_method, token);
     }
+
     // this is the method internal name
     RexxString *name = token->value();
     // this is the look up name
@@ -687,7 +689,7 @@ void LanguageParser::methodDirective()
                 // ::METHOD name EXTERNAL extname
                 case SUBDIRECTIVE_EXTERNAL:
                     // no dup on external and abstract is mutually exclusive
-                    if (externalname != OREF_NULL || isAbstract)
+                    if (externalname != OREF_NULL || delegateName != OREF_NULL || isAbstract)
                     {
                         syntaxError(Error_Invalid_subkeyword_method, token);
                     }
@@ -785,12 +787,30 @@ void LanguageParser::methodDirective()
                 // ::METHOD name ABSTRACT
                 case SUBDIRECTIVE_ABSTRACT:
                     // can't have dups or external name or be an attributed
-                    if (isAbstract || externalname != OREF_NULL || isAttribute)
+                    if (isAbstract || externalname != OREF_NULL || delegateName != OREF_NULL || isAttribute)
                     {
                         syntaxError(Error_Invalid_subkeyword_method, token);
                     }
 
                     isAbstract = true;
+                    break;
+
+                // ::METHOD name DELEGATE property
+                case SUBDIRECTIVE_DELEGATE:
+                    // no dup on external and abstract is mutually exclusive
+                    if (externalname != OREF_NULL || delegateName != OREF_NULL || isAbstract)
+                    {
+                        syntaxError(Error_Invalid_subkeyword_method, token);
+                    }
+
+                    token = nextReal();
+                    // delegate name must be a symbol
+                    if (!token->isSymbol())
+                    {
+                        syntaxError(Error_Symbol_expected_delegate, token);
+                    }
+                    // get the name of the attribute used for the forwarding
+                    delegateName = token->value();
                     break;
 
                 // something invalid
@@ -805,8 +825,34 @@ void LanguageParser::methodDirective()
     checkDuplicateMethod(internalname, isClass, Error_Translation_duplicate_method);
 
     MethodClass *_method = OREF_NULL;
+
+    // handle delegates first.  A delegate method can also be an attribute, which really
+    // just means we produce two delegate methods
+    if (delegateName != OREF_NULL)
+    {
+        // now get a variable retriever to get the property
+        RexxVariableBase *retriever = getRetriever(delegateName);
+
+        // cannot have code following an method with the delegateb keyword
+        checkDirective(Error_Translation_delegate_method);
+
+        if (isAttribute)
+        {
+            // now get this as the setter method.
+            RexxString *setterName = commonString(internalname->concatWithCstring("="));
+            // need to check for duplicates on that too
+            checkDuplicateMethod(setterName, isClass, Error_Translation_duplicate_method);
+            // create the method pair and quit.
+            createDelegateMethod(setterName, retriever, isClass, accessFlag == PRIVATE_SCOPE,
+                protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, true);
+        }
+        // create the method pair and quit.
+        createDelegateMethod(internalname, retriever, isClass, accessFlag == PRIVATE_SCOPE,
+            protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, isAttribute);
+        return;
+    }
     // is this an attribute method?
-    if (isAttribute)
+    else if (isAttribute)
     {
         // now get this as the setter method.
         RexxString *setterName = commonString(internalname->concatWithCstring("="));
@@ -1168,6 +1214,7 @@ void LanguageParser::attributeDirective()
     AttributeType style = ATTRIBUTE_BOTH;
     bool isClass = false;            // default is an instance method
     bool isAbstract = false;         // by default, creating a concrete method
+    RexxString *delegateName = OREF_NULL;
 
     RexxToken *token = nextReal();
     // the name must be a string or a symbol
@@ -1291,7 +1338,7 @@ void LanguageParser::attributeDirective()
                 // external attributes?
                 case SUBDIRECTIVE_EXTERNAL:
                     // can't be abstract and external
-                    if (externalname != OREF_NULL || isAbstract)
+                    if (externalname != OREF_NULL || delegateName != OREF_NULL || isAbstract)
                     {
                         syntaxError(Error_Invalid_subkeyword_attribute, token);
                     }
@@ -1309,11 +1356,29 @@ void LanguageParser::attributeDirective()
                 // abstract method
                 case SUBDIRECTIVE_ABSTRACT:
                     // abstract and external conflict
-                    if (isAbstract || externalname != OREF_NULL)
+                    if (isAbstract || externalname != OREF_NULL || delegateName != OREF_NULL)
                     {
                         syntaxError(Error_Invalid_subkeyword_attribute, token);
                     }
                     isAbstract = true;
+                    break;
+
+                // ::ATTRIBUTE name DELEGATE target property
+                case SUBDIRECTIVE_DELEGATE:
+                    // no dup on external and abstract is mutually exclusive
+                    if (externalname != OREF_NULL || delegateName != OREF_NULL || isAbstract)
+                    {
+                        syntaxError(Error_Invalid_subkeyword_attribute, token);
+                    }
+
+                    token = nextReal();
+                    // delegate name must be a symbol
+                    if (!token->isSymbol())
+                    {
+                        syntaxError(Error_Symbol_expected_delegate, token);
+                    }
+                    // get the name of the attribute used for the forwarding
+                    delegateName = token->value();
                     break;
 
                 // some invalid keyword
@@ -1351,11 +1416,15 @@ void LanguageParser::attributeDirective()
                 // now create both getter and setting methods from the information.
                 MethodClass *_method = createNativeMethod(internalname, library, procedure->concatToCstring("GET"));
                 _method->setAttributes(accessFlag == PRIVATE_SCOPE, protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD);
+                // mark this as an attribute method
+                _method->setAttribute();
                 // add to the compilation
                 addMethod(internalname, _method, isClass);
 
                 _method = createNativeMethod(setterName, library, procedure->concatToCstring("SET"));
                 _method->setAttributes(accessFlag == PRIVATE_SCOPE, protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD);
+                // mark this as an attribute method
+                _method->setAttribute();
                 // add to the compilation
                 addMethod(setterName, _method, isClass);
             }
@@ -1366,6 +1435,18 @@ void LanguageParser::attributeDirective()
                 createAbstractMethod(internalname, isClass, accessFlag == PRIVATE_SCOPE,
                     protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, true);
                 createAbstractMethod(setterName, isClass, accessFlag == PRIVATE_SCOPE,
+                    protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, true);
+            }
+            // delegating these to another object
+            else if (delegateName != OREF_NULL)
+            {
+                // the retriever is the delegate name, not the attribute name
+                retriever = getRetriever(delegateName);
+                // create the method pair and quit.
+                createDelegateMethod(internalname, retriever, isClass, accessFlag == PRIVATE_SCOPE,
+                    protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, true);
+                // create the method pair and quit.
+                createDelegateMethod(setterName, retriever, isClass, accessFlag == PRIVATE_SCOPE,
                     protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, true);
             }
             else
@@ -1411,6 +1492,19 @@ void LanguageParser::attributeDirective()
                 checkDirective(Error_Translation_abstract_attribute);
                 // create the method pair and quit.
                 createAbstractMethod(internalname, isClass, accessFlag == PRIVATE_SCOPE,
+                    protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, true);
+            }
+            // delegating these to another object
+            else if (delegateName != OREF_NULL)
+            {
+                // the retriever is the delegate name, not the attribute name
+                retriever = getRetriever(delegateName);
+
+                // no code can follow delegate methods
+                checkDirective(Error_Translation_delegate_attribute);
+
+                // create the method pair and quit.
+                createDelegateMethod(internalname, retriever, isClass, accessFlag == PRIVATE_SCOPE,
                     protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, true);
             }
             // either written in ooRexx or is automatically generated.
@@ -1465,6 +1559,19 @@ void LanguageParser::attributeDirective()
                 checkDirective(Error_Translation_abstract_attribute);
                 // create the method pair and quit.
                 createAbstractMethod(setterName, isClass, accessFlag == PRIVATE_SCOPE,
+                    protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, true);
+            }
+            // delegating these to another object
+            else if (delegateName != OREF_NULL)
+            {
+                // the retriever is the delegate name, not the attribute name
+                retriever = getRetriever(delegateName);
+
+                // no code can follow delegate methods
+                checkDirective(Error_Translation_delegate_attribute);
+
+                // create the method pair and quit.
+                createDelegateMethod(setterName, retriever, isClass, accessFlag == PRIVATE_SCOPE,
                     protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, true);
             }
             else
@@ -2043,6 +2150,35 @@ void LanguageParser::createAttributeGetterMethod(RexxString *name, RexxVariableB
     // mark as an attribute method
     _method->setAttribute();
     // add this to the target
+    addMethod(name, _method, classMethod);
+}
+
+
+/**
+ * Create a DELEGATE method.
+ *
+ * @param name      The name of the method.
+ * @param retriever The retriever for the target variable.
+ * @param classMethod
+ *                  Indicates we're adding a class or instance method.
+ * @param privateMethod
+ *                  The method's private attribute.
+ * @param protectedMethod
+ *                  The method's protected attribute.
+ * @param guardedMethod
+ *                  The method's guarded attribute.
+ * @param isAttribute
+ *                  Indicates whether this is an attribute method.
+ */
+void LanguageParser::createDelegateMethod(RexxString *name, RexxVariableBase *retriever,
+    bool classMethod, bool privateMethod, bool protectedMethod, bool guardedMethod, bool isAttribute)
+{
+    // create the kernel method for the accessor
+    BaseCode *code = new DelegateCode(retriever);
+    MethodClass *_method = new MethodClass(name, code);
+    _method->setAttributes(privateMethod, protectedMethod, guardedMethod);
+    // mark with the attribute state
+    _method->setAttribute(isAttribute);
     addMethod(name, _method, classMethod);
 }
 

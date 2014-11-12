@@ -173,6 +173,7 @@ class RexxActivation : public ActivationBase
    void              exitFrom(RexxObject *);
    void              procedureExpose(RexxVariableBase **variables, size_t count);
    void              expose(RexxVariableBase **variables, size_t count);
+   void              autoExpose(RexxVariableBase **variables, size_t count);
    void              setTrace(const TraceSetting &);
    void              setTrace(RexxString *);
    void              raise(RexxString *, RexxObject *, RexxString *, RexxObject *, RexxObject *, DirectoryClass *);
@@ -250,6 +251,7 @@ class RexxActivation : public ActivationBase
    VariableDictionary *getObjectVariables();
    StringTable     * getLabels();
    RexxString      * getProgramName();
+   const char      * displayProgramName();
    RexxObject      * popControl();
    void              pushControl(RexxObject *);
    void              closeStreams();

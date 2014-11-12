@@ -378,7 +378,7 @@ set (build_extensions_csvstream_dir ${build_extensions_dir}/csvStream)
 set (build_extensions_rxmath_dir ${build_extensions_dir}/rxmath)
 set (build_extensions_rxregexp_dir ${build_extensions_dir}/rxregexp)
 set (build_extensions_rxsock_dir ${build_extensions_dir}/rxsock)
-set (build_extensions_orxncurses_dir ${build_extensions_dir}/platform/unix/orxncurses)
+set (build_extensions_orxncurses_dir ${build_extensions_dir}/orxncurses)
 set (build_extensions_hostemu_dir ${build_extensions_dir}/hostemu)
 set (build_extensions_hostemu_platform_dir ${build_extensions_hostemu_dir}/${ORX_PLATFORM_DIR})
 set (build_utilities_dir utilities)
@@ -607,6 +607,7 @@ set (instructions_sources  ${build_instructions_dir}/AddressInstruction.cpp
             ${build_instructions_dir}/ControlledDoInstruction.cpp
             ${build_instructions_dir}/DoForeverInstruction.cpp
             ${build_instructions_dir}/DoOverInstruction.cpp
+            ${build_instructions_dir}/DoWithInstruction.cpp
             ${build_instructions_dir}/DoWhileInstruction.cpp
             ${build_instructions_dir}/DropInstruction.cpp
             ${build_instructions_dir}/ElseInstruction.cpp
@@ -641,7 +642,8 @@ set (instructions_sources  ${build_instructions_dir}/AddressInstruction.cpp
             ${build_instructions_dir}/SignalInstruction.cpp
             ${build_instructions_dir}/ThenInstruction.cpp
             ${build_instructions_dir}/TraceInstruction.cpp
-            ${build_instructions_dir}/UseStrictInstruction.cpp
+            ${build_instructions_dir}/UseInstruction.cpp
+            ${build_instructions_dir}/UseLocalInstruction.cpp
             ${build_instructions_dir}/WhenCaseInstruction.cpp)
 set (parser_sources ${build_parser_dir}/Clause.cpp
             ${build_parser_dir}/KeywordConstants.cpp
@@ -925,6 +927,7 @@ if (XALAN_EXECUTABLE)
 
     generate_message_file(${build_messages_dir}/RexxErrorCodes.h ${build_messages_dir}/RexxErrorCodes.xsl)
     generate_message_file(${build_messages_dir}/RexxMessageNumbers.h ${build_messages_dir}/RexxMessageNumbers.xsl)
+    generate_message_file(${build_messages_dir}/RexxMessageTable.h ${build_messages_dir}/RexxMessageTable.xsl)
     generate_message_file(${build_api_dir}/oorexxerrors.h ${build_messages_dir}/ApiErrorCodes.xsl)
     generate_message_file(${build_messages_dir}/errnums.xml ${build_messages_dir}/errnums.xsl)
     generate_message_file(${build_messages_dir}/errnumsrxqueue.xml ${build_messages_dir}/errnumsrxqueue.xsl)
@@ -940,6 +943,7 @@ if (XALAN_EXECUTABLE)
 
     set (REXXMSG_FILES ${build_messages_dir}/RexxErrorCodes.h
                        ${build_messages_dir}/RexxMessageNumbers.h
+                       ${build_messages_dir}/RexxMessageTable.h
                        ${build_api_dir}/oorexxerrors.h
                        ${build_messages_dir}/errnums.xml
                        ${build_messages_dir}/errnumsrxqueue.xml
@@ -1160,12 +1164,12 @@ endif ()
 #################### liborxncurses.so ################
 if (NOT WIN32)
 # Sources for liborxncurses.so
-add_library(orxncurses SHARED ${build_extensions_platform_dir}/orxncurses/orxncurses.cpp)
+add_library(orxncurses SHARED ${build_extensions_dir}/orxncurses/orxncurses.cpp)
 # Include file definition
 target_include_directories(orxncurses PUBLIC
              ${build_api_dir}
              ${build_api_platform_dir}
-             ${extensions_unix_dir}/orxncurses)
+             ${build_extensions_dir}/orxncurses)
 # Extra link library definitions
 target_link_libraries(orxncurses rexx rexxapi ncurses)
 set_target_properties(orxncurses PROPERTIES VERSION ${ORX_VERSION})
@@ -1528,7 +1532,10 @@ endif ()
 
 
 # direct output into a samples subdir
-add_subdirectory (samples samples)
+add_subdirectory (samples)
+
+# build the binaries used for API tests.
+add_subdirectory (testbinaries)
 
 
 #################### NSIS Package Targets ##########################
@@ -1591,8 +1598,6 @@ if (WIN32 AND DOC_SOURCE_DIR)
    install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/rexxapi.pdb COMPONENT Core DESTINATION ${INSTALL_EXECUTABLE_DIR}
        CONFIGURATIONS Debug RelWithDebInfo)
    install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/rexxc.pdb COMPONENT Core DESTINATION ${INSTALL_EXECUTABLE_DIR}
-       CONFIGURATIONS Debug RelWithDebInfo)
-   install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/rexxexit.pdb COMPONENT Core DESTINATION ${INSTALL_EXECUTABLE_DIR}
        CONFIGURATIONS Debug RelWithDebInfo)
    install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/rexxhide.pdb COMPONENT Core DESTINATION ${INSTALL_EXECUTABLE_DIR}
        CONFIGURATIONS Debug RelWithDebInfo)

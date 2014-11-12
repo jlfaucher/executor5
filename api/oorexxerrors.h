@@ -173,6 +173,10 @@
 #define Rexx_Error_Symbol_expected_qualified_symbol                       20923
 #define Rexx_Error_Symbol_expected_annotation_type                        20924
 #define Rexx_Error_Symbol_expected_form                                   20925
+#define Rexx_Error_Symbol_expected_delegate                               20926
+#define Rexx_Error_Symbol_expected_use_local                              20927
+#define Rexx_Error_Symbol_expected_indirect                               20928
+#define Rexx_Error_Symbol_expected_after_keyword                          20929
 #define Rexx_Error_Invalid_data                                           21000
 #define Rexx_Error_Invalid_data_user_defined                              21900
 #define Rexx_Error_Invalid_data_nop                                       21901
@@ -252,6 +256,8 @@
 #define Rexx_Error_Invalid_do_whileuntil                                  27001
 #define Rexx_Error_Invalid_do_forever                                     27901
 #define Rexx_Error_Invalid_do_duplicate                                   27902
+#define Rexx_Error_Invalid_do_with_no_control                             27903
+#define Rexx_Error_Invalid_do_with_no_over                                27904
 #define Rexx_Error_Invalid_leave                                          28000
 #define Rexx_Error_Invalid_leave_leave                                    28001
 #define Rexx_Error_Invalid_leave_iterate                                  28002
@@ -292,6 +298,7 @@
 #define Rexx_Error_Logical_value_authorization                            34903
 #define Rexx_Error_Logical_value_property                                 34904
 #define Rexx_Error_Logical_value_when_case                                34905
+#define Rexx_Error_Logical_value_supplier                                 34906
 #define Rexx_Error_Invalid_expression                                     35000
 #define Rexx_Error_Invalid_expression_general                             35001
 #define Rexx_Error_Invalid_expression_user_defined                        35900
@@ -539,6 +546,7 @@
 #define Rexx_Error_Unsupported_copy_method                                93970
 #define Rexx_Error_Incorrect_method_multi_dimension                       93971
 #define Rexx_Error_Incorrect_method_message_name                          93972
+#define Rexx_Error_Incorrect_method_no_method_type                        93974
 #define Rexx_Error_No_method                                              97000
 #define Rexx_Error_No_method_name                                         97001
 #define Rexx_Error_No_method_user_defined                                 97900
@@ -589,6 +597,10 @@
 #define Rexx_Error_Execution_no_namespace_class                           98988
 #define Rexx_Error_Execution_abstract_class                               98989
 #define Rexx_Error_Execution_abstract_metaclass                           98990
+#define Rexx_Error_Execution_private_access                               98991
+#define Rexx_Error_Execution_expose_method                                98992
+#define Rexx_Error_Execution_use_local_method                             98993
+#define Rexx_Error_Execution_no_supplier                                  98994
 #define Rexx_Error_Translation                                            99000
 #define Rexx_Error_Translation_user_defined                               99900
 #define Rexx_Error_Translation_duplicate_class                            99901
@@ -633,6 +645,9 @@
 #define Rexx_Error_Translation_missing_resource_end                       99943
 #define Rexx_Error_Translation_reserved_namespace                         99944
 #define Rexx_Error_Translation_missing_annotation_target                  99945
+#define Rexx_Error_Translation_delegate_method                            99946
+#define Rexx_Error_Translation_delegate_attribute                         99947
+#define Rexx_Error_Translation_use_local_compound                         99948
 
 
 #endif

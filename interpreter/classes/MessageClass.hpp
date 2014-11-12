@@ -63,7 +63,7 @@ class MessageClass : public RexxObject
         flagErrorReported,
         flagAllNotified,
         flagStartPending,
-        flagMsgSent,
+        flagMsgActivated,
     } MessageFlag;
 
     void * operator new(size_t);
@@ -74,11 +74,21 @@ class MessageClass : public RexxObject
     virtual void  live(size_t);
     virtual void  liveGeneral(MarkReason reason);
     virtual void  flatten(Envelope *);
+    virtual RexxInternalObject *copy();
 
-    RexxObject   *notify(MessageClass *);
+    RexxObject   *notify(RexxObject *);
     RexxObject   *result();
-    RexxObject   *send(RexxObject *);
-    RexxObject   *start(RexxObject *);
+    RexxObject   *wait();
+    RexxObject   *send();
+    RexxObject   *dispatch();
+    RexxObject   *start();
+    MessageClass *reply();
+    RexxObject   *startRexx(RexxObject **, size_t);
+    RexxObject   *startWithRexx(RexxObject *, ArrayClass *);
+    RexxObject   *replyRexx(RexxObject **, size_t);
+    RexxObject   *replyWithRexx(RexxObject *, ArrayClass *);
+    RexxObject   *sendRexx(RexxObject **, size_t);
+    RexxObject   *sendWithRexx(RexxObject *, ArrayClass *);
     RexxObject   *completed();
     void          sendNotification();
     void          error(DirectoryClass *);
@@ -90,19 +100,25 @@ class MessageClass : public RexxObject
     RexxObject   *errorCondition();
     RexxObject   *newRexx(RexxObject **, size_t);
     Activity     *getActivity() { return startActivity; }
+    RexxObject   *messageCompleted(RexxObject *messageSource);
+    RexxObject   *halt(RexxString *description);
 
+    inline bool isActivated()    { return dataFlags[flagMsgActivated]; }
+    inline bool isComplete()     { return resultReturned() || raiseError(); }
     inline bool resultReturned() { return dataFlags[flagResultReturned]; }
     inline bool raiseError()     { return dataFlags[flagRaiseError]; }
     inline bool errorReported()  { return dataFlags[flagErrorReported]; }
     inline bool allNotified()    { return dataFlags[flagAllNotified]; }
     inline bool startPending()   { return dataFlags[flagStartPending]; }
-    inline bool msgSent()        { return dataFlags[flagMsgSent]; }
     inline void setResultReturned() { dataFlags.set(flagResultReturned); }
     inline void setRaiseError()     { dataFlags.set(flagRaiseError); }
     inline void setErrorReported()  { dataFlags.set(flagErrorReported); }
     inline void setAllNotified()    { dataFlags.set(flagAllNotified); }
-    inline void setStartPending()   { dataFlags.set(flagStartPending); }
-    inline void setMsgSent()        { dataFlags.set(flagMsgSent); }
+    inline void clearStartPending() { dataFlags.reset(flagMsgActivated); dataFlags.reset(flagStartPending); }
+    inline void setStartPending()   { setMsgActivated(); dataFlags.set(flagStartPending); }
+    inline void setMsgActivated()   { dataFlags.set(flagMsgActivated); }
+    void clearCompletion();
+    void checkReuse();
 
     static void createInstance();
     static RexxClass *classInstance;
@@ -120,8 +136,6 @@ class MessageClass : public RexxObject
     Activity      *startActivity;         // Activity created to run msg
     ArrayClass    *waitingActivities;     // waiting activities list
     FlagSet <MessageFlag, 32> dataFlags;  // flags to control processing
-    SysSemaphore  waitResultSem;          // Semophore used to wait on result
-    size_t NumWaiting;                    // activities waiting on result
 };
 
 #endif

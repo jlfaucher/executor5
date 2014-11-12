@@ -114,6 +114,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 <Class id="AttributeSetterCode" class="AttributeSetterCode" include="CPPCode.hpp"/>
 <Class id="ConstantGetterCode" class="ConstantGetterCode" include="CPPCode.hpp"/>
 <Class id="AbstractCode" class="AbstractCode" include="CPPCode.hpp"/>
+<Class id="DelegateCode" class="DelegateCode" include="CPPCode.hpp"/>
 
 <Class id="SmartBuffer" class="SmartBuffer" include="SmartBuffer.hpp"/>
 <Class id="IdentityHashContents" class="IdentityHashContents" include="HashContents.hpp"/>
@@ -192,7 +193,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 <Class id="SignalOnInstruction" class="RexxInstructionSignalOn" include="SignalInstruction.hpp"/>
 <Class id="ThenInstruction" class="RexxInstructionThen" include="ThenInstruction.hpp"/>
 <Class id="TraceInstruction" class="RexxInstructionTrace" include="TraceInstruction.hpp"/>
-<Class id="UseInstruction" class="RexxInstructionUseStrict" include="UseStrictInstruction.hpp"/>
+<Class id="UseInstruction" class="RexxInstructionUse" include="UseInstruction.hpp"/>
+<Class id="UseLocalInstruction" class="RexxInstructionUseLocal" include="UseLocalInstruction.hpp"/>
+<Class id="DoWithInstruction" class="RexxInstructionDoWith" include="DoInstruction.hpp"/>
+<Class id="DoWithUntilInstruction" class="RexxInstructionDoWithUntil" include="DoInstruction.hpp"/>
+<Class id="DoWithWhileInstruction" class="RexxInstructionDoWithWhile" include="DoInstruction.hpp"/>
+<Class id="DoWithForInstruction" class="RexxInstructionDoWithFor" include="DoInstruction.hpp"/>
+<Class id="DoWithForUntilInstruction" class="RexxInstructionDoWithForUntil" include="DoInstruction.hpp"/>
+<Class id="DoWithForWhileInstruction" class="RexxInstructionDoWithForWhile" include="DoInstruction.hpp"/>
 
 <Class id="ClassDirective" class="ClassDirective" include="ClassDirective.hpp"/>
 <Class id="LibraryDirective" class="LibraryDirective" include="LibraryDirective.hpp"/>

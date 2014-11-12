@@ -511,6 +511,41 @@ RexxObject *RexxClass::defineMethods(StringTable *newMethods)
 
 
 /**
+ * Add a full table of methods to a class definition.
+ *
+ * @param newMethods The new methods to add.
+ */
+RexxObject *RexxClass::defineMethodsRexx(RexxObject *newMethods)
+{
+    // Rexx defined classes are not allowed to be update.  We report this as
+    // a NOMETHOD problem, as if the define method did not even exist.
+    if ( isRexxDefined())
+    {
+        reportException(Error_Execution_rexx_defined_class);
+    }
+
+    requiredArgument(newMethods, "methods");
+    // create a method dictionary and merge this into the method dictionary
+    Protected<MethodDictionary> enhancing_methods = createMethodDictionary(newMethods, this);
+
+    // make a copy of the instance behaviour so any previous objects
+    // aren't enhanced
+    setField(instanceBehaviour, (RexxBehaviour *)instanceBehaviour->copy());
+
+    // replace all of the methods in the method dictionary
+    instanceMethodDictionary->replaceMethods(enhancing_methods, this);
+
+    // any subclasses that we have need to redo their instance behaviour
+    // this also updates our own behaviour table
+    updateInstanceSubClasses();
+
+    // see if we have an uninit method defined now that this is done
+    checkUninit();
+    return OREF_NULL;
+}
+
+
+/**
  * Inherit the instance methods from another class definition.
  * This is not an true inherit operation where the class is part
  * of the hierarchy.  This directly grabs the instance methods
@@ -642,13 +677,6 @@ void RexxClass::buildFinalClassBehaviour()
     instanceBehaviour->addScope(this);
     // now we do the same thing with the class behaviour
     classMethodDictionary = getBehaviourDictionary();
-    // The merge of the mdict's is order specific. By processing OBJECT
-    // first then CLASS and then the rest of the subclassable classes
-    // the mdict's will be set up correctly.
-    // In this way merging the CLASS behaviour will only be the CLASS
-    // instance methods when OBJECT is processed, but will be CLASS's
-    // and OBJECT's after CLASS is processed
-    behaviour->merge(TheClassBehaviour);
     // now add the scope levels to this class behaviour
     // If this isn't OBJECT put OBJECT in first
     if (this != TheObjectClass)
@@ -664,6 +692,10 @@ void RexxClass::buildFinalClassBehaviour()
         // so all the classes will inherit
         classMethodDictionary = getBehaviourDictionary();
     }
+    // The merge of the mdict's is order specific. By processing OBJECT
+    // first then CLASS and then the rest of the subclassable classes
+    // the mdict's will be set up correctly.
+    behaviour->merge(TheClassBehaviour);
     // if this isn't CLASS put CLASS in next
     if (this != TheClassClass)
     {
@@ -897,7 +929,7 @@ RexxObject *RexxClass::deleteMethod(RexxString  *method_name)
     }
 
     // the method name must be a string, and we use the uppercase version...always!
-    method_name = stringArgument(method_name, ARG_ONE)->upper();
+    method_name = stringArgument(method_name, "method name")->upper();
     // we work on a copy of the instance behaviour so that this changed
     // does not suddenly show up in existing instances of this class.
     setField(instanceBehaviour, (RexxBehaviour *)instanceBehaviour->copy());
@@ -923,7 +955,7 @@ RexxObject *RexxClass::deleteMethod(RexxString  *method_name)
 MethodClass *RexxClass::method(RexxString  *method_name)
 {
     // make sure we have a proper name
-    method_name = stringArgument(method_name, ARG_ONE)->upper();
+    method_name = stringArgument(method_name, "method name")->upper();
     // we keep the instance methods defined at this level in a separate
     // method dictionary that is used to build the behaviour.  We can retrieve
     // the method directly from there.
@@ -1180,7 +1212,7 @@ MethodDictionary *RexxClass::createMethodDictionary(RexxObject *sourceCollection
     SupplierClass *supplier = (SupplierClass *)(RexxObject *)p2;
     for (; supplier->available() == TheTrueObject; supplier->next())
     {
-        MethodClass *newMethod = (MethodClass *)supplier->value();
+        MethodClass *newMethod = (MethodClass *)supplier->item();
         Protected<RexxString> method_name = supplier->index()->requestString();;
         // we add the methods to the table in uppercase, but create method objects using
         // the original name.
@@ -1222,7 +1254,7 @@ RexxObject *RexxClass::inherit(RexxClass *mixin_class, RexxClass  *position)
     }
 
     // the mixin class is required
-    requiredArgument(mixin_class, ARG_ONE);
+    requiredArgument(mixin_class, "mixin class");
 
     // this must be a class object and must be marked as a mixin
     if (!mixin_class->isInstanceOf(TheClassClass) || !mixin_class->isMixinClass())
@@ -1314,7 +1346,13 @@ RexxObject *RexxClass::uninherit(RexxClass  *mixin_class)
     }
 
     // the target class is required
-    requiredArgument(mixin_class, ARG_ONE);
+    requiredArgument(mixin_class, "mixin class");
+
+    // this must be a class object and must be marked as a mixin
+    if (!mixin_class->isInstanceOf(TheClassClass) || !mixin_class->isMixinClass())
+    {
+        reportException(Error_Execution_mixinclass, mixin_class);
+    }
 
     // this class must be a superclass of this class, but not the
     // immeidate superclass.
@@ -1370,7 +1408,7 @@ RexxObject *RexxClass::enhanced(RexxObject **args, size_t argCount)
 
     // ok, get the table argument and make sure we really got something.
     RexxObject *enhanced_methods = args[0];
-    requiredArgument(enhanced_methods, ARG_ONE);
+    requiredArgument(enhanced_methods, "methods");
 
     // create a dummy subclass of the receiver class
     Protected<RexxClass> dummy_subclass = subclass(OREF_NULL, new_string("Enhanced Subclass"), OREF_NULL, OREF_NULL);
@@ -1499,8 +1537,7 @@ RexxClass  *RexxClass::subclass(PackageClass *package, RexxString *class_id,
 
     ProtectedObject p;
     // now get an instance of the meta class
-    meta_class->sendMessage(GlobalNames::NEW, class_id, p);
-    RexxClass *new_class = (RexxClass *)(RexxObject *)p;
+    RexxClass *new_class = (RexxClass *)meta_class->sendMessage(GlobalNames::NEW, class_id, p);
 
     // hook this up with the source as early as possible.
     new_class->setPackage(package);
@@ -1523,7 +1560,7 @@ RexxClass  *RexxClass::subclass(PackageClass *package, RexxString *class_id,
 
     // if we have enhancing methods, create an instance method dictionary using the
     // new class as the scope.
-    if (enhancing_methods != OREF_NULL && enhancing_methods != TheNilObject)
+    if (enhancing_methods != OREF_NULL)
     {
         // create a method dictionary and merge this into the class method dictionary
         Protected<MethodDictionary> enhancing_class_methods = new_class->createMethodDictionary(enhancing_methods, new_class);
@@ -1550,8 +1587,9 @@ RexxClass  *RexxClass::subclass(PackageClass *package, RexxString *class_id,
     addSubClass(new_class);
     // we need to look for an uninit method and record if we have it
     new_class->checkUninit();
+    ProtectedObject result;
     // drive the new class INIT method
-    new_class->sendMessage(GlobalNames::INIT);
+    new_class->sendMessage(GlobalNames::INIT, result);
 
     // If the parent class has an uninit defined, the new child class must have one, too
     if (hasUninitDefined() || parentHasUninitDefined())
@@ -1614,7 +1652,8 @@ bool RexxClass::isCompatibleWith(RexxClass *other)
  */
 RexxObject *RexxClass::isSubclassOf(RexxClass *other)
 {
-    requiredArgument(other, ARG_ONE);            // must have the other argument
+    // verify we have a valid class object to check
+    classArgument(other, TheClassClass, "class");
     return booleanObject(isCompatibleWith(other));
 }
 
@@ -1705,7 +1744,7 @@ RexxClass  *RexxClass::newRexx(RexxObject **args, size_t argCount)
 
     // first argument is the class id...make sure it is a string value
     RexxString *class_id = (RexxString *)args[0];
-    class_id = stringArgument(class_id, ARG_ONE);
+    class_id = stringArgument(class_id, "class id");
 
     // get a copy of this class object
     Protected<RexxClass> new_class = (RexxClass *)clone();
@@ -1763,8 +1802,9 @@ RexxClass  *RexxClass::newRexx(RexxObject **args, size_t argCount)
         new_class->setHasUninitDefined();
     }
 
+    ProtectedObject result;
     // send the new class the INIT method
-    new_class->sendMessage(GlobalNames::INIT, args + 1, argCount - 1);
+    new_class->sendMessage(GlobalNames::INIT, args + 1, argCount - 1, result);
     return new_class;
 }
 
@@ -1808,14 +1848,16 @@ void RexxClass::completeNewObject(RexxObject *obj, RexxObject **initArgs, size_t
     // set the behaviour (this might be a subclass, so don't assume the
     // one from the base class is correct).
     obj->setBehaviour(getInstanceBehaviour());
-    // a subclass might defined an uninit method, so we need to
+    // a subclass might define an uninit method, so we need to
     // check that also.
     if (hasUninitDefined())
     {
-        obj->hasUninit();
+        obj->requiresUninit();
     }
+
+    ProtectedObject result;
     // now send an INIT message to complete initialization.
-    obj->sendMessage(GlobalNames::INIT, initArgs, argCount);
+    obj->sendMessage(GlobalNames::INIT, initArgs, argCount, result);
 }
 
 

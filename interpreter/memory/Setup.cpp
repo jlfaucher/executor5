@@ -330,6 +330,7 @@ void MemoryObject::createImage()
 #define AddClassProtectedMethod(name, entryPoint, args) defineProtectedMethod(name, currentClassBehaviour, CPPM(entryPoint), args, #entryPoint);
 #define AddClassPrivateMethod(name, entryPoint, args) definePrivateMethod(name, currentClassBehaviour, CPPM(entryPoint), args, #entryPoint);
 #define HideClassMethod(name) currentClassBehaviour->hideMethod(name);
+#define RemoveClassMethod(name) currentClassBehaviour->removeMethod(name);
 
 // inherit class method definitions from a previously created class
 #define InheritClassMethods(source) currentClassBehaviour->inheritInstanceMethods(The##source##ClassBehaviour);
@@ -339,6 +340,7 @@ void MemoryObject::createImage()
 #define AddProtectedMethod(name, entryPoint, args) defineProtectedMethod(name, currentInstanceBehaviour, CPPM(entryPoint), args, #entryPoint);
 #define AddPrivateMethod(name, entryPoint, args) definePrivateMethod(name, currentInstanceBehaviour, CPPM(entryPoint), args, #entryPoint);
 #define HideMethod(name) currentInstanceBehaviour->hideMethod(name);
+#define RemoveMethod(name) currentInstanceBehaviour->removeMethod(name);
 
 // inherit instance method definitions from a previously created class
 #define InheritInstanceMethods(source) currentInstanceBehaviour->inheritInstanceMethods(The##source##Behaviour);
@@ -423,6 +425,7 @@ StartClassDefinition(Class);
     // now the normal instance methods for a CLASS object.
         AddProtectedMethod("BaseClass", RexxClass::getBaseClass, 0);
         AddProtectedMethod("Define", RexxClass::defineMethod, 2);
+        AddProtectedMethod("DefineMethods", RexxClass::defineMethodsRexx, 1);
         // these two are special and will be removed at the end of
         // the image build
         AddProtectedMethod("DefineClassMethod", RexxClass::defineClassMethod, 2);
@@ -653,6 +656,10 @@ StartClassDefinition(String)
         AddMethod("CaselessEquals", RexxString::caselessEquals, 1);
         AddMethod("CompareTo", RexxString::compareToRexx, 3);
         AddMethod("CaselessCompareTo", RexxString::caselessCompareToRexx, 3);
+        AddMethod("StartsWith", RexxString::startsWithRexx, 1);
+        AddMethod("EndsWith", RexxString::endsWithRexx, 1);
+        AddMethod("CaselessStartsWith", RexxString::caselessStartsWithRexx, 1);
+        AddMethod("CaselessEndsWith", RexxString::caselessEndsWithRexx, 1);
 
     CompleteMethodDefinitions();
 
@@ -745,6 +752,11 @@ StartClassDefinition(Queue);
         // the queue size is always the number of items, so remap that call
         // to the array items method.
         AddMethod("Size", ArrayClass::itemsRexx, 0);
+
+        // remove some inherited array methods that make no sense for queues
+        RemoveMethod("Dimension");
+        RemoveMethod("Dimensions");
+        RemoveMethod("Fill");
 
     CompleteMethodDefinitions();
 
@@ -900,6 +912,7 @@ StartClassDefinition(Relation)
         AddMethod("Items", RelationClass::itemsRexx, 1);
         AddMethod("HasItem", RelationClass::hasItemRexx, 2);
         AddMethod("AllIndex", RelationClass::allIndexRexx, 1);
+        AddMethod("AllAt", RelationClass::allAt, 1);
         AddMethod("RemoveAll", RelationClass::removeAll, 1);
         AddMethod("UniqueIndexes", RelationClass::uniqueIndexes, 0);
 
@@ -996,8 +1009,18 @@ StartClassDefinition(Message)
         AddMethod("MessageName", MessageClass::messageName, 0);
         AddMethod("Arguments", MessageClass::arguments, 0);
         AddMethod("ErrorCondition", MessageClass::errorCondition, 0);
-        AddMethod("Send", MessageClass::send, 1);
-        AddMethod("Start", MessageClass::start, 1);
+        AddMethod("Send", MessageClass::sendRexx, A_COUNT);
+        AddMethod("Start", MessageClass::startRexx, A_COUNT);
+        AddMethod("Reply", MessageClass::replyRexx, A_COUNT);
+        AddMethod("SendWith", MessageClass::sendWithRexx, 2);
+        AddMethod("StartWith", MessageClass::startWithRexx, 2);
+        AddMethod("ReplyWith", MessageClass::replyWithRexx, 2);
+        // these are both just for triggering a send event for event
+        // completions.  The map to the same method
+        AddMethod("MessageComplete", MessageClass::messageCompleted, 1);
+        AddMethod("Triggered", MessageClass::messageCompleted, 1);
+        AddMethod("Wait", MessageClass::wait, 0);
+        AddMethod("Halt", MessageClass::halt, 1);
 
     CompleteMethodDefinitions();
 
@@ -1089,6 +1112,7 @@ StartClassDefinition(Package)
         AddMethod("ImportedClasses", PackageClass::getImportedClassesRexx, 0);
         AddMethod("DefinedMethods", PackageClass::getMethodsRexx, 0);
         AddMethod("Resources", PackageClass::getResourcesRexx, 0);
+        AddMethod("Resource", PackageClass::getResourceRexx, 1);
         AddMethod("Namespaces", PackageClass::getNamespacesRexx, 0);
         AddMethod("Annotations", PackageClass::getAnnotations, 0);
         AddMethod("Annotation", PackageClass::getAnnotationRexx, 1);
@@ -1113,6 +1137,8 @@ StartClassDefinition(Package)
         AddMethod("Form", PackageClass::formRexx, 0);
         AddMethod("Fuzz", PackageClass::fuzzRexx, 0);
         AddMethod("Trace", PackageClass::traceRexx, 0);
+        AddMethod("Prolog", PackageClass::getMainRexx, 0);
+        AddMethod("FindProgram", PackageClass::findProgramRexx, 1);
 
     CompleteMethodDefinitions();
 
@@ -1293,6 +1319,10 @@ StartClassDefinition(MutableBuffer)
         AddMethod("WordPos", MutableBuffer::wordPos, 2);
         AddMethod("CaselessWordPos", MutableBuffer::caselessWordPos, 2);
         AddMethod("DelWord", MutableBuffer::delWord, 2);
+        AddMethod("StartsWith", MutableBuffer::startsWithRexx, 1);
+        AddMethod("EndsWith", MutableBuffer::endsWithRexx, 1);
+        AddMethod("CaselessStartsWith", MutableBuffer::caselessStartsWithRexx, 1);
+        AddMethod("CaselessEndsWith", MutableBuffer::caselessEndsWithRexx, 1);
 
     CompleteMethodDefinitions();
 
@@ -1440,7 +1470,7 @@ StartClassDefinition(Supplier)
         AddMethod("Available", SupplierClass::available, 0);
         AddMethod("Index", SupplierClass::index, 0);
         AddMethod("Next", SupplierClass::next, 0);
-        AddMethod("Item", SupplierClass::value, 0);
+        AddMethod("Item", SupplierClass::item, 0);
         AddMethod("Init", SupplierClass::initRexx, 2);
 
     CompleteMethodDefinitions();

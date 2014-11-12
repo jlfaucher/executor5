@@ -466,6 +466,7 @@
 #define Error_Translation_invalid_line_msg                           537
 #define Error_Translation_requires_msg                               538
 #define Error_Incorrect_method_no_method_msg                         539
+#define Error_Incorrect_method_no_method_type_msg                    539
 #define Error_Incorrect_method_argType_msg                           540
 #define Error_Incorrect_method_array_dimension_msg                   541
 #define Error_Incorrect_method_nostring_inarray_msg                  542
@@ -678,6 +679,20 @@
 #define Error_Execution_abstract_metaclass_msg                       770
 #define Error_Symbol_expected_form_msg                               771
 #define Error_Incorrect_method_message_name_msg                      772
+#define Error_Execution_private_access_msg                           773
+#define Error_Translation_delegate_method_msg                        774
+#define Error_Symbol_expected_delegate_msg                           775
+#define Error_Translation_delegate_attribute_msg                     776
+#define Error_Symbol_expected_use_local_msg                          777
+#define Error_Translation_use_local_compound_msg                     778
+#define Error_Symbol_expected_indirect_msg                           779
+#define Error_Execution_expose_method_msg                            780
+#define Error_Execution_use_local_method_msg                         781
+#define Error_Logical_value_supplier_msg                             782
+#define Error_Execution_no_supplier_msg                              783
+#define Error_Symbol_expected_after_keyword_msg                      784
+#define Error_Invalid_do_with_no_control_msg                         784
+#define Error_Invalid_do_with_no_over_msg                            786
 
 
 #endif

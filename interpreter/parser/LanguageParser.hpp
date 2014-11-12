@@ -76,7 +76,7 @@ class ClassResolver;
 
 // handy defines for simplifying creation of instruction types.
 #define new_instruction(name, type) sourceNewObject(sizeof(RexxInstruction##type), The##type##InstructionBehaviour, KEYWORD_##name)
-#define new_variable_instruction(name, type, size) sourceNewObject(size, The##type##InstructionBehaviour, KEYWORD_##name)
+#define new_variable_instruction(name, type, count, itemType) sourceNewObject(sizeof(RexxInstruction##type), count, sizeof(itemType), The##type##InstructionBehaviour, KEYWORD_##name)
 
 // context flag values.
 typedef enum
@@ -116,7 +116,7 @@ class LanguageParser: public RexxInternalObject
     void        resolveDependencies();
     void        flushControl(RexxInstruction *);
     RexxCode   *translateBlock();
-    RexxCode   *translateInterpret(StringTable *contextLabels);
+    RexxCode   *translateInterpret(PackageClass *sourceContext, StringTable *contextLabels);
     RoutineClass *generateProgram(PackageClass *sourceContext = OREF_NULL);
     RoutineClass *generateRoutine(PackageClass *sourceContext = OREF_NULL);
     MethodClass *generateMethod(PackageClass *sourceContext = OREF_NULL);
@@ -173,9 +173,12 @@ class LanguageParser: public RexxInternalObject
     RexxStemVariable  *addStem(RexxString *);
     RexxCompoundVariable *addCompound(RexxString *);
     void        expose(RexxString *);
+    void        localVariable(RexxString *);
+    void        autoExpose();
     RexxString *commonString(RexxString *);
     RexxInternalObject *addText(RexxToken *);
     RexxVariableBase *addVariable(RexxToken *);
+    RexxVariableBase *requiredVariable(RexxToken *, const char *);
     void        addClause(RexxInstruction *);
     void        addLabel(RexxInstruction *, RexxString *);
     RexxInstruction *findLabel(RexxString *);
@@ -248,6 +251,7 @@ class LanguageParser: public RexxInternalObject
     RexxInstruction *doNew();
     RexxInstruction *newControlledLoop(RexxString *label, RexxToken *nameToken);
     RexxInstruction *newDoOverLoop(RexxString *label, RexxToken *nameToken);
+    RexxInstruction *newDoWithLoop(RexxString *label);
     RexxInstruction *newSimpleDo(RexxString *label);
     RexxInstruction *newLoopForever(RexxString *label);
     RexxInstruction *newLoopWhile(RexxString *label, WhileUntilLoop &conditional);
@@ -291,6 +295,7 @@ class LanguageParser: public RexxInternalObject
     RexxInstruction *thenNew(RexxToken *, RexxInstructionIf *);
     RexxInstruction *traceNew();
     RexxInstruction *useNew();
+    RexxInstruction *useLocalNew();
 
     inline void        addReference(RexxInternalObject *reference) { calls->addLast(reference); }
     inline void        pushDo(RexxInstruction *i) { control->push(i); }
@@ -301,6 +306,7 @@ class LanguageParser: public RexxInternalObject
     inline bool topDoIsType(InstructionKeyword t) { return ((RexxInstruction *)(control->peek()))->isType(t); }
     inline bool topDoIsType(InstructionKeyword t1, InstructionKeyword t2) { return topDoIsType(t1) || topDoIsType(t2); }
     RexxInstruction *sourceNewObject(size_t size, RexxBehaviour *_behaviour, InstructionKeyword type);
+    RexxInstruction *sourceNewObject(size_t size, size_t count, size_t itemSize, RexxBehaviour *_behaviour, InstructionKeyword type);
 
     // directive parsing methods
     void        nextDirective();
@@ -328,6 +334,7 @@ class LanguageParser: public RexxInternalObject
     void        createMethod(RexxString *name, bool classMethod, bool privateMethod, bool protectedMethod, bool guardedMethod, bool isAttribute);
     void        createAttributeGetterMethod(RexxString *name, RexxVariableBase *retriever, bool classMethod, bool privateMethod, bool protectedMethod, bool guardedMethod);
     void        createAttributeSetterMethod(RexxString *name, RexxVariableBase *retriever, bool classMethod, bool privateMethod, bool protectedMethod, bool guardedMethod);
+    void        createDelegateMethod(RexxString *name, RexxVariableBase *retriever, bool classMethod, bool privateMethod, bool protectedMethod, bool guardedMethod, bool isAttribute);
     void        createConstantGetterMethod(RexxString *name, RexxObject *value);
     void        createAbstractMethod(RexxString *name, bool classMethod, bool privateMethod, bool protectedMethod, bool guardedMethod, bool isAttribute);
     void        checkDuplicateMethod(RexxString *name, bool classMethod, RexxErrorCodes errorMsg);
@@ -424,7 +431,7 @@ class LanguageParser: public RexxInternalObject
     static RoutineClass *createProgram(RexxString *name);
     static RoutineClass *restoreFromMacroSpace(RexxString *name);
     static RoutineClass *processInstore(PRXSTRING instore, RexxString * name);
-    static RexxCode *translateInterpret(RexxString *interpretString, StringTable *labels, size_t lineNumber);
+    static RexxCode *translateInterpret(RexxString *interpretString, PackageClass *sourceContext, StringTable *labels, size_t lineNumber);
     static RoutineClass *createProgramFromFile(RexxString *filename);
     static PackageClass *createPackage(RexxString *filename);
     static PackageClass *createPackage(RexxString *name, ArrayClass *source, PackageClass *sourceContext = OREF_NULL);
@@ -484,6 +491,7 @@ protected:
     StringTable     *labels;             // root of associated label list
     IdentityTable   *guardVariables;     // exposed variables in guard list
     StringTable     *exposedVariables;   // root of exposed variables list
+    StringTable     *localVariables;     // list of explicitly specified local variables
     ArrayClass      *calls;              // root of call list
 
     size_t           currentStack;       // current expression stack depth

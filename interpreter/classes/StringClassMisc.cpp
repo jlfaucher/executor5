@@ -779,10 +779,11 @@ RexxInteger *RexxString::verify(RexxString *ref, RexxString *option, RexxInteger
 RexxObject *RexxString::match(RexxInteger *start_, RexxString *other, RexxInteger *offset_, RexxInteger *len_)
 {
     size_t _start = positionArgument(start_, ARG_ONE);
-    // the start position must be within the string bounds
+    // the start position must be within the string bounds for any match
+    // to be performed.
     if (_start > getLength())
     {
-        reportException(Error_Incorrect_method_position, start_);
+        return TheFalseObject;
     }
     other = stringArgument(other, ARG_TWO);
 
@@ -822,10 +823,11 @@ RexxObject *RexxString::match(RexxInteger *start_, RexxString *other, RexxIntege
 RexxObject *RexxString::caselessMatch(RexxInteger *start_, RexxString *other, RexxInteger *offset_, RexxInteger *len_)
 {
     size_t _start = positionArgument(start_, ARG_ONE);
-    // the start position must be within the string bounds
+    // the start position must be within the string bounds for any match
+    // to be performed.
     if (_start > getLength())
     {
-        reportException(Error_Incorrect_method_position, start_);
+        return TheFalseObject;
     }
     other = stringArgument(other, ARG_TWO);
 
@@ -844,6 +846,76 @@ RexxObject *RexxString::caselessMatch(RexxInteger *start_, RexxString *other, Re
     }
 
     return booleanObject(primitiveCaselessMatch(_start, other, offset, len));
+}
+
+
+/**
+ * Test if a string starts with another string
+ *
+ * @param other  The other compare string.
+ *
+ * @return True if the string starts with the other, false otherwise.
+ */
+RexxObject *RexxString::startsWithRexx(RexxString *other)
+{
+    other = stringArgument(other, "match");
+    return booleanObject(primitiveMatch(1, other, 1, other->getLength()));
+}
+
+
+/**
+ * Test if a string starts with another string
+ *
+ * @param other  The other compare string.
+ *
+ * @return True if the string starts with the other, false otherwise.
+ */
+RexxObject *RexxString::caselessStartsWithRexx(RexxString *other)
+{
+    other = stringArgument(other, "match");
+    return booleanObject(primitiveCaselessMatch(1, other, 1, other->getLength()));
+}
+
+
+/**
+ * Test if a string ends with another string
+ *
+ * @param other  The other compare string.
+ *
+ * @return True if the string starts with the other, false otherwise.
+ */
+RexxObject *RexxString::endsWithRexx(RexxString *other)
+{
+    other = stringArgument(other, "match");
+
+    // we need to check this here, because the calculated offset might be wrong
+    if (other->getLength() > getLength())
+    {
+        return TheFalseObject;
+    }
+
+    return booleanObject(primitiveMatch(getLength() - other->getLength() + 1, other, 1, other->getLength()));
+}
+
+
+/**
+ * Test if a string ends with another string
+ *
+ * @param other  The other compare string.
+ *
+ * @return True if the string starts with the other, false otherwise.
+ */
+RexxObject *RexxString::caselessEndsWithRexx(RexxString *other)
+{
+    other = stringArgument(other, "match");
+
+    // we need to check this here, because the calculated offset might be wrong
+    if (other->getLength() > getLength())
+    {
+        return TheFalseObject;
+    }
+
+    return booleanObject(primitiveCaselessMatch(getLength() - other->getLength() + 1, other, 1, other->getLength()));
 }
 
 
@@ -914,10 +986,11 @@ bool RexxString::primitiveCaselessMatch(size_t _start, RexxString *other, size_t
 RexxObject *RexxString::matchChar(RexxInteger *position_, RexxString *matchSet)
 {
     size_t position = positionArgument(position_, ARG_ONE);
-    // the start position must be within the string bounds
+    // the start position must be within the string bounds for any match
+    // to be performed.
     if (position > getLength())
     {
-        reportException(Error_Incorrect_method_position, position);
+        return TheFalseObject;
     }
     matchSet = stringArgument(matchSet, ARG_TWO);
 
@@ -950,10 +1023,11 @@ RexxObject *RexxString::matchChar(RexxInteger *position_, RexxString *matchSet)
 RexxObject *RexxString::caselessMatchChar(RexxInteger *position_, RexxString *matchSet)
 {
     size_t position = positionArgument(position_, ARG_ONE);
-    // the start position must be within the string bounds
+    // the start position must be within the string bounds for any match
+    // to be performed.
     if (position > getLength())
     {
-        reportException(Error_Incorrect_method_position, position);
+        return TheFalseObject;
     }
     matchSet = stringArgument(matchSet, ARG_TWO);
 

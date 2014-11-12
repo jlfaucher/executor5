@@ -142,6 +142,7 @@ public:
     inline StringTable *getNamespaces() { install(); return namespaces; }
            StringTable *getAnnotations();
            RexxString  *getAnnotation(RexxString *name);
+           ArrayClass  *getResource(RexxString *name);
     inline void         setDigits(wholenumber_t d) { packageSettings.setDigits(d); }
     inline wholenumber_t getDigits() { return packageSettings.getDigits(); }
     inline void         setForm(bool f) { packageSettings.setForm(f); }
@@ -159,6 +160,7 @@ public:
     inline void enableProlog() { packageSettings.enableProlog(); }
     inline void disableProlog() { packageSettings.disableProlog(); }
     inline bool isPrologEnabled() { return packageSettings.isPrologEnabled() && initCode != OREF_NULL; }
+    inline RoutineClass *getMain() { return (RoutineClass *)mainExecutable; }
 
            RexxString    *getTrace();
            void           detachSource();
@@ -177,6 +179,7 @@ public:
            PackageClass  *getNamespaceRexx();
            ArrayClass    *getImportedPackagesRexx();
            RexxObject    *getAnnotationRexx(RexxObject *name);
+           RexxObject    *getResourceRexx(RexxObject *name);
            PackageClass  *loadPackageRexx(RexxString *name, ArrayClass *s);
            RexxObject    *addPackageRexx(PackageClass *package, RexxString *namespaceName);
            RexxObject    *addRoutineRexx(RexxString *name, RoutineClass *routine);
@@ -194,10 +197,9 @@ public:
            RexxObject    *fuzzRexx();
            RexxObject    *formRexx();
            RexxObject    *traceRexx();
-           ArrayClass    *getSourceRexx()
-           {
-               return extractSource();
-           }
+           ArrayClass    *getSourceRexx() { return extractSource(); }
+           RexxObject    *getMainRexx();
+           RexxObject    *findProgramRexx(RexxObject *name);
            void           runProlog(Activity *);
            void addNamespace(RexxString *name, PackageClass *package);
 

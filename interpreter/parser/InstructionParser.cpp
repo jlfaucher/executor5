@@ -85,7 +85,8 @@
 #include "QueueInstruction.hpp"
 #include "RaiseInstruction.hpp"
 #include "TraceInstruction.hpp"
-#include "UseStrictInstruction.hpp"
+#include "UseInstruction.hpp"
+#include "UseLocalInstruction.hpp"
 
 #include "CallInstruction.hpp"                 /* call/signal instructions          */
 #include "SignalInstruction.hpp"
@@ -499,6 +500,55 @@ RexxInstruction *LanguageParser::sourceNewObject(size_t size, RexxBehaviour *_be
 
 
 /**
+ * Create a "raw" executable instruction object of variable
+ * size.  Allocation/creation of instruction objects are handled
+ * a little differently, and goes in stages: 1) Have RexxMemory
+ * allocate a Rexx object of the appropriate size.  2) Set the
+ * object behaviour to be the table for the target instruction.
+ * 3) Call the in-memory new() method on this object using the
+ * RexxInstruction() constructor.  This does base initialization
+ * of the object as an instruction object.  This version is
+ * returned to the caller, with this instruction anchored in the
+ * parser object to protect it from garbage collection, which is
+ * handy if its constructor needs to allocate any additional
+ * objects.<p>
+ * Step 4) happens once the caller receives this object
+ * instance.  It agains calls the new() in-memory allocator for
+ * the final instruction class.  The constructor fills in any
+ * instruction specific information, as well as changing the
+ * object virtual function table to the final version.  The
+ * information we set up here will remain untouched.
+ *
+ * @param size       The base size of the object type.
+ * @param count      The count of extra items to add to the object instance.
+ * @param itemSize   The size of the extra items to add.
+ * @param _behaviour The Rexx object behaviour.
+ * @param type       The type identifiers for the instruction
+ *                   (see RexxToken InstructionKeyword enum).
+ *
+ * @return A newly created instruction object with basic instruction initialization.
+ */
+RexxInstruction *LanguageParser::sourceNewObject(size_t size, size_t count, size_t itemSize,
+    RexxBehaviour *_behaviour, InstructionKeyword type )
+{
+    // for variable size instructions, there is always an extra field at the end of the object
+    // for the first slot allocation.  If the count is zero, then we subtract the item size from
+    // the base size.  Otherwise, we add count - 1 extra items to the allocation.
+    if (count == 0)
+    {
+        size -= itemSize;
+    }
+    else
+    {
+        size += (count - 1) * itemSize;
+    }
+
+    // go allocate the actual object.
+    return sourceNewObject(size, _behaviour, type);
+}
+
+
+/**
  * Parse an ADDRESS instruction and create an executable instruction object.
  *
  * @return An instruction object that can perform this function.
@@ -751,7 +801,7 @@ RexxInstruction *LanguageParser::dynamicCallNew(RexxToken *token)
     size_t argCount = parseArgList(OREF_NULL, TERM_EOC);
 
     // create a new instruction object
-    RexxInstruction *newObject = new_variable_instruction(CALL_VALUE, DynamicCall, sizeof(RexxInstructionDynamicCall) + (argCount - 1) * sizeof(RexxObject *));
+    RexxInstruction *newObject = new_variable_instruction(CALL_VALUE, DynamicCall, argCount, RexxObject *);
     ::new ((void *)newObject) RexxInstructionDynamicCall(targetName, argCount, subTerms);
 
     // NOTE:  The name of the call cannot be determined until run time, so we don't
@@ -787,7 +837,7 @@ RexxInstruction *LanguageParser::qualifiedCallNew(RexxToken *token)
     size_t argCount = parseArgList(OREF_NULL, TERM_EOC);
 
     // create a new instruction object
-    RexxInstruction *newObject = new_variable_instruction(CALL_QUALIFIED, QualifiedCall, sizeof(RexxInstructionQualifiedCall) + (argCount - 1) * sizeof(RexxObject *));
+    RexxInstruction *newObject = new_variable_instruction(CALL_QUALIFIED, QualifiedCall, argCount, RexxObject *);
     ::new ((void *)newObject) RexxInstructionQualifiedCall(namespaceName, routineName, argCount, subTerms);
 
     // NOTE:  The call target has no reliance on the labels because it is always an external
@@ -879,7 +929,7 @@ RexxInstruction *LanguageParser::callNew()
     }
 
     // create a new Call instruction.  This only handles the simple calls.
-    RexxInstruction *newObject = new_variable_instruction(CALL, Call, sizeof(RexxInstructionCall) + (argCount - 1) * sizeof(RexxObject *));
+    RexxInstruction *newObject = new_variable_instruction(CALL, Call, argCount, RexxObject *);
     ::new ((void *)newObject) RexxInstructionCall(targetName, argCount, subTerms, builtin_index);
 
     // add to our references list, but only if this is a form where
@@ -1202,6 +1252,200 @@ RexxInstruction *LanguageParser::newDoOverLoop(RexxString *label, RexxToken *nam
 
 
 /**
+ * Parse and create the variants of a DO WITH loop instruction.
+ * This can also include a WHILE or UNTIL modifier (but not
+ * both).
+ *
+ * @param label     Any label obtained from the LABEL keyword.
+ *
+ * @return A contructed instruction object of the appropriate type.
+ */
+RexxInstruction *LanguageParser::newDoWithLoop(RexxString *label)
+{
+    // a construct to fill in for the instruction.
+    WithLoop withLoop;
+    ForLoop forLoop;
+    WhileUntilLoop conditional;
+    // track while/until forms
+    InstructionSubKeyword conditionalType = SUBKEY_NONE;
+
+    // we have already parsed over the WITH keyword, so we're looing
+    // for the INDEX, ITEM, and OVER keywords now.  OVER must be after
+    // INDEX and ITEM, which can be in any order (and only one is needed).
+
+    // get the next real token.
+    RexxToken *token = nextReal();
+
+    // these all options are marked by symbols, so keep looping while we have one
+    while (token->isSymbol())
+    {
+        // this must be a keyword, so resolve it.
+        switch (token->subKeyword())
+        {
+            // an index variable
+            case SUBKEY_INDEX:
+            {
+                if (withLoop.indexVar != OREF_NULL)
+                {
+                    syntaxError(Error_Invalid_do_duplicate, token);
+                }
+
+                // this must be a variable token
+                token = nextReal();
+
+                // save the loopWith variable retriever
+                withLoop.indexVar = requiredVariable(token, "INDEX");
+                // get the next token and continue
+                token = nextReal();
+                continue;
+            }
+
+            // an item variable
+            case SUBKEY_ITEM:
+            {
+                if (withLoop.itemVar != OREF_NULL)
+                {
+                    syntaxError(Error_Invalid_do_duplicate, token);
+                }
+
+                // this must be a variable token
+                token = nextReal();
+
+                // save the loopWith variable retriever
+                withLoop.itemVar = requiredVariable(token, "ITEM");
+                // get the next token and continue
+                token = nextReal();
+                continue;
+            }
+        }
+
+        // found a keyword that is not INDEX or ITEM, break out of the loop
+        break;
+    }
+
+    // we must have at least one of these loop loopWith variables
+    if (withLoop.itemVar == OREF_NULL && withLoop.indexVar == OREF_NULL)
+    {
+        syntaxError(Error_Invalid_do_with_no_control);
+    }
+
+    // the next token needs to be an OVER keyword.
+    if (!token->isSymbol() || token->subKeyword() != SUBKEY_OVER)
+    {
+        syntaxError(Error_Invalid_do_with_no_over);
+    }
+
+    // and get the OVER expression, which is required
+    withLoop.supplierSource = requiredExpression(TERM_OVER, Error_Invalid_expression_over);
+
+    // protect this expression from GC
+    pushSubTerm(withLoop.supplierSource);
+
+    // ok, keep looping while we don't have a clause terminator
+    // because the parsing of the initial expression is terminated by either
+    // the end-of-clause or DO/LOOP keyword, we know the next token will by
+    // a symbol if it is not the end.
+    token = nextReal();
+
+    while (!token->isEndOfClause())
+    {
+        // this must be a keyword, so resolve it.
+        switch (token->subKeyword())
+        {
+            case SUBKEY_FOR:
+            {
+                // only one per customer
+                if (forLoop.forCount != OREF_NULL)
+                {
+                    syntaxError(Error_Invalid_do_duplicate, token);
+                }
+                // get the keyword expression, which is required also
+                forLoop.forCount = requiredExpression(TERM_CONTROL, Error_Invalid_expression_for);
+                // protect from GC
+                pushSubTerm(forLoop.forCount);
+                break;
+            }
+
+            case SUBKEY_UNTIL:
+            case SUBKEY_WHILE:
+            {
+                // step back a token and process the conditional
+                previousToken();
+                // this also does not allow anything after the loop conditional
+                conditional.conditional = parseLoopConditional(conditionalType, Error_None);
+                break;
+            }
+        }
+        token = nextReal();
+    }
+
+    // NOTE:  We parse until we hit the end of clause or found an error,
+    // so once we get here, there's no need for any end-of-clause checks.
+
+    // we've parsed everything correctly and we have six potential types of
+    // loop now.  1)  A DO OVER loop with no conditional, 2) a DO OVER loop
+    // with a WHILE condition and 3) a DO OVER loop with a UNTIL condition.
+    // Each of those forms can also have a FOR modifier.
+    // The conditionalType variable tells us which form it is, so we can create
+    // the correct type instruction object, the forControl will tell us if we have a FOR
+    // expression.
+
+    switch (conditionalType)
+    {
+        // DO OVER with no extra conditional.
+        case SUBKEY_NONE:
+        {
+            if (forLoop.forCount == OREF_NULL)
+            {
+                RexxInstruction *newObject = new_instruction(LOOP_WITH, DoWith);
+                ::new ((void *)newObject) RexxInstructionDoWith(label, withLoop);
+                return newObject;
+            }
+            else
+            {
+                RexxInstruction *newObject = new_instruction(LOOP_WITH_FOR, DoWithFor);
+                ::new ((void *)newObject) RexxInstructionDoWithFor(label, withLoop, forLoop);
+                return newObject;
+            }
+        }
+        // DO OVER with a WHILE conditional
+        case SUBKEY_WHILE:
+        {
+            if (forLoop.forCount == OREF_NULL)
+            {
+                RexxInstruction *newObject = new_instruction(LOOP_WITH_WHILE, DoWithWhile);
+                ::new ((void *)newObject) RexxInstructionDoWithWhile(label, withLoop, conditional);
+                return newObject;
+            }
+            else
+            {
+                RexxInstruction *newObject = new_instruction(LOOP_WITH_FOR_WHILE, DoWithForWhile);
+                ::new ((void *)newObject) RexxInstructionDoWithForWhile(label, withLoop, forLoop, conditional);
+                return newObject;
+            }
+        }
+        // DO OVER with an UNTIL conditional.
+        case SUBKEY_UNTIL:
+        {
+            if (forLoop.forCount == OREF_NULL)
+            {
+                RexxInstruction *newObject = new_instruction(LOOP_WITH_UNTIL, DoWithUntil);
+                ::new ((void *)newObject) RexxInstructionDoWithUntil(label, withLoop, conditional);
+                return newObject;
+            }
+            else
+            {
+                RexxInstruction *newObject = new_instruction(LOOP_WITH_FOR_UNTIL, DoWithForUntil);
+                ::new ((void *)newObject) RexxInstructionDoWithForUntil(label, withLoop, forLoop, conditional);
+                return newObject;
+            }
+        }
+    }
+    return OREF_NULL;    // should never get here.
+}
+
+
+/**
  * Create an instance of a simple DO block.
  *
  * @param label  The optional block label.
@@ -1430,6 +1674,13 @@ RexxInstruction *LanguageParser::createLoop(bool isLoop)
                 // This is a controlled loop, we're all positioned to process this.
                 return newControlledLoop(label, token);
             }
+            // similar to assignment instructions, any equal sign triggers this to
+            // be a controlled form, even if the the "=" is part of a larger instruction
+            // such as "==".  We give this as an expression error.
+            else if (name->isSubtype(OPERATOR_STRICT_EQUAL))
+            {
+                syntaxError(Error_Invalid_expression_general, name);
+            }
             else
             {
                 // this is either an end-of-clause or something not a symbol.  This is an error.
@@ -1491,6 +1742,11 @@ RexxInstruction *LanguageParser::createLoop(bool isLoop)
             // now check the other keyword varieties.
             switch (token->subKeyword())
             {
+                // WITH INDEX var ITEM var OVER expr....with a potention WHILE or UNTIL modifier
+                case SUBKEY_WITH:
+                {
+                    return newDoWithLoop(label);
+                }
                 // FOREVER...this can have either a WHILE or UNTIL modifier.
                 case SUBKEY_FOREVER:         // DO FOREVER
                 {
@@ -1561,7 +1817,7 @@ RexxInstruction *LanguageParser::dropNew()
     // in the subterms stack.
     size_t variableCount = processVariableList(KEYWORD_DROP);
 
-    RexxInstruction *newObject = new_variable_instruction(DROP, Drop, sizeof(RexxInstructionDrop) + (variableCount - 1) * sizeof(RexxObject *));
+    RexxInstruction *newObject = new_variable_instruction(DROP, Drop, variableCount, RexxObject *);
     // this initializes from the sub term stack.
     ::new ((void *)newObject) RexxInstructionDrop(variableCount, subTerms);
     return newObject;
@@ -1680,8 +1936,83 @@ RexxInstruction *LanguageParser::exposeNew()
     // The variables are placed in the subTerms stack
     size_t variableCount = processVariableList(KEYWORD_EXPOSE);
 
-    RexxInstruction *newObject = new_variable_instruction(EXPOSE, Expose, sizeof(RexxInstructionExpose) + (variableCount - 1) * sizeof(RexxObject *));
+    RexxInstruction *newObject = new_variable_instruction(EXPOSE, Expose, variableCount, RexxObject *);
     ::new ((void *)newObject) RexxInstructionExpose(variableCount, subTerms);
+    return newObject;
+}
+
+
+/**
+ * Parse and create a new USE LOCAL instruction
+ *
+ * @return The configured instruction instance.
+ */
+RexxInstruction *LanguageParser::useLocalNew()
+{
+    // not valid in an interpret
+    if (isInterpret())
+    {
+        syntaxError(Error_Translation_expose_interpret);
+    }
+
+    // validate the placement at the beginning of the code block...
+    // the rules are the same as with EXPOSE.
+    isExposeValid();
+
+    // switch on auto expose tracking
+    autoExpose();
+
+    // process the variable list and create an instruction from this.
+    // There are enough differences from EXPOSE/DROP/PROCEDURE that it is
+    // easier doing this here.
+    size_t variableCount = 0;
+
+    // the next real token is the start of the list (after the
+    // space following the keyword instruction.
+    RexxToken *token = nextReal();
+
+    // while not at the end of the clause, process a list of variables.  Note
+    // that the variable list is optional.
+    while (!token->isEndOfClause())
+    {
+        // generally, these are symbols, but not all symbols are variables.
+        if (token->isSymbol())
+        {
+            // non-variable symbol?
+            if (token->isSubtype(SYMBOL_CONSTANT))
+            {
+                syntaxError(Error_Invalid_variable_number, token);
+            }
+            // the dummy period and other dot symbols
+            else if (token->isSubtype(SYMBOL_DUMMY, SYMBOL_DOTSYMBOL))
+            {
+                syntaxError(Error_Invalid_variable_period, token);
+            }
+            // we only allow simple variables or stems to be declared local
+            else if (token->isSubtype(SYMBOL_COMPOUND))
+            {
+                syntaxError(Error_Translation_use_local_compound, token);
+            }
+
+            // ok, get a retriever for the variable and push it on the stack.
+            pushSubTerm(addVariable(token));
+            // the GUARD instruction also needs to understand about locals,
+            // so record this as an explicit local
+            localVariable(token->value());
+            // update our return value.
+            variableCount++;
+        }
+        // something unrecognized...we need to issue the message for the instruction.
+        else
+        {
+            syntaxError(Error_Symbol_expected_use_local);
+        }
+        // and see if we have more variables
+        token = nextReal();
+    }
+
+    RexxInstruction *newObject = new_variable_instruction(USE_LOCAL, UseLocal, variableCount, RexxObject *);
+    ::new ((void *)newObject) RexxInstructionUseLocal(variableCount, subTerms);
     return newObject;
 }
 
@@ -1926,18 +2257,7 @@ RexxInstruction *LanguageParser::guardNew()
         syntaxError(Error_Invalid_subkeyword_guard_on, token);
     }
 
-    RexxInstruction *newObject;
-    // if we have when expression variables, create an appropriate size instruction
-    if (variable_count != 0)
-    {
-        newObject = new_variable_instruction(GUARD, Guard,
-            sizeof(RexxInstructionGuard) + (variable_count - 1) * sizeof(RexxObject *));
-    }
-    // just use the base size.
-    else
-    {
-       newObject = new_instruction(GUARD, Guard);
-    }
+    RexxInstruction *newObject = new_variable_instruction(GUARD, Guard, variable_count, RexxVariableBase *);
     ::new ((void *)newObject) RexxInstructionGuard(expression, variable_list, guardOn);
     return newObject;
 }
@@ -1956,6 +2276,8 @@ RexxInstruction *LanguageParser::ifNew()
 {
     // ok, get a conditional expression
     RexxInternalObject *_condition = requiredLogicalExpression(TERM_IF, Error_Invalid_expression_if);
+    // protect on the term stack
+    pushSubTerm(_condition);
 
     // get to the terminator token for this (likely a THEN, but it could
     // be an EOC.  We use this to update the end location for the instruction since
@@ -1997,6 +2319,8 @@ RexxInstruction *LanguageParser::whenNew()
     {
         // ok, get a conditional expression
         RexxInternalObject *_condition = requiredLogicalExpression(TERM_IF, Error_Invalid_expression_when);
+        // protect on the term stack
+        pushSubTerm(_condition);
 
         // get to the terminator token for this (likely a THEN, but it could
         // be an EOC.  We use this to update the end location for the instruction since
@@ -2023,7 +2347,7 @@ RexxInstruction *LanguageParser::whenNew()
         RexxToken *token = nextReal();
         previousToken();
         // this is really an IF instruction
-        RexxInstruction *newObject = new_variable_instruction(WHEN_CASE, CaseWhen, sizeof(RexxInstructionCaseWhen) + (argCount - 1) * sizeof(RexxObject *));
+        RexxInstruction *newObject = new_variable_instruction(WHEN_CASE, CaseWhen, argCount, RexxObject *);
         ::new ((void *)newObject) RexxInstructionCaseWhen(argCount, subTerms, token);
         return newObject;
     }
@@ -2125,7 +2449,7 @@ RexxInstruction *LanguageParser::messageNew(RexxExpressionMessage *msg)
 {
     ProtectedObject p(msg);
     // just allocate and initialize the object.
-    RexxInstruction *newObject = new_variable_instruction(MESSAGE, Message, sizeof(RexxInstructionMessage) + (msg->argumentCount - 1) * sizeof(RexxObject *));
+    RexxInstruction *newObject = new_variable_instruction(MESSAGE, Message, msg->argumentCount, RexxObject *);
     ::new ((void *)newObject) RexxInstructionMessage(msg);
     return newObject;
 }
@@ -2143,7 +2467,7 @@ RexxInstruction *LanguageParser::doubleMessageNew(RexxExpressionMessage *msg)
 {
     ProtectedObject p(msg);
     // just allocate and initialize the object.
-    RexxInstruction *newObject = new_variable_instruction(MESSAGE_DOUBLE, Message, sizeof(RexxInstructionMessage) + (msg->argumentCount - 1) * sizeof(RexxObject *));
+    RexxInstruction *newObject = new_variable_instruction(MESSAGE_DOUBLE, Message, msg->argumentCount, RexxObject *);
     ::new ((void *)newObject) RexxInstructionMessage(msg);
     return newObject;
 }
@@ -2162,8 +2486,8 @@ RexxInstruction *LanguageParser::messageAssignmentNew(RexxExpressionMessage *msg
     ProtectedObject p(msg);               // protect this
     msg->makeAssignment(this);            // convert into an assignment message
 
-    // allocate a new object.  NB:  a message instruction gets an extra argument, so we don't subtract one.
-    RexxInstruction *newObject = new_variable_instruction(MESSAGE, Message, sizeof(RexxInstructionMessage) + (msg->argumentCount) * sizeof(RexxObject *));
+    // allocate a new object.  NB:  a message instruction gets an extra argument, so we add one
+    RexxInstruction *newObject = new_variable_instruction(MESSAGE, Message, msg->argumentCount + 1, RexxObject *);
     ::new ((void *)newObject) RexxInstructionMessage(msg, expr);
     return newObject;
 }
@@ -2196,8 +2520,8 @@ RexxInstruction *LanguageParser::messageAssignmentOpNew(RexxExpressionMessage *m
     // now add a binary operator to this expression tree using the message copy.
     expr = new RexxBinaryOperator(operation->subtype(), retriever, expr);
 
-    // allocate a new object.  NB:  a message instruction gets an extra argument, so we don't subtract one.
-    RexxInstruction *newObject = new_variable_instruction(MESSAGE, Message, sizeof(RexxInstructionMessage) + (msg->argumentCount) * sizeof(RexxObject *));
+    // allocate a new object.  NB:  a message instruction gets an extra argument, so we add one
+    RexxInstruction *newObject = new_variable_instruction(MESSAGE, Message, msg->argumentCount + 1, RexxObject *);
     ::new ((void *)newObject) RexxInstructionMessage(msg, expr);
     return newObject;
 }
@@ -2699,7 +3023,7 @@ RexxInstruction *LanguageParser::parseNew(InstructionSubKeyword argPull)
     }
 
     // and finally create the instruction from the accumulated information.
-    RexxInstruction *newObject = new_variable_instruction(PARSE, Parse, sizeof(RexxInstructionParse) + (templateCount - 1) * sizeof(RexxObject *));
+    RexxInstruction *newObject = new_variable_instruction(PARSE, Parse, templateCount, RexxObject *);
     ::new ((void *)newObject) RexxInstructionParse(sourceExpression, stringSource, parseFlags, templateCount, parse_template);
     return newObject;
 }
@@ -2727,7 +3051,7 @@ RexxInstruction *LanguageParser::procedureNew()
         variableCount = processVariableList(KEYWORD_PROCEDURE);
     }
 
-    RexxInstruction *newObject = new_variable_instruction(PROCEDURE, Procedure, sizeof(RexxInstructionProcedure) + (variableCount - 1) * sizeof(RexxObject *));
+    RexxInstruction *newObject = new_variable_instruction(PROCEDURE, Procedure, variableCount, RexxObject *);
     ::new ((void *)newObject) RexxInstructionProcedure(variableCount, subTerms);
     return newObject;
 }
@@ -2997,7 +3321,7 @@ RexxInstruction *LanguageParser::raiseNew()
         size_t arrayCount = arrayItems->size();
         // we pass this as the additional...the flag tells us which to use
         additional = arrayItems;
-        newObject = new_variable_instruction(RAISE, Raise, sizeof(RexxInstructionRaise) + (arrayCount - 1) * sizeof(RexxObject *));
+        newObject = new_variable_instruction(RAISE, Raise, arrayCount, RexxObject *);
     }
     // fixed instruction size
     else
@@ -3519,6 +3843,7 @@ RexxInstruction *LanguageParser::traceNew()
     return newObject;
 }
 
+
 /**
  * Parse a USE STRICT ARG instruction.
  *
@@ -3532,6 +3857,12 @@ RexxInstruction *LanguageParser::useNew()
     // syntax rules
     RexxToken *token = nextReal();
     InstructionSubKeyword subkeyword = token->subKeyword();
+
+    // check for USE LOCAL first. we really just handle the USE ARG in here
+    if (subkeyword == SUBKEY_LOCAL)
+    {
+        return useLocalNew();
+    }
 
     if (subkeyword == SUBKEY_STRICT)
     {
@@ -3650,8 +3981,8 @@ RexxInstruction *LanguageParser::useNew()
         }
     }
 
-    RexxInstruction *newObject = new_variable_instruction(USE, Use, sizeof(RexxInstructionUseStrict) + (variableCount == 0 ? 0 : (variableCount - 1)) * sizeof(UseVariable));
-    ::new ((void *)newObject) RexxInstructionUseStrict(variableCount, strictChecking, allowOptionals, variable_list, defaults_list);
+    RexxInstruction *newObject = new_variable_instruction(USE, Use, variableCount, UseVariable);
+    ::new ((void *)newObject) RexxInstructionUse(variableCount, strictChecking, allowOptionals, variable_list, defaults_list);
 
     return newObject;
 }
@@ -3709,7 +4040,7 @@ size_t LanguageParser::processVariableList(InstructionKeyword type )
                 syntaxError(Error_Invalid_variable_number, token);
             }
             // the dummy period
-            else if (token->isSubtype(SYMBOL_DUMMY))
+            else if (token->isSubtype(SYMBOL_DUMMY, SYMBOL_DOTSYMBOL))
             {
                 syntaxError(Error_Invalid_variable_period, token);
             }

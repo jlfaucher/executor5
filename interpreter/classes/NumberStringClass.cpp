@@ -3063,12 +3063,6 @@ RexxObject *NumberString::xorOp(RexxObject *operand)
  */
 bool NumberString::isEqual(RexxInternalObject *other)
 {
-    // this is rare and hard to do, but possible.
-    if (isSubClassOrEnhanced())
-    {
-        return sendMessage(GlobalNames::STRICT_EQUAL, (RexxObject *)other)->truthValue(Error_Logical_value_method);
-    }
-
     // perform the comparison using the string value because this is "==".
     return stringValue()->isEqual(other);
 }
@@ -3728,7 +3722,7 @@ bool NumberString::isInteger()
     // get size of the integer part of this number
     wholenumber_t adjustedLength = numberExponent + digitsCount;
     // ok, now do the exponent check...if we need one, not an integer
-    if ((adjustedLength >= createdDigits) || (Numerics::abs(numberExponent) > createdDigits * 2) )
+    if ((adjustedLength > createdDigits) || adjustedLength <= 0)
     {
         return false;
     }

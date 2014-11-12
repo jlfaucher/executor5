@@ -134,6 +134,12 @@ public:
     inline bool isPrimitive() { return (flags & IsNonPrimitive) == 0; }
     inline void setReadyForUninit() { flags |= UninitPending; }
     inline bool isReadyForUninit() { return (flags & UninitPending) != 0; }
+    inline bool hasUninit() { return (flags & HasUninit) != 0; }
+    inline void setHasUninit() { flags |= HasUninit; }
+    inline void clearHasUninit() { flags &= ~HasUninit; }
+    inline bool isDeadObject() { return (flags & DeadObject) != 0; }
+    inline void setDeadObject() { flags |= DeadObject; }
+    inline void clearDeadObject() { flags &= ~DeadObject; }
     inline void initHeader(size_t l, size_t mark)
     {
         objectSize = l;
@@ -157,6 +163,8 @@ protected:
         NoRefBit         =  0x0020,    // location of No References Bit.
         OldSpaceBit      =  0x0040,    // location of the OldSpace bit
         UninitPending    =  0x0080,    // we have an uninit operation pending
+        HasUninit        =  0x0100,    // this object has an uninit method
+        DeadObject       =  0x0200,    // this is a dead object
     };
 
     size_t    objectSize;              // allocated size of the object
@@ -266,6 +274,9 @@ class RexxInternalObject : public RexxVirtualBase
     inline void   setHasNoReferences() { header.setHasNoReferences(); }
     inline void   setReadyForUninit() { header.setReadyForUninit(); }
     inline bool   isReadyForUninit() { return header.isReadyForUninit(); }
+    inline bool   hasUninit() { return header.hasUninit(); }
+    inline void   setHasUninit() { header.setHasUninit(); }
+    inline void   clearHasUninit() { header.clearHasUninit(); }
     inline bool   hasReferences() { return header.hasReferences(); }
     inline bool   hasNoReferences() { return header.hasNoReferences(); }
     inline void   setPrimitive() { header.setPrimitive(); }
@@ -338,7 +349,7 @@ class RexxInternalObject : public RexxVirtualBase
         return (this == other) || this->isEqual(other);
     }
 
-    void         hasUninit();
+    void         requiresUninit();
     void         removedUninit();
     RexxInternalObject  *clone();
 
@@ -425,6 +436,7 @@ class RexxObject : public RexxInternalObject
     virtual ~RexxObject(){;};
 
             RexxObject  *defineInstanceMethod(RexxString *, MethodClass *, RexxClass *);
+            RexxObject  *deleteInstanceMethod(RexxString *msgname);
     virtual RexxString  *defaultName();
     virtual bool         hasMethod(RexxString *msg);
             RexxObject  *hasMethodRexx(RexxString *);
@@ -461,30 +473,25 @@ class RexxObject : public RexxInternalObject
     MessageClass *startCommon(RexxObject *message, RexxObject **arguments, size_t argCount);
     static void decodeMessageName(RexxObject *target, RexxObject *message, RexxString *&messageName, RexxClass *&startScope);
     RexxObject  *run(RexxObject **, size_t);
+    void         checkUninit();
 
-    void         messageSend(RexxString *, RexxObject **, size_t, ProtectedObject &);
-    void         messageSend(RexxString *, RexxObject **, size_t, RexxClass *, ProtectedObject &);
-    MethodClass  *checkPrivate(MethodClass *);
+    RexxObject  *messageSend(RexxString *, RexxObject **, size_t, ProtectedObject &);
+    RexxObject  *messageSend(RexxString *, RexxObject **, size_t, RexxClass *, ProtectedObject &);
+    MethodClass *checkPrivate(MethodClass *);
+    void         checkRestrictedMethod(const char *methodName);
     void         processProtectedMethod(RexxString *, MethodClass *, RexxObject **, size_t, ProtectedObject &);
-    void         sendMessage(RexxString *, ArrayClass *, ProtectedObject &);
-    inline void  sendMessage(RexxString *message, ProtectedObject &result) { this->messageSend(message, OREF_NULL, 0, result); };
-    inline void  sendMessage(RexxString *message, RexxObject **args, size_t argCount, ProtectedObject &result) { this->messageSend(message, args, argCount, result); };
-    inline void  sendMessage(RexxString *message, RexxObject *argument1, ProtectedObject &result)
-        { this->messageSend(message, &argument1, 1, result); }
-    void         sendMessage(RexxString *, RexxObject *, RexxObject *, ProtectedObject &);
-    void         sendMessage(RexxString *, RexxObject *, RexxObject *, RexxObject *, ProtectedObject &);
-    void         sendMessage(RexxString *, RexxObject *, RexxObject *, RexxObject *, RexxObject *, ProtectedObject &);
-    void         sendMessage(RexxString *, RexxObject *, RexxObject *, RexxObject *, RexxObject *, RexxObject *, ProtectedObject&);
+    RexxObject  *sendMessage(RexxString *, ArrayClass *, ProtectedObject &);
+    inline RexxObject *sendMessage(RexxString *message, ProtectedObject &result) { return messageSend(message, OREF_NULL, 0, result); };
+    inline RexxObject *sendMessage(RexxString *message, RexxObject **args, size_t argCount, ProtectedObject &result) { return messageSend(message, args, argCount, result); };
+    inline RexxObject *sendMessage(RexxString *message, RexxObject *argument1, ProtectedObject &result)
+        { return messageSend(message, &argument1, 1, result); }
+    RexxObject  *sendMessage(RexxString *, RexxObject *, RexxObject *, ProtectedObject &);
+    RexxObject  *sendMessage(RexxString *, RexxObject *, RexxObject *, RexxObject *, ProtectedObject &);
+    RexxObject  *sendMessage(RexxString *, RexxObject *, RexxObject *, RexxObject *, RexxObject *, ProtectedObject &);
+    RexxObject  *sendMessage(RexxString *, RexxObject *, RexxObject *, RexxObject *, RexxObject *, RexxObject *, ProtectedObject&);
 
-    RexxObject  *sendMessage(RexxString *, ArrayClass *);
-    RexxObject  *sendMessage(RexxString *message);
-    RexxObject  *sendMessage(RexxString *message, RexxObject **args, size_t argCount);
-    RexxObject  *sendMessage(RexxString *message, RexxObject *argument1);
-    RexxObject  *sendMessage(RexxString *, RexxObject *, RexxObject *);
-    RexxObject  *sendMessage(RexxString *, RexxObject *, RexxObject *, RexxObject *);
-    RexxObject  *sendMessage(RexxString *, RexxObject *, RexxObject *, RexxObject *, RexxObject *);
-    RexxObject  *sendMessage(RexxString *, RexxObject *, RexxObject *, RexxObject *, RexxObject *, RexxObject *);
     void         validateScopeOverride(RexxClass *scope);
+    void         validateOverrideContext(RexxObject *target, RexxClass *scope);
 
                                       // Following are internal OREXX methods
     RexxObject  *defineInstanceMethods(DirectoryClass *);

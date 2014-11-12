@@ -36,45 +36,99 @@
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 /******************************************************************************/
-/* REXX Kernel                                       UseStrictInstruction.hpp */
+/* REXX Translator                                                            */
 /*                                                                            */
-/* Primitive USE STRICT instruction Class Definitions                         */
+/* Use Local instruction class                                                */
 /*                                                                            */
 /******************************************************************************/
-#ifndef Included_RexxInstructionUseStrict
-#define Included_RexxInstructionUseStrict
+#include "RexxCore.h"
+#include "RexxActivation.hpp"
+#include "QueueClass.hpp"
+#include "UseLocalInstruction.hpp"
+#include "ExpressionBaseVariable.hpp"
 
-#include "RexxInstruction.hpp"
-
-class UseVariable
+/**
+ * Complete construction of a USE LOCAL instruction.
+ *
+ * @param varCount The count of variables to expose.
+ * @param variable_list
+ *                 The queue of the variable retrievers (in reverse order).
+ */
+RexxInstructionUseLocal::RexxInstructionUseLocal(size_t varCount, QueueClass  *variable_list)
 {
-public:
-    RexxVariableBase *variable;        // the variable accessor
-    RexxInternalObject *defaultValue;  // default value for optional variables
-};
+    // get the variable size
+    variableCount = varCount;
+    // now copy all of the retriever references from the queue, back to front.
+    initializeObjectArray(varCount, variables, RexxVariableBase, variable_list);
+}
 
 
-class RexxInstructionUseStrict : public RexxInstruction
+/**
+ * Perform garbage collection on a live object.
+ *
+ * @param liveMark The current live mark.
+ */
+void RexxInstructionUseLocal::live(size_t liveMark)
 {
- public:
-    RexxInstructionUseStrict(size_t, bool, bool, QueueClass *, QueueClass *);
-    inline RexxInstructionUseStrict(RESTORETYPE restoreType) { ; };
+    // must be first one marked
+    memory_mark(nextInstruction);
+    memory_mark_array(variableCount, variables);
+}
 
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
-    virtual void flatten(Envelope *);
 
-    virtual void execute(RexxActivation *, ExpressionStack *);
+/**
+ * Perform generalized live marking on an object.  This is
+ * used when mark-and-sweep processing is needed for purposes
+ * other than garbage collection.
+ *
+ * @param reason The reason for the marking call.
+ */
+void RexxInstructionUseLocal::liveGeneral(MarkReason reason)
+{
+    // must be first one marked
+    memory_mark_general(nextInstruction);
+    memory_mark_general_array(variableCount, variables);
+}
 
-protected:
 
-    RexxObject *getArgument(RexxObject **arglist, size_t count, size_t target);
+/**
+ * Flatten a source object.
+ *
+ * @param envelope The envelope that will hold the flattened object.
+ */
+void RexxInstructionUseLocal::flatten(Envelope *envelope)
+{
+    setUpFlatten(RexxInstructionUseLocal)
 
-    size_t variableCount;            // count of variables to process
-    size_t minimumRequired;          // the minimum number of require arguments
-    bool variableSize;               // additional arguments allowed after last
-    bool strictChecking;             // determines whether to apply strict argument checks
-    UseVariable variables[1];        // List of variables for USE
-};
-#endif
+    flattenRef(nextInstruction);
+    flattenArrayRefs(variableCount, variables);
+
+    cleanUpFlatten
+}
+
+
+/**
+ * Execute a USE LOCAL instruction.
+ *
+ * @param context The current execution context.
+ * @param stack   The current evaluation stack.
+ */
+void RexxInstructionUseLocal::execute(RexxActivation *context, ExpressionStack *stack)
+{
+    // standard trace on entry.
+    context->traceInstruction(this);
+
+    // not allowed in a method context.
+    if (!context->inMethod())
+    {
+        reportException(Error_Execution_use_local_method);
+    }
+
+    // the context processeses these
+    context->autoExpose(variables, variableCount);
+
+    // and standare debug pause.
+    context->pauseInstruction();
+}
+
 

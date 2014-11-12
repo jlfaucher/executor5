@@ -571,6 +571,13 @@ RexxInternalObject *RexxObject::copy()
         // need to copy the behaviour
         newObj->setBehaviour((RexxBehaviour *)newObj->behaviour->copy());
     }
+
+    // if the source object has an uninit method, then so does the copy.  Make
+    // sure it is added to the table.
+    if (hasUninit())
+    {
+        newObj->requiresUninit();
+    }
     return newObj;
 }
 
@@ -602,7 +609,7 @@ void RexxObject::copyObjectVariables(RexxObject *newObj)
  */
 MethodClass *RexxObject::checkPrivate(MethodClass *method )
 {
-    // get the calling activaiton context
+    // get the calling activation context
     ActivationBase *activation = ActivityManager::currentActivity->getTopStackFrame();
     if (activation != OREF_NULL)
     {
@@ -641,139 +648,48 @@ MethodClass *RexxObject::checkPrivate(MethodClass *method )
 
 
 /**
- * Send a message to an object.
+ * Check that methods like RUN, SETMETHOD, and UNSETMETHOD are
+ * issued from a method on the same object instance.
  *
- * @param message The name of the message.
- * @param args    The message arguments.
- *
- * @return The message result.
+ * @return An executable method, or OREF_NULL if this cannot be called.
  */
-RexxObject *RexxObject::sendMessage(RexxString *message, ArrayClass *args)
+void RexxObject::checkRestrictedMethod(const char *methodName)
 {
-    ProtectedObject r;
-    sendMessage(message, args, r);
-    return r;
-}
+    // get the calling activation context
+    ActivationBase *activation = ActivityManager::currentActivity->getTopStackFrame();
+    if (activation != OREF_NULL)
+    {
+        // Unlike private methods, this is only allowed from the instance, or from
+        // the class.  Because RUN, SETMETHOD, and UNSETMETHOD are defined by Object,
+        // this essentially means the only restrictions on these private methods under
+        // the new rules is that it must be called from another method.  Seriously
+        // NOT the intent of making private methods interact a little more.  Therefore,
+        // we add an additional check for any private methods defined by .object
+        RexxObject *sender = activation->getReceiver();
+        if (sender == this)
+        {
+            return;
+        }
 
+        // no sender means this is a routine or program context.  Definitely not allowed.
+        if (sender == OREF_NULL)
+        {
+            reportException(Error_Execution_private_access, methodName);
+        }
 
-/**
- * Another method signature for sending a message.
- *
- * @param message The message name.
- *
- * @return The message result.
- */
-RexxObject *RexxObject::sendMessage(RexxString *message)
-{
-    ProtectedObject r;
-    sendMessage(message, r);
-    return r;
-}
-
-
-/**
- * Another convenience method for sending a message.
- *
- * @param message  The message name.
- * @param args     Pointer to a variable size argument list.
- * @param argCount The cound of arguments.
- *
- * @return The message result.
- */
-RexxObject *RexxObject::sendMessage(RexxString *message, RexxObject **args, size_t argCount)
-{
-    ProtectedObject r;
-    sendMessage(message, args, argCount, r);
-    return r;
-}
-
-
-/**
- * Set a message with a single argument.
- *
- * @param message   The message name.
- * @param argument1 The message argument.
- *
- * @return The message result.
- */
-RexxObject *RexxObject::sendMessage(RexxString *message, RexxObject *argument1)
-{
-    ProtectedObject r;
-    sendMessage(message, argument1, r);
-    return r;
-}
-
-
-/**
- * Send a message with two arguments.
- *
- * @param message   The message name.
- * @param argument1 The first argument.
- * @param argument2 The second argument.
- *
- * @return The message result.
- */
-RexxObject *RexxObject::sendMessage(RexxString *message, RexxObject *argument1, RexxObject *argument2)
-{
-    ProtectedObject r;
-    sendMessage(message, argument1, argument2, r);
-    return r;
-}
-
-
-/**
- * Send a message with three arguments.
- *
- * @param message   The message name.
- * @param argument1 The first argument.
- * @param argument2 The second argument.
- * @param argument3 The third argument.
- *
- * @return The message result.
- */
-RexxObject *RexxObject::sendMessage(RexxString *message, RexxObject *argument1, RexxObject *argument2, RexxObject *argument3)
-{
-    ProtectedObject r;
-    sendMessage(message, argument1, argument2, argument3, r);
-    return r;
-}
-
-
-/**
- * Send a message with four arguments.
- *
- * @param message   The message name.
- * @param argument1 The first argument.
- * @param argument2 The second argument.
- * @param argument3 The third argument.
- * @param argument4 The fourth argument.
- *
- * @return The message result.
- */
-RexxObject *RexxObject::sendMessage(RexxString *message, RexxObject *argument1, RexxObject *argument2, RexxObject *argument3, RexxObject *argument4)
-{
-    ProtectedObject r;
-    sendMessage(message, argument1, argument2, argument3, argument4, r);
-    return r;
-}
-
-
-/**
- * Send a message with five arguments.
- *
- * @param message   The message name.
- * @param argument1 The first argument.
- * @param argument2 The second argument.
- * @param argument3 The third argument.
- * @param argument4 The fifth argument.
- *
- * @return The message result.
- */
-RexxObject *RexxObject::sendMessage(RexxString *message, RexxObject *argument1, RexxObject *argument2, RexxObject *argument3, RexxObject *argument4, RexxObject *argument5)
-{
-    ProtectedObject r;
-    sendMessage(message, argument1, argument2, argument3, argument4, argument5, r);
-    return r;
+        // if the sender is a class object, check the class for compatibility with the
+        // method scope
+        if (isOfClassType(Class, sender))
+        {
+            // if this class is part of the object's hierarchy, this is also permitted
+            if (isInstanceOf((RexxClass *)sender))
+            {
+                return;
+            }
+        }
+        // we have this issued from an invalid context.
+        reportException(Error_Execution_private_access, methodName);
+    }
 }
 
 
@@ -785,9 +701,9 @@ RexxObject *RexxObject::sendMessage(RexxString *message, RexxObject *argument1, 
  * @param result    A ProtectedObject used for returning a result and
  *                  protecting it from garbage collection.
  */
-void RexxObject::sendMessage(RexxString *message, ArrayClass  *arguments, ProtectedObject &result)
+RexxObject *RexxObject::sendMessage(RexxString *message, ArrayClass  *arguments, ProtectedObject &result)
 {
-    messageSend(message, arguments->messageArgs(), arguments->messageArgCount(), result);
+    return messageSend(message, arguments->messageArgs(), arguments->messageArgCount(), result);
 }
 
 
@@ -799,7 +715,7 @@ void RexxObject::sendMessage(RexxString *message, ArrayClass  *arguments, Protec
  * @param argument2 The second argument.
  * @param result    A protected object for returning a result.
  */
-void RexxObject::sendMessage(RexxString *message, RexxObject *argument1, RexxObject *argument2, ProtectedObject &result)
+RexxObject *RexxObject::sendMessage(RexxString *message, RexxObject *argument1, RexxObject *argument2, ProtectedObject &result)
 {
     // copy the objects in to an array so they can be passed as a group.
     RexxObject *arguments[2];
@@ -807,7 +723,7 @@ void RexxObject::sendMessage(RexxString *message, RexxObject *argument1, RexxObj
     arguments[0] = argument1;
     arguments[1] = argument2;
 
-    messageSend(message, arguments, 2, result);
+    return messageSend(message, arguments, 2, result);
 }
 
 
@@ -820,7 +736,7 @@ void RexxObject::sendMessage(RexxString *message, RexxObject *argument1, RexxObj
  * @param argument3 The third argument.
  * @param result    A protected object for returning a result.
  */
-void RexxObject::sendMessage(RexxString *message, RexxObject *argument1, RexxObject *argument2, RexxObject *argument3, ProtectedObject &result)
+RexxObject *RexxObject::sendMessage(RexxString *message, RexxObject *argument1, RexxObject *argument2, RexxObject *argument3, ProtectedObject &result)
 {
     RexxObject *arguments[3];
 
@@ -828,7 +744,7 @@ void RexxObject::sendMessage(RexxString *message, RexxObject *argument1, RexxObj
     arguments[1] = argument2;
     arguments[2] = argument3;
 
-    messageSend(message, arguments, 3, result);
+    return messageSend(message, arguments, 3, result);
 }
 
 
@@ -842,7 +758,7 @@ void RexxObject::sendMessage(RexxString *message, RexxObject *argument1, RexxObj
  * @param argument4 The fourth argument.
  * @param result    A protected object for returning a result.
  */
-void RexxObject::sendMessage(RexxString *message, RexxObject *argument1, RexxObject *argument2,
+RexxObject *RexxObject::sendMessage(RexxString *message, RexxObject *argument1, RexxObject *argument2,
     RexxObject *argument3, RexxObject *argument4, ProtectedObject &result)
 {
     RexxObject *arguments[4];
@@ -852,7 +768,7 @@ void RexxObject::sendMessage(RexxString *message, RexxObject *argument1, RexxObj
     arguments[2] = argument3;
     arguments[3] = argument4;
 
-    messageSend(message, arguments, 4, result);
+    return messageSend(message, arguments, 4, result);
 }
 
 
@@ -867,7 +783,7 @@ void RexxObject::sendMessage(RexxString *message, RexxObject *argument1, RexxObj
  * @param argument5 The fifth argument.
  * @param result    A protected object for returning a result.
  */
-void RexxObject::sendMessage(RexxString *message, RexxObject *argument1, RexxObject *argument2, RexxObject *argument3,
+RexxObject *RexxObject::sendMessage(RexxString *message, RexxObject *argument1, RexxObject *argument2, RexxObject *argument3,
     RexxObject *argument4, RexxObject *argument5, ProtectedObject &result)
 {
     RexxObject *arguments[5];
@@ -878,7 +794,7 @@ void RexxObject::sendMessage(RexxString *message, RexxObject *argument1, RexxObj
     arguments[3] = argument4;
     arguments[4] = argument5;
 
-    messageSend(message, arguments, 5, result);
+    return messageSend(message, arguments, 5, result);
 }
 
 
@@ -890,7 +806,7 @@ void RexxObject::sendMessage(RexxString *message, RexxObject *argument1, RexxObj
  * @param count     The count of arguments.
  * @param result    A protected object for returning the message result.
  */
-void RexxObject::messageSend(RexxString *msgname, RexxObject **arguments, size_t  count, ProtectedObject &result)
+RexxObject *RexxObject::messageSend(RexxString *msgname, RexxObject **arguments, size_t  count, ProtectedObject &result)
 {
     // check for a control stack condition
     ActivityManager::currentActivity->checkStackSpace();
@@ -910,7 +826,7 @@ void RexxObject::messageSend(RexxString *msgname, RexxObject **arguments, size_t
         if (method_save != OREF_NULL && method_save->isProtected())
         {
             processProtectedMethod(msgname, method_save, arguments, count, result);
-            return;
+            return result;
         }
     }
 
@@ -924,6 +840,7 @@ void RexxObject::messageSend(RexxString *msgname, RexxObject **arguments, size_t
         // not found, so check for an unknown method
         processUnknown(msgname, arguments, count, result);
     }
+    return result;
 }
 
 
@@ -936,7 +853,7 @@ void RexxObject::messageSend(RexxString *msgname, RexxObject **arguments, size_t
  * @param startscope The starting scope.
  * @param result     A protected object for returning the result.
  */
-void RexxObject::messageSend(RexxString *msgname, RexxObject **arguments, size_t count,
+RexxObject *RexxObject::messageSend(RexxString *msgname, RexxObject **arguments, size_t count,
     RexxClass *startscope, ProtectedObject &result)
 {
     // perform a stack space check
@@ -955,7 +872,7 @@ void RexxObject::messageSend(RexxString *msgname, RexxObject **arguments, size_t
         else
         {
             processProtectedMethod(msgname, method_save, arguments, count, result);
-            return;
+            return result;
         }
     }
     // invoke the method if we have one, call unknown otherwise
@@ -967,6 +884,7 @@ void RexxObject::messageSend(RexxString *msgname, RexxObject **arguments, size_t
     {
         processUnknown(msgname, arguments, count, result);
     }
+    return result;
 }
 
 
@@ -1163,7 +1081,8 @@ RexxString *RexxInternalObject::stringValue()
  */
 RexxString *RexxObject::stringValue()
 {
-    return (RexxString *)sendMessage(GlobalNames::OBJECTNAME);
+    ProtectedObject result;
+    return (RexxString *)sendMessage(GlobalNames::OBJECTNAME, result);
 }
 
 
@@ -1193,7 +1112,8 @@ RexxString *RexxInternalObject::makeString()
     // some sort of subclass, so we need to issue the actual REQUEST method.
     else
     {
-        return (RexxString *)resultOrNil(((RexxObject *)this)->sendMessage(GlobalNames::REQUEST, GlobalNames::STRING));
+        ProtectedObject result;
+        return (RexxString *)resultOrNil(((RexxObject *)this)->sendMessage(GlobalNames::REQUEST, GlobalNames::STRING, result));
     }
 }
 
@@ -1225,7 +1145,8 @@ ArrayClass *RexxInternalObject::makeArray()
     }
     else
     {
-        return (ArrayClass *)resultOrNil(((RexxObject *)this)->sendMessage(GlobalNames::REQUEST, GlobalNames::ARRAY));
+        ProtectedObject result;
+        return (ArrayClass *)resultOrNil(((RexxObject *)this)->sendMessage(GlobalNames::REQUEST, GlobalNames::ARRAY, result));
     }
 }
 
@@ -1353,7 +1274,8 @@ RexxString *RexxInternalObject::requiredString()
     {
         // do via a message send with some no return value protection to keep us from
         // crashing.
-        RexxObject *string_value = resultOrNil(((RexxObject *)this)->sendMessage(GlobalNames::REQUEST, GlobalNames::STRING));
+        ProtectedObject result;
+        RexxObject *string_value = resultOrNil(((RexxObject *)this)->sendMessage(GlobalNames::REQUEST, GlobalNames::STRING, result));
         if (string_value != TheNilObject)
         {
             // The returned value might be an Integer or NumberString value.  We need to
@@ -1664,7 +1586,8 @@ ArrayClass *RexxInternalObject::requestArray()
     // for subclasses, this needs to go through the REQUEST method.
     else
     {
-        return(ArrayClass *)resultOrNil(((RexxObject *)this)->sendMessage(GlobalNames::REQUEST, GlobalNames::ARRAY));
+        ProtectedObject result;
+        return(ArrayClass *)resultOrNil(((RexxObject *)this)->sendMessage(GlobalNames::REQUEST, GlobalNames::ARRAY, result));
     }
 }
 
@@ -1689,8 +1612,9 @@ RexxString *RexxObject::objectName()
             return defaultName();
         }
 
+        ProtectedObject result;
         // send the default name message...
-        string_value = (RexxString *)sendMessage(GlobalNames::DEFAULTNAME);
+        string_value = (RexxString *)sendMessage(GlobalNames::DEFAULTNAME, result);
         // it is possible we got nothing back from this method.  Prevent
         // potential crashes by returning the default default.
         if (string_value.isNull())
@@ -1809,33 +1733,10 @@ RexxClass *RexxObject::classObject()
 RexxObject *RexxObject::setMethod(RexxString *msgname, MethodClass *methobj, RexxString *option)
 {
     // get the message name as a string
-    msgname = stringArgument(msgname, ARG_ONE)->upper();
+    msgname = stringArgument(msgname, "method name")->upper();
 
     // by default, the added scope is .nil, which is the object scope.
     RexxClass *targetScope = (RexxClass *)TheNilObject;
-
-    // By default, we add this method using the floating scope, which is a
-    // non-specific scope shared by all set methods.  This can also be defined
-    // using "OBJECT" scope, which really should be "CLASS" scope.  "OBJECT" scope
-    // uses the
-    if (option != OREF_NULL)
-    {
-        option = stringArgument(option, ARG_THREE);
-
-        // OBJECT scope means we attach this as a method of the defining class (top-level
-        // of the hierarchy.
-        if (Utilities::strCaselessCompare("OBJECT", option->getStringData()) == 0)
-        {
-            // define this scope on the class object, not the object level.
-            targetScope = classObject();
-        }
-        // FLOAT is the only other possibility, which is the default.  This is
-        // the .nil scope.
-        else if (Utilities::strCaselessCompare("FLOAT",option->getStringData()) != 0)
-        {
-            reportException(Error_Incorrect_call_list, "SETMETHOD", IntegerThree, "\"FLOAT\", \"OBJECT\"", option);
-        }
-    }
 
     // if not passed a method, we're hiding methods of this name, so use .nil for
     // the method object.
@@ -1848,6 +1749,33 @@ RexxObject *RexxObject::setMethod(RexxString *msgname, MethodClass *methobj, Rex
         // make one from a string or array, setting the scope to .nil
         methobj = MethodClass::newMethodObject(msgname, (RexxObject *)methobj, (RexxClass *)TheNilObject, "method");
     }
+
+    // By default, we add this method using the floating scope, which is a
+    // non-specific scope shared by all set methods.  This can also be defined
+    // using "OBJECT" scope, which really should be "CLASS" scope.  "OBJECT" scope
+    // uses the
+    if (option != OREF_NULL)
+    {
+        option = stringArgument(option, "scope option");
+
+        // OBJECT scope means we attach this as a method of the defining class (top-level
+        // of the hierarchy.
+        if (Utilities::strCaselessCompare("OBJECT", option->getStringData()) == 0)
+        {
+            // define this scope on the class object, not the object level.
+            targetScope = classObject();
+        }
+        // FLOAT is the only other possibility, which is the default.  This is
+        // the .nil scope.
+        else if (Utilities::strCaselessCompare("FLOAT",option->getStringData()) != 0)
+        {
+            reportException(Error_Invalid_argument_list, "SETMETHOD", IntegerThree, "\"FLOAT\" or \"OBJECT\"", option);
+        }
+    }
+
+    // this has restrictions on how it can be used, check this context is valid.
+    checkRestrictedMethod("SETMETHOD");
+
     // define the new method
     defineInstanceMethod(msgname, methobj, targetScope);
     return OREF_NULL;
@@ -1863,9 +1791,13 @@ RexxObject *RexxObject::setMethod(RexxString *msgname, MethodClass *methobj, Rex
  */
 RexxObject  *RexxObject::unsetMethod(RexxString *msgname)
 {
-    msgname = stringArgument(msgname, ARG_ONE)->upper();
-    // the behaviour does the heavy lifting here.
-    behaviour->deleteMethod(msgname);
+    msgname = stringArgument(msgname, "method name")->upper();
+
+    // this has restrictions on how it can be used, check this context is valid.
+    checkRestrictedMethod("UNSETMETHOD");
+
+    // go remove the instance method
+    deleteInstanceMethod(msgname);
     return OREF_NULL;
 }
 
@@ -1895,8 +1827,9 @@ RexxObject *RexxObject::requestRexx(RexxString *className)
     // have this method?
     if (method != OREF_NULL)
     {
+        ProtectedObject result;
         // go invoke the method and return the result
-        return resultOrNil(sendMessage(make_method));
+        return resultOrNil(sendMessage(make_method, result));
     }
     else
     {
@@ -1918,6 +1851,39 @@ void RexxObject::validateScopeOverride(RexxClass *scope)
         {
             reportException(Error_Incorrect_method_array_noclass, this, scope);
         }
+    }
+}
+
+
+/**
+ * Validate that this is an appropriate context for invoking
+ * a superclass override.
+ *
+ * @param target The invocation target object.
+ */
+void RexxObject::validateOverrideContext(RexxObject *target, RexxClass *scope)
+{
+    // no scope override, so this is good
+    if (scope == OREF_NULL)
+    {
+        return;
+    }
+
+    // validate the message creator now
+    ActivationBase *activation = ActivityManager::currentActivity->getTopStackFrame();
+    // have an activation?
+    if (activation != OREF_NULL)
+    {
+        // get the receiving object
+        RexxObject *sender = activation->getReceiver();
+        if (sender != target)
+        {
+            reportException(Error_Execution_super);
+        }
+    }
+    else
+    {
+        reportException(Error_Execution_super);
     }
 }
 
@@ -1948,6 +1914,7 @@ RexxObject *RexxObject::sendWith(RexxObject *message, ArrayClass *arguments)
     {
         // validate that the scope override is valid
         validateScopeOverride(startScope);
+        validateOverrideContext(this, startScope);
         messageSend(messageName, arguments->messageArgs(), arguments->messageArgCount(), startScope, r);
     }
     return (RexxObject *)r;
@@ -1988,6 +1955,7 @@ RexxObject *RexxObject::send(RexxObject **arguments, size_t argCount)
     {
         // validate that the scope override is valid
         validateScopeOverride(startScope);
+        validateOverrideContext(this, startScope);
         messageSend(messageName, arguments + 1, argCount - 1, startScope, r);
     }
     return (RexxObject *)r;
@@ -2062,10 +2030,11 @@ MessageClass *RexxObject::startCommon(RexxObject *message, RexxObject **argument
     // validate the starting scope now, if specified.  We'll validate this in this
     // thread first.
     validateScopeOverride(startScope);
+    validateOverrideContext(this, startScope);
 
     // creeate the new message object and start it.
     Protected<MessageClass> newMessage = new MessageClass(this, messageName, startScope, new_array(argCount, arguments));
-    newMessage->start(OREF_NULL);
+    newMessage->start();
     // the message object is our return value.
     return newMessage;
 }
@@ -2109,22 +2078,8 @@ void RexxObject::decodeMessageName(RexxObject *target, RexxObject *message, Rexx
         startScope = (RexxClass *)messageArray->get(2);
         classArgument(startScope, TheClassClass, "SCOPE");
 
-        // validate the message creator now
-        ActivationBase *activation = ActivityManager::currentActivity->getTopStackFrame();
-        // have an activation?
-        if (activation != OREF_NULL)
-        {
-            // get the receiving object
-            RexxObject *sender = activation->getReceiver();
-            if (sender != target)
-            {
-                reportException(Error_Execution_super);
-            }
-        }
-        else
-        {
-            reportException(Error_Execution_super);
-        }
+        // we only break this up into the component parts here.  The calling context
+        // takes care of validating whether this is a valid call.
     }
     else
     {
@@ -2137,8 +2092,10 @@ void RexxObject::decodeMessageName(RexxObject *target, RexxObject *message, Rexx
 /**
  * Tag an object as having an UNINIT method
  */
-void RexxInternalObject::hasUninit()
+void RexxInternalObject::requiresUninit()
 {
+    // mark this object as having an uninit method
+    setHasUninit();
     memoryObject.addUninitObject(this);
 }
 
@@ -2207,6 +2164,10 @@ RexxObject *RexxObject::run(RexxObject **arguments, size_t argCount)
                 break;
         }
     }
+
+    // this has restrictions on how it can be used, check this context is valid.
+    checkRestrictedMethod("RUN");
+
     ProtectedObject result;
     // run the method and return the result
     methobj->run(ActivityManager::currentActivity, this, GlobalNames::UNNAMED_METHOD, argumentPtr, argcount, result);
@@ -2253,7 +2214,7 @@ RexxObject *RexxObject::defineInstanceMethods(DirectoryClass *methods)
 
 /**
  * Add a method to an object's behaviour.  Used internally
- * during image build.
+ * during image build and for the Object setMethod() method.
  *
  * @param msgname The method name.
  * @param methobj The target method object.
@@ -2263,8 +2224,6 @@ RexxObject *RexxObject::defineInstanceMethods(DirectoryClass *methods)
  */
 RexxObject *RexxObject::defineInstanceMethod(RexxString *msgname, MethodClass *methobj, RexxClass *scope)
 {
-    // get the method name in uppercase.
-    msgname = msgname->upper();
     if (methobj != TheNilObject)
     {
         // set a new scope on this of the target (either .nil, or the object class)
@@ -2276,12 +2235,34 @@ RexxObject *RexxObject::defineInstanceMethod(RexxString *msgname, MethodClass *m
     // may have been sharing the mvd.
     setField(behaviour, (RexxBehaviour *)behaviour->copy());
     // add this to the behaviour
-    behaviour->defineMethod(msgname, methobj);
+    behaviour->addInstanceMethod(msgname, methobj);
+
     // adding an UNINIT method to obj?
-    if (methobj != TheNilObject && msgname->strCompare(GlobalNames::UNINIT))
-    {
-        hasUninit();
-    }
+    checkUninit();
+    return OREF_NULL;
+}
+
+
+/**
+ * Remove a method to an object's instance behaviour with
+ * unsetMethod.
+ *
+ * @param msgname The method name.
+ * @param methobj The target method object.
+ * @param scope   The scope the new method is defined with.
+ *
+ * @return Returns nothing.
+ */
+RexxObject *RexxObject::deleteInstanceMethod(RexxString *msgname)
+{
+    // copy primitive behaviour object and define the method, a copy is made to
+    // ensure that we don't update the behaviour of any other object, since they
+    // may have been sharing the mvd.
+    setField(behaviour, (RexxBehaviour *)behaviour->copy());
+    // add this to the behaviour
+    behaviour->removeInstanceMethod(msgname);
+    // we might have removed an uninit method, so check the status
+    checkUninit();
     return OREF_NULL;
 }
 
@@ -2302,6 +2283,8 @@ size_t RexxInternalObject::getObjectTypeNumber()
  */
 void RexxInternalObject::removedUninit()
 {
+    // mark this object as not having an uninit method
+    clearHasUninit();
     memoryObject.removeUninitObject(this);
 }
 
@@ -2514,7 +2497,8 @@ void RexxObject::uninit()
 {
     if (hasMethod(GlobalNames::UNINIT))
     {
-        sendMessage(GlobalNames::UNINIT);
+        ProtectedObject result;
+        sendMessage(GlobalNames::UNINIT, result);
     }
 }
 
@@ -2527,6 +2511,24 @@ void RexxObject::uninit()
 bool RexxObject::hasUninitMethod()
 {
     return hasMethod(GlobalNames::UNINIT);
+}
+
+
+/**
+ * Check to see if an object has an uninit method after
+ * a change to the instance methods.
+ */
+void RexxObject::checkUninit()
+{
+    if (hasMethod(GlobalNames::UNINIT))
+    {
+        requiresUninit();
+    }
+    // this might be in the uninit table, remove it now.
+    else
+    {
+        removedUninit();
+    }
 }
 
 

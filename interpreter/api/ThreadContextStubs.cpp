@@ -161,8 +161,7 @@ RexxObjectPtr RexxEntry SendMessageArray(RexxThreadContext *c, RexxObjectPtr o, 
     {
         RexxString *message = new_upper_string(m);
         ProtectedObject p(message);
-
-        return context.ret(((RexxObject *)o)->sendMessage(message, (ArrayClass *)a));
+        return context.ret(((RexxObject *)o)->sendMessage(message, (ArrayClass *)a, p));
     }
     catch (NativeActivation *)
     {
@@ -178,7 +177,7 @@ RexxObjectPtr RexxEntry SendMessage0(RexxThreadContext *c, RexxObjectPtr o, CSTR
     {
         RexxString *message = new_upper_string(m);
         ProtectedObject p(message);
-        return context.ret(((RexxObject *)o)->sendMessage(message));
+        return context.ret(((RexxObject *)o)->sendMessage(message, p));
     }
     catch (NativeActivation *)
     {
@@ -194,7 +193,7 @@ RexxObjectPtr RexxEntry SendMessage1(RexxThreadContext *c, RexxObjectPtr o, CSTR
     {
         RexxString *message = new_upper_string(m);
         ProtectedObject p(message);
-        return context.ret(((RexxObject *)o)->sendMessage(message, (RexxObject *)a1));
+        return context.ret(((RexxObject *)o)->sendMessage(message, (RexxObject *)a1, p));
     }
     catch (NativeActivation *)
     {
@@ -209,7 +208,7 @@ RexxObjectPtr RexxEntry SendMessage2(RexxThreadContext *c, RexxObjectPtr o, CSTR
     {
         RexxString *message = new_upper_string(m);
         ProtectedObject p(message);
-        return context.ret(((RexxObject *)o)->sendMessage(message, (RexxObject *)a1, (RexxObject *)a2));
+        return context.ret(((RexxObject *)o)->sendMessage(message, (RexxObject *)a1, (RexxObject *)a2, p));
     }
     catch (NativeActivation *)
     {
@@ -411,7 +410,7 @@ RexxDirectoryObject RexxEntry GetPackageRoutines(RexxThreadContext *c, RexxPacka
     ApiContext context(c);
     try
     {
-        return (RexxDirectoryObject)context.ret(((PackageClass *)m)->getRoutines());
+        return (RexxDirectoryObject)context.ret(((PackageClass *)m)->getRoutinesRexx());
     }
     catch (NativeActivation *)
     {
@@ -425,7 +424,7 @@ RexxDirectoryObject RexxEntry GetPackagePublicRoutines(RexxThreadContext *c, Rex
     ApiContext context(c);
     try
     {
-        return (RexxDirectoryObject)context.ret(((PackageClass *)m)->getPublicRoutines());
+        return (RexxDirectoryObject)context.ret(((PackageClass *)m)->getPublicRoutinesRexx());
     }
     catch (NativeActivation *)
     {
@@ -1540,7 +1539,7 @@ RexxObjectPtr RexxEntry SupplierItem(RexxThreadContext *c, RexxSupplierObject o)
     ApiContext context(c);
     try
     {
-        return context.ret(((SupplierClass *)o)->value());
+        return context.ret(((SupplierClass *)o)->item());
     }
     catch (NativeActivation *)
     {

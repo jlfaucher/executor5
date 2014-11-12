@@ -123,7 +123,7 @@ $ Error_Invalid_whole_number
 26 Invalid whole number.
 
 $ Error_Invalid_do
-27 Invalid DO syntax.
+27 Invalid DO or LOOP syntax.
 
 $ Error_Invalid_leave
 28 Invalid LEAVE or ITERATE.
@@ -624,10 +624,10 @@ $ Error_Invalid_whole_number_power
 304 Operand to the right of the power operator (**) must be a whole number; found "&1".
 
 $ Error_Invalid_whole_number_repeat
-305 Value of repetition count expression in DO instruction must be zero or a positive whole number; found "&1".
+305 Value of repetition count expression in DO or LOOP instruction must be zero or a positive whole number; found "&1".
 
 $ Error_Invalid_whole_number_for
-306 Value of FOR expression in DO instruction must be zero or a positive whole number; found "&1".
+306 Value of FOR expression in DO or LOOP instruction must be zero or a positive whole number; found "&1".
 
 $ Error_Invalid_whole_number_parse
 307 Positional pattern of PARSE template must be a whole number; found "&1".
@@ -648,10 +648,10 @@ $ Error_Invalid_whole_number_rem
 312 Result of // operation did not result in a whole number.
 
 $ Error_Invalid_do_whileuntil
-313 WHILE and UNTIL keywords cannot be used on the same DO loop.
+313 Only one WHILE or UNTIL condition can be used on the same loop.
 
 $ Error_Invalid_do_forever
-314 Incorrect data following FOREVER keyword on the DO loop; found "&1".
+314 Incorrect data following FOREVER keyword on the loop; found "&1".
 
 $ Error_Invalid_leave_leave
 315 LEAVE is valid only within a repetitive loop or labeled block instruction.
@@ -738,7 +738,7 @@ $ Error_Invalid_expression_when
 343 Missing conditional expression following WHEN keyword.
 
 $ Error_Invalid_expression_control
-344 Missing initial expression for DO control variable.
+344 Missing initial expression for DO or LOOP control variable.
 
 $ Error_Invalid_expression_by
 345 Missing expression following BY keyword.
@@ -921,13 +921,13 @@ $ Error_Conversion_exponent
 406 Exponent exceeds &1 digits; found "&2".
 
 $ Error_Conversion_to
-407 Value of TO expression of DO instruction must be numeric; found "&1".
+407 Value of TO expression of DO or LOOP instruction must be numeric; found "&1".
 
 $ Error_Conversion_by
-408 Value of BY expression of DO instruction must be numeric; found "&1".
+408 Value of BY expression of DO or LOOP instruction must be numeric; found "&1".
 
 $ Error_Conversion_control
-409 Value of control variable expression of DO instruction must be numeric; found "&1".
+409 Value of control variable expression of DO or LOOP instruction must be numeric; found "&1".
 
 $ Error_Conversion_raise
 410 Value of RAISE instruction SYNTAX expression must be numeric; found "&1".
@@ -1289,6 +1289,9 @@ $ Error_Translation_requires
 $ Error_Incorrect_method_no_method
 539 The &1 argument must be a string or array object.
 
+$ Error_Incorrect_method_no_method_type
+539 The &1 argument must be a string, array, or method object.
+
 $ Error_Incorrect_method_argType
 540 Method argument &1 could not be converted to type &2.
 
@@ -1305,7 +1308,7 @@ $ Error_Incorrect_method_array_noclass
 544 Target object "&1" is not a subclass of the message override scope (&2).
 
 $ Error_Invalid_do_duplicate
-545 DO keyword &1 can be specified only once.
+545 DO or LOOP keyword &1 can be specified only once.
 
 $ Error_Incorrect_method_array_too_big
 546 An array cannot contain more than 99,999,999 elements.
@@ -1924,6 +1927,48 @@ $ Error_Symbol_expected_form
 
 $ Error_Incorrect_method_message_name
 772 A message name argument must be a string or an array with 2 elements; found "&1".
+
+$ Error_Execution_private_access
+773 Method &1 may only be invoked from a method of the same object or one of its classes.
+
+$ Error_Translation_delegate_method
+774 Delegate methods cannot have a method body.
+
+$ Error_Symbol_expected_delegate
+775 Symbol expected after the DELEGATE keyword.
+
+$ Error_Translation_delegate_attribute
+776 Delegate attributes cannot have a method body.
+
+$ Error_Symbol_expected_use_local
+777 Symbol expected after USE LOCAL.
+
+$ Error_Translation_use_local_compound
+778 USE LOCAL cannot process compound variables; found "&1".
+
+$ Error_Symbol_expected_indirect
+779 Symbol expected as an indirect variable name; found "&1".
+
+$ Error_Execution_expose_method
+780 The EXPOSE instruction may only be used from method invocations.
+
+$ Error_Execution_use_local_method
+781 The USE LOCAL instruction may only be used from method invocations.
+
+$ Error_Logical_value_supplier
+782 Suppplier AVAILABLE method did not return exactly "0" or "1"; found "&1".
+
+$ Error_Execution_no_supplier
+783 Unable to convert object "&1" to a supplier object.
+
+$ Error_Symbol_expected_after_keyword
+784 Symbol expected after &1 keyword.
+
+$ Error_Invalid_do_with_no_control
+784 No INDEX or ITEM control variable specified on a WITH loop.
+
+$ Error_Invalid_do_with_no_over
+786 OVER keyword expected for a WITH loop.
 
 
 $ * -------------------------------------------------------------------------- */

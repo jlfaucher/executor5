@@ -180,6 +180,12 @@ PackageClass *PackageClass::newRexx(RexxObject **init_args, size_t argCount)
         // validate, and potentially transform, the method source object.
         ArrayClass *sourceArray = BaseExecutable::processExecutableSource(programSource, "source");
 
+        // if not a valid source, give an error
+        if (sourceArray == OREF_NULL)
+        {
+            reportException(Error_Incorrect_method_no_method, "source");
+        }
+
         // and create the package
         package = LanguageParser::createPackage(nameString, sourceArray, sourceContext);
         // make sure the prolog is run
@@ -851,7 +857,49 @@ RoutineClass *PackageClass::findRoutine(RexxString *routineName)
  */
 RexxString *PackageClass::resolveProgramName(Activity *activity, RexxString *name)
 {
-    return activity->getInstance()->resolveProgramName(name, programDirectory, programExtension);
+    RexxString *fullName = activity->getInstance()->resolveProgramName(name, programDirectory, programExtension);
+    // if we can't resolve this directly and we have a parent context, then
+    // try the parent context.
+    if (fullName == OREF_NULL && parentPackage != OREF_NULL)
+    {
+        fullName = parentPackage->resolveProgramName(activity, name);
+    }
+    return fullName;
+}
+
+
+/**
+ * Locate a program using the target package context.
+ *
+ * @param name   The target name.
+ *
+ * @return The fully resolved filename, or .nil if no file was found.
+ */
+RexxObject *PackageClass::findProgramRexx(RexxObject *name)
+{
+    RexxString *target = stringArgument(name, "name");
+
+    Activity *activity = ActivityManager::currentActivity;
+    // we need the instance this is associated with
+    InterpreterInstance *instance = activity->getInstance();
+
+    // get a fully resolved name for this....we might locate this under either name, but the
+    // fully resolved name is generated from this source file context.
+    RexxString *programName = instance->resolveProgramName(target, programDirectory, programExtension);
+    if (programName != OREF_NULL)
+    {
+        return programName;
+    }
+
+    // we might have a chained context.  Try to resolve in the parent
+    // if we could not find this directly
+    if (parentPackage != OREF_NULL)
+    {
+        return parentPackage->findProgramRexx(target);
+    }
+
+    // nothing found
+    return TheNilObject;
 }
 
 
@@ -1141,7 +1189,8 @@ void PackageClass::processInstall(RexxActivation *activation)
         for (size_t i = 1; i <= count; i++)
         {
             RexxClass *clz = (RexxClass *)createdClasses->get(i);
-            clz->sendMessage(GlobalNames::ACTIVATE);
+            ProtectedObject result;
+            clz->sendMessage(GlobalNames::ACTIVATE, result);
         }
     }
 }
@@ -1534,6 +1583,39 @@ StringTable *PackageClass::getResourcesRexx()
 
 
 /**
+ * Get a specific named resource
+ *
+ * @param name   The resource name
+ *
+ * @return The resource array, or OREF_NULL if it doesn't exist.
+ */
+ArrayClass *PackageClass::getResource(RexxString *name)
+{
+    // we need to return a copy.  The source might necessarily have any of these,
+    // so we return an empty directory if it's not there.
+    StringTable *resourceDir = getResources();
+    if (resourceDir == OREF_NULL)
+    {
+        return OREF_NULL;
+    }
+    return (ArrayClass *)resourceDir->entry(name);
+}
+
+
+/**
+ * The Rexx stub for the get resource method
+ *
+ * @param name   The name of the target resource.
+ *
+ * @return The resource value, or .nil if it does not exist.
+ */
+RexxObject *PackageClass::getResourceRexx(RexxObject *name)
+{
+    return resultOrNil(getResource(stringArgument(name, "name")));
+}
+
+
+/**
  * Get all of the namespaces defined in this package.
  *
  * @return A directory of the defined namespaces
@@ -1893,6 +1975,20 @@ RexxObject *PackageClass::formRexx()
 RexxObject *PackageClass::traceRexx()
 {
     return getTrace();
+}
+
+
+/**
+ * Return the main executable for a package.  Returns .nil if
+ * the package was created as a new method or a new routine.
+ *
+ * @return The main section of the package or .nil if there is
+ *         no main section
+ */
+RexxObject *PackageClass::getMainRexx()
+{
+    //. the main executable is valid if there is init code.
+    return resultOrNil(initCode == OREF_NULL ? TheNilObject : getMain());
 }
 
 

@@ -8,9 +8,13 @@ Hence the creation of a new Github repository Executor5...
 
 Creation of the Github repository Executor5.
 Procedure :
-Using SmartGit, clone svn+ssh://jfaucher@svn.code.sf.net/p/oorexx/code-0/main (svn)
+Using SmartGit, clone svn://svn.code.sf.net/p/oorexx/code-0/main (svn)
 Add the remote git@github.com:jlfaucher/executor5.git (origin)
 Push svn to origin
+
+Remember, don't use
+svn+ssh://jfaucher@svn.code.sf.net/p/oorexx/code-0/main
+to avoid any accidental update of SVN repository.
 
 
 ===============================================================================

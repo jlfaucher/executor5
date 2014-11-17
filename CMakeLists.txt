@@ -79,8 +79,15 @@ endif ()
 
 find_package(Subversion)
 if(SUBVERSION_FOUND)
-  Subversion_WC_INFO(${PROJECT_SOURCE_DIR} ORX)
-  set(ORX_BLD_LVL ${ORX_WC_REVISION})
+  # If the specified directory is not an SVN working copy then Subversion_WC_INFO will
+  # return an error and the generation of the makefile will be aborted.
+  # So call Subversion_WC_INFO only if svn info doesn't return an error.
+  execute_process(COMMAND ${Subversion_SVN_EXECUTABLE} info ${PROJECT_SOURCE_DIR}
+    RESULT_VARIABLE Subversion_svn_info_result)
+  if(${Subversion_svn_info_result} EQUAL 0)
+    Subversion_WC_INFO(${PROJECT_SOURCE_DIR} ORX)
+    set(ORX_BLD_LVL ${ORX_WC_REVISION})
+  endif()
 endif()
 
 
@@ -187,14 +194,18 @@ if (WIN32)
    ENDMACRO ()
 
 else ()
-   set (CMAKE_INSTALL_PREFIX /usr)
+   #jlf set (CMAKE_INSTALL_PREFIX /usr)
+   if(NOT DEFINED CMAKE_INSTALL_PREFIX) #jlf
+      set(CMAKE_INSTALL_PREFIX "/usr")  #jlf
+   endif()                              #jlf
    set (catdir ${CMAKE_INSTALL_PREFIX}/bin)
    set (INSTALL_EXECUTABLE_DIR ${CMAKE_INSTALL_PREFIX}/bin)
    set (INSTALL_CLS_DIR ${CMAKE_INSTALL_PREFIX}/bin)
    set (INSTALL_REX_DIR ${CMAKE_INSTALL_PREFIX}/bin)
    set (INSTALL_INCLUDE_DIR ${CMAKE_INSTALL_PREFIX}/include)
    set (INSTALL_SAMPLES_DIR ${CMAKE_INSTALL_PREFIX}/share/${CMAKE_PROJECT_NAME})
-   find_path(INSTALL_LIB_DIR libc.so PATHS ${CMAKE_INSTALL_PREFIX}/lib/* ${CMAKE_INSTALL_PREFIX}/lib64)
+   #jlf find_path(INSTALL_LIB_DIR libc.so PATHS ${CMAKE_INSTALL_PREFIX}/lib/* ${CMAKE_INSTALL_PREFIX}/lib64)
+   set (INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/lib) #jlf
    set (INSTALL_MAN_DIR ${CMAKE_INSTALL_PREFIX}/share/man)
 endif ()
 

@@ -36,84 +36,107 @@
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 /******************************************************************************/
-/* REXX unix Support                                                          */
-/*                                                                            */
-/* Miscellaneous unix specific routines.                                      */
+/* A collection that maps pointers to object values.  Used for internal       */
+/* memory management.                                                         */
 /*                                                                            */
 /******************************************************************************/
 
-/*********************************************************************/
-/*                                                                   */
-/*   Function:  Miscellaneous system specific routines               */
-/*                                                                   */
-/*********************************************************************/
-#ifdef HAVE_CONFIG_H
-    #include "config.h"
-#endif
-
 #include "RexxCore.h"
-#include "StringClass.hpp"
-#include "DirectoryClass.hpp"
-#include "Activity.hpp"
-#include "RexxActivation.hpp"
-#include "ActivityManager.hpp"
-#include "PointerClass.hpp"
-#include "SystemInterpreter.hpp"
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-
-#if defined( HAVE_SIGNAL_H )
-    #include <signal.h>
-#endif
-
-#if defined( HAVE_SYS_SIGNAL_H )
-    #include <sys/signal.h>
-#endif
-
-#if defined( HAVE_SYS_LDR_H )
-    #include <sys/ldr.h>
-#endif
-
-#if defined( HAVE_FILEHDR_H )
-    #include <filehdr.h>
-#endif
-
-#include <dlfcn.h>
-
-#if defined( HAVE_SYS_UTSNAME_H )
-    #include <sys/utsname.h>               /* get the uname() function   */
-#endif
-
-#define LOADED_OBJECTS 100
-
-
-// maximum length of an environment name.
-const size_t MAX_ADDRESS_NAME_LENGTH = 250;
+#include "PointerTable.hpp"
 
 
 /**
- * Validate an external address name.
+ * Allocate a new PointerTable item.
  *
- * @param Name   The name to validate
+ * @param size    The base object size.
+ *
+ * @return The storage for creating a MapBucket.
  */
-void SystemInterpreter::validateAddressName(RexxString *name )
+void *PointerTable::operator new(size_t size)
 {
-    // only complain if it is too long.
-    if (name->getLength() > MAX_ADDRESS_NAME_LENGTH)
+   return new_object(size, T_PointerTable);
+}
+
+
+/**
+ * Initialize a PointerTable object.
+ *
+ * @param entries The number of entries.
+ */
+PointerTable::PointerTable(size_t entries)
+{
+    // get a new bucket of the correct size
+    contents = new (entries) PointerBucket(entries);
+}
+
+
+/**
+ * Normal garbage collection live marking
+ *
+ * @param liveMark The current live mark.
+ */
+void PointerTable::live(size_t liveMark)
+{
+    memory_mark(contents);
+}
+
+
+/**
+ * Generalized object marking.
+ *
+ * @param reason The reason for this live marking operation.
+ */
+void PointerTable::liveGeneral(MarkReason reason)
+{
+    memory_mark_general(contents);
+}
+
+
+/**
+ * Copy a map table.
+ *
+ * @return The new PointerTable object.
+ */
+RexxInternalObject *PointerTable::copy()
+{
+    // copy this object first
+    PointerTable *newObj = (PointerTable *)RexxInternalObject::copy();
+    newObj->contents = (PointerBucket *)contents->copy();
+    return newObj;
+}
+
+
+/**
+ * Place an item into a hash collection using a key.
+ *
+ * @param value The inserted value.
+ * @param index The insertion key.
+ *
+ * @return The retrieved object.  Returns OREF_NULL if the object
+ *         was not found.
+ */
+void PointerTable::put(RexxInternalObject *value, void *index)
+{
+    // try to insert in the existing hash tables...if this
+    // fails, we're full and need to reallocate.
+    if (!contents->put(value, index))
     {
-        reportException(Error_Environment_name_name, MAX_ADDRESS_NAME_LENGTH, name);
+        // reallocate and try again
+        reallocateContents();
+        contents->put(value, index);
     }
 }
 
 
 /**
- * Return the platform name used in Parse Source.
- *
- * @return The string name of the platform we're building for.
+ * Reallocate the hash bucket to a larger version after
+ * a failed put() operation.
  */
-const char *SystemInterpreter::getPlatformName()
+void PointerTable::reallocateContents()
 {
-    return ORX_SYS_STR;
+    // create a new bucket and merge the old bucket into it, then replace the contents
+    // with the new ones.
+    PointerBucket *newContents = new (contents->totalSize * 2) PointerBucket(contents->totalSize * 2);
+    contents->merge(newContents);
+    contents = newContents;
 }
-

@@ -54,7 +54,7 @@
  */
 void *MapTable::operator new(size_t size)
 {
-   return new_object(size, T_MapBucket);
+   return new_object(size, T_MapTable);
 }
 
 

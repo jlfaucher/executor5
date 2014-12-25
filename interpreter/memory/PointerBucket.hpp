@@ -36,84 +36,87 @@
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 /******************************************************************************/
-/* REXX unix Support                                                          */
 /*                                                                            */
-/* Miscellaneous unix specific routines.                                      */
+/* Mapping table for pointer index to an object value.  Used for the object   */
+/* memory allocation tables.                                                  */
 /*                                                                            */
 /******************************************************************************/
+#ifndef Included_PointerBucket
+#define Included_PointerBucket
 
-/*********************************************************************/
-/*                                                                   */
-/*   Function:  Miscellaneous system specific routines               */
-/*                                                                   */
-/*********************************************************************/
-#ifdef HAVE_CONFIG_H
-    #include "config.h"
-#endif
-
-#include "RexxCore.h"
-#include "StringClass.hpp"
-#include "DirectoryClass.hpp"
-#include "Activity.hpp"
-#include "RexxActivation.hpp"
-#include "ActivityManager.hpp"
-#include "PointerClass.hpp"
-#include "SystemInterpreter.hpp"
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-
-#if defined( HAVE_SIGNAL_H )
-    #include <signal.h>
-#endif
-
-#if defined( HAVE_SYS_SIGNAL_H )
-    #include <sys/signal.h>
-#endif
-
-#if defined( HAVE_SYS_LDR_H )
-    #include <sys/ldr.h>
-#endif
-
-#if defined( HAVE_FILEHDR_H )
-    #include <filehdr.h>
-#endif
-
-#include <dlfcn.h>
-
-#if defined( HAVE_SYS_UTSNAME_H )
-    #include <sys/utsname.h>               /* get the uname() function   */
-#endif
-
-#define LOADED_OBJECTS 100
-
-
-// maximum length of an environment name.
-const size_t MAX_ADDRESS_NAME_LENGTH = 250;
+#include "ObjectClass.hpp"
 
 
 /**
- * Validate an external address name.
- *
- * @param Name   The name to validate
+ * A mapping class for mapping pointer values to an associated
+ * object instance.
  */
-void SystemInterpreter::validateAddressName(RexxString *name )
+class PointerBucket : public RexxInternalObject
 {
-    // only complain if it is too long.
-    if (name->getLength() > MAX_ADDRESS_NAME_LENGTH)
-    {
-        reportException(Error_Environment_name_name, MAX_ADDRESS_NAME_LENGTH, name);
-    }
-}
+ friend class PointerTable;
+ public:
+    typedef size_t MapLink;                  // a link to another map item
 
+           void *operator new(size_t base, size_t entries);
+    inline void  operator delete(void *) {;}
 
-/**
- * Return the platform name used in Parse Source.
- *
- * @return The string name of the platform we're building for.
- */
-const char *SystemInterpreter::getPlatformName()
-{
-    return ORX_SYS_STR;
-}
+    PointerBucket(size_t entries);
+    inline PointerBucket(RESTORETYPE restoreType) { ; };
+
+    virtual void live(size_t);
+    virtual void liveGeneral(MarkReason reason);
+
+    void         empty();
+    bool         isEmpty() { return itemCount == 0; }
+    bool         isFull()  { return itemCount >= totalSize; }
+    size_t       items() { return itemCount; };
+
+    RexxInternalObject *remove(void *key);
+    RexxInternalObject *get(void *key);
+    bool         put(RexxInternalObject *value, void *key);
+    bool         hasIndex(void *key);
+    void         merge(PointerBucket *other);
+    MapLink      locate(void *key);
+    bool         append(RexxInternalObject *value, void *index, MapLink position);
+
+    // We never get saved in the image or flattened with other objects, so we can just use the
+    // identity hash to generate the index
+    inline MapLink hashIndex(void *index) { return (MapLink)(((uintptr_t)index) % bucketSize); }
+
+    // link terminator
+    static const MapLink NoMore = 0;
+    // indicates not linked
+    static const MapLink NoLink = ~((MapLink)0);
+
+protected:
+
+   class MapEntry
+   {
+   public:
+       void *index;                 // the value we index from
+       RexxInternalObject *value;   // the stored value
+       MapLink next;                // next item in overflow bucket
+
+       inline bool isAvailable() { return index == NULL; }
+       inline bool isIndex(void *i) { return i == index; }
+       inline void clear() { set(NULL, OREF_NULL); next = NoMore; }
+       inline void copyElement(MapEntry &other)
+       {
+           value = other.value;
+           index = other.index;
+           next = other.next;
+       }
+       // NOTE:  This is a transient object, no setField() used.
+       inline void set(void *i, RexxInternalObject *v) { index = i; value = v; }
+       inline void setValue(RexxInternalObject *v) { value = v; }
+   };
+
+    size_t   bucketSize;                // size of the hash table
+    size_t   totalSize;                 // total size of the table, including the overflow area
+    size_t   itemCount;                 // total number of items in the table
+    MapLink  freeItem;                  // first free element
+    MapEntry entries[1];                // hash table entries
+};
+
+#endif
 

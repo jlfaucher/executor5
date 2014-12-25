@@ -41,6 +41,9 @@
 #/*----------------------------------------------------------------------------*/
 cmake_minimum_required (VERSION 2.8)
 cmake_policy(SET CMP0010 OLD)
+if(POLICY CMP0042)
+  cmake_policy(SET CMP0042 NEW)
+endif()
 include(CheckIncludeFile)
 include(CheckLibraryExists)
 include(CheckFunctionExists)
@@ -554,6 +557,8 @@ set (memory_sources ${build_memory_dir}/DeadObject.cpp
             ${build_memory_dir}/MemoryStack.cpp
             ${build_memory_dir}/MemoryStats.cpp
             ${build_memory_dir}/NumberArray.cpp
+            ${build_memory_dir}/PointerBucket.cpp
+            ${build_memory_dir}/PointerTable.cpp
             ${build_memory_dir}/ProtectedObject.cpp
             ${build_memory_dir}/Envelope.cpp
             ${build_memory_dir}/InternalStack.cpp
@@ -1106,6 +1111,25 @@ install(TARGETS rxsock RUNTIME COMPONENT Core DESTINATION ${INSTALL_LIB_DIR}
                        LIBRARY DESTINATION ${INSTALL_LIB_DIR} COMPONENT Core)
 set_target_properties(rxsock PROPERTIES VERSION ${ORX_VERSION})
 
+#################### librxsock6.so ################
+# Sources for librxsock.so
+add_library(rxsock6 SHARED ${build_extensions_rxsock_dir}/orxsock6.cpp)
+# additional source files required by specific platforms
+if (WIN32)
+   set (platform_rxsock_sources
+            ${build_platform_dir}/rxsock6.def
+            ${build_platform_dir}/verinfo.rc)
+   # Extra link library definitions
+   target_link_libraries(rxsock6 rexx rexxapi ${platform_rxsock_libs} ws2_32)
+else ()
+   # Extra link library definitions
+   target_link_libraries(rxsock6 rexx rexxapi ${platform_rxsock_libs})
+endif ()
+
+install(TARGETS rxsock6 RUNTIME COMPONENT Core DESTINATION ${INSTALL_LIB_DIR}
+                       LIBRARY DESTINATION ${INSTALL_LIB_DIR} COMPONENT Core)
+set_target_properties(rxsock6 PROPERTIES VERSION ${ORX_VERSION})
+
 #################### librxregexp.so ################
 # additional source files required by specific platforms
 if (WIN32)
@@ -1432,9 +1456,12 @@ copy_build_file(rxregexp.cls ${build_extensions_rxregexp_dir})
 copy_build_file(rxftp.cls ${build_extensions_rxftp_dir})
 copy_build_file(csvStream.cls ${build_extensions_csvstream_dir})
 copy_build_file(socket.cls ${build_extensions_rxsock_dir})
+copy_build_file(socket6.cls ${build_extensions_rxsock_dir})
 copy_build_file(streamsocket.cls ${build_extensions_rxsock_dir})
+copy_build_file(streamsocket6.cls ${build_extensions_rxsock_dir})
 copy_build_file(mime.cls ${build_extensions_rxsock_dir})
 copy_build_file(smtp.cls ${build_extensions_rxsock_dir})
+copy_build_file(smtp6.cls ${build_extensions_rxsock_dir})
 copy_build_file(ncurses.cls ${build_extensions_orxncurses_dir})
 copy_build_file(rexxtry.rex ${build_samples_dir})
 add_custom_target(class_files ALL DEPENDS
@@ -1514,7 +1541,7 @@ if (NOT WIN32)
               DEPENDS ${image_class_files} ${platform_rexx_img_depends}
               WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
    add_custom_target(rexx_cat ALL DEPENDS rexx.cat)
-   install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/rexx.cat DESTINATION ${catdir} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
+   install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/rexx.cat DESTINATION ${catdir} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ OWNER_EXECUTE GROUP_EXECUTE WORLD_EXECUTE)
 
    macro (add_manpage name cat)
       add_custom_command(OUTPUT ${name}.${cat}.gz
@@ -1825,14 +1852,14 @@ if (BUILD_RPM)
    SET(ORX_PIXMAPS_DIR     ${CMAKE_INSTALL_PREFIX}/share/icons)
    configure_file(${ORX_PLATFORM_DIR}/menu/rexxtry.desktop.in ${PROJECT_BINARY_DIR}/rexxtry.desktop)
    INSTALL (FILES ${PROJECT_BINARY_DIR}/rexxtry.desktop DESTINATION ${ORX_DESKTOP_DIR})
-   INSTALL (FILES ${ORX_PLATFORM_DIR}/menu/rexxtry.xml DESTINATION ${ORX_DESKTOP_DIR})
+   #INSTALL (FILES ${ORX_PLATFORM_DIR}/menu/rexxtry.xml DESTINATION ${ORX_DESKTOP_DIR})
    # Copy the ooRexx pixmap
    INSTALL (FILES ${ORX_PLATFORM_DIR}/oorexx.png DESTINATION ${ORX_PIXMAPS_DIR})
    # try to set up the menu system
    find_program(XDG-MIME_EXECUTABLE xdg-mime)
    find_program(XDG-DESKTOP-MENU_EXECUTABLE xdg-desktop-menu)
    INSTALL(CODE "
-     execute_process(COMMAND ${XDG-MIME_EXECUTABLE} install --novendor ${ORX_DESKTOP_DIR}/rexxtry.xml)
+     #execute_process(COMMAND ${XDG-MIME_EXECUTABLE} install --novendor ${ORX_DESKTOP_DIR}/rexxtry.xml)
      execute_process(COMMAND ${XDG-DESKTOP-MENU_EXECUTABLE} install --novendor ${ORX_DESKTOP_DIR}/rexxtry.desktop)
      execute_process(COMMAND ${XDG-MIME_EXECUTABLE} default ${ORX_DESKTOP_DIR}/rexxtry.desktop application/x-ooRexx-item)
      ")
@@ -1895,14 +1922,14 @@ if (BUILD_DEB)
    SET(ORX_PIXMAPS_DIR     ${CMAKE_INSTALL_PREFIX}/share/icons)
    configure_file(${ORX_PLATFORM_DIR}/menu/rexxtry.desktop.in ${PROJECT_BINARY_DIR}/rexxtry.desktop)
    INSTALL (FILES ${PROJECT_BINARY_DIR}/rexxtry.desktop DESTINATION ${ORX_DESKTOP_DIR})
-   INSTALL (FILES ${ORX_PLATFORM_DIR}/menu/rexxtry.xml DESTINATION ${ORX_DESKTOP_DIR})
+   #INSTALL (FILES ${ORX_PLATFORM_DIR}/menu/rexxtry.xml DESTINATION ${ORX_DESKTOP_DIR})
    # Copy the ooRexx pixmap
    INSTALL (FILES ${ORX_PLATFORM_DIR}/oorexx.png DESTINATION ${ORX_PIXMAPS_DIR})
    # try to set up the menu system
    find_program(XDG-MIME_EXECUTABLE xdg-mime)
    find_program(XDG-DESKTOP-MENU_EXECUTABLE xdg-desktop-menu)
    INSTALL(CODE "
-     execute_process(COMMAND ${XDG-MIME_EXECUTABLE} install --novendor ${ORX_DESKTOP_DIR}/rexxtry.xml)
+     #execute_process(COMMAND ${XDG-MIME_EXECUTABLE} install --novendor ${ORX_DESKTOP_DIR}/rexxtry.xml)
      execute_process(COMMAND ${XDG-DESKTOP-MENU_EXECUTABLE} install --novendor ${ORX_DESKTOP_DIR}/rexxtry.desktop)
      execute_process(COMMAND ${XDG-MIME_EXECUTABLE} default ${ORX_DESKTOP_DIR}/rexxtry.desktop application/x-ooRexx-item)
      ")
@@ -1948,6 +1975,39 @@ if (BUILD_DEB)
    # The DEB generator does not support a multi-line description.
    set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Open Object Rexx is an object-oriented scripting language.")
 endif ()
+
+if (BUILD_DMG)
+   set(CPACK_PACKAGE_EXECUTABLES "ooRexx.app")
+   # Copy the ooRexx pixmap
+   INSTALL (FILES ${ORX_PLATFORM_DIR}/oorexx.png DESTINATION ${ORX_PIXMAPS_DIR})
+   set(CPACK_GENERATOR DRAGNDROP)
+   if (DEFINED PROD)
+      set(CPACK_PACKAGE_RELEASE 1)
+   else ()
+      set(CPACK_PACKAGE_RELEASE ${ORX_BLD_LVL})
+   endif ()
+   set(CPACK_PACKAGE_CONTACT "wdashley@sourceforge.net")
+   set(CPACK_PACKAGING_INSTALL_PREXIX "${CMAKE_INSTALL_PREFIX}")
+   set(orx_install_arch "x86_64")
+   if (DEFINED OS_DIST)
+      set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL}-${CPACK_PACKAGE_RELEASE}.${orx_install_arch}.${OS_DIST}")
+   else ()
+      set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL}-${CPACK_PACKAGE_RELEASE}.${orx_install_arch}")
+   endif ()
+   set(CPACK_RPM_PACKAGE_DESCRIPTION_SUMMARY
+"Open Object Rexx is an object-oriented scripting language. The language
+is designed for both beginners and experienced Rexx programmers. It is
+easy to learn and use, and provides an excellent vehicle to enter the
+world of object-oriented programming without much effort.
+
+It extends the procedural way of Rexx programming with object-oriented
+features that allow you to gradually change your programming style as
+you learn more about objects.
+
+For more information on ooRexx, visit http://www.oorexx.org/
+For more information on Rexx, visit http://www.rexxla.org/")
+endif ()
+
 
 
 

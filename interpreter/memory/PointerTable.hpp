@@ -36,84 +36,40 @@
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 /******************************************************************************/
-/* REXX unix Support                                                          */
-/*                                                                            */
-/* Miscellaneous unix specific routines.                                      */
+/* Defintions for a MapTable, which is used by memory management to map       */
+/* object instances to integer values.  Used mostly for old-to-new tables     */
+/* and flattening offset tables.                                              */
 /*                                                                            */
 /******************************************************************************/
+#ifndef Included_PointerTable
+#define Included_PointerTable
 
-/*********************************************************************/
-/*                                                                   */
-/*   Function:  Miscellaneous system specific routines               */
-/*                                                                   */
-/*********************************************************************/
-#ifdef HAVE_CONFIG_H
-    #include "config.h"
-#endif
+#include "PointerBucket.hpp"
 
-#include "RexxCore.h"
-#include "StringClass.hpp"
-#include "DirectoryClass.hpp"
-#include "Activity.hpp"
-#include "RexxActivation.hpp"
-#include "ActivityManager.hpp"
-#include "PointerClass.hpp"
-#include "SystemInterpreter.hpp"
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-
-#if defined( HAVE_SIGNAL_H )
-    #include <signal.h>
-#endif
-
-#if defined( HAVE_SYS_SIGNAL_H )
-    #include <sys/signal.h>
-#endif
-
-#if defined( HAVE_SYS_LDR_H )
-    #include <sys/ldr.h>
-#endif
-
-#if defined( HAVE_FILEHDR_H )
-    #include <filehdr.h>
-#endif
-
-#include <dlfcn.h>
-
-#if defined( HAVE_SYS_UTSNAME_H )
-    #include <sys/utsname.h>               /* get the uname() function   */
-#endif
-
-#define LOADED_OBJECTS 100
-
-
-// maximum length of an environment name.
-const size_t MAX_ADDRESS_NAME_LENGTH = 250;
-
-
-/**
- * Validate an external address name.
- *
- * @param Name   The name to validate
- */
-void SystemInterpreter::validateAddressName(RexxString *name )
+class PointerTable : public RexxInternalObject
 {
-    // only complain if it is too long.
-    if (name->getLength() > MAX_ADDRESS_NAME_LENGTH)
-    {
-        reportException(Error_Environment_name_name, MAX_ADDRESS_NAME_LENGTH, name);
-    }
-}
+ public:
+           void *operator new(size_t base);
+    inline void  operator delete(void *) {;}
 
+    PointerTable(size_t entries = DefaultPointerTableSize);
+    inline PointerTable(RESTORETYPE restoreType) { ; };
 
-/**
- * Return the platform name used in Parse Source.
- *
- * @return The string name of the platform we're building for.
- */
-const char *SystemInterpreter::getPlatformName()
-{
-    return ORX_SYS_STR;
-}
+    virtual void live(size_t);
+    virtual void liveGeneral(MarkReason reason);
+
+    virtual RexxInternalObject *copy();
+
+    inline RexxInternalObject *get(void *key) { return contents->get(key); }
+           void   put(RexxInternalObject *value, void *key);
+    inline RexxInternalObject *remove(void *key) { return contents->remove(key); };
+    inline void   empty() { contents->empty(); }
+    inline bool   isEmpty() { return contents->isEmpty(); }
+           void   reallocateContents();
+
+    static const size_t DefaultPointerTableSize = 10;
+
+    PointerBucket *contents;     // the backing collection for this
+};
+#endif
 

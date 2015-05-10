@@ -17,6 +17,44 @@ svn+ssh://jfaucher@svn.code.sf.net/p/oorexx/code-0/main
 to avoid any accidental update of SVN repository.
 
 
+2015 apr 26
+Attempt to reclone because the history of revisions has a "hole" before rev 10464 "promote sandbox version to trunk".
+But... see below, does not work.
+Not a big problem, I can stay like that.
+I keep the procedure, for the records.
+
+Follow the procedure described here :
+https://www.syntevo.com/smartgit/howtos/5/show?page=config.svn-clone-custom-branch-layout
+because ooRexx SVN repository has not a standard branch layout.
+Repository, Clone.
+Check the box "Just initialize clone".
+Click finish.
+-->  The repository is in state <incomplete>
+Close the repository.
+Edit the file .git/svn/.svngit/svngitkit.config
+Replace the section [svn-git-remote "svn"] by :
+[svn-git-remote "svn"]
+	url = svn://svn.code.sf.net/p/oorexx/code-0/main/trunk
+	fetch = trunk:refs/remotes/svn/trunk
+    branches = branches/*:refs/remotes/svn/branches/*
+    tags = releases/*:refs/remotes/svn/releases/*
+    additional-branches = "sandbox/rick/*:refs/remotes/sandbox/rick/*"
+[svn-git-remote "svn"]
+	url = svn://svn.code.sf.net/p/oorexx/code-0/main
+	fetch = trunk:refs/remotes/svn/trunk
+	branches = branches/*:refs/remotes/svn/branches/*
+	tags = releases/*:refs/remotes/svn/releases/*
+Reopen the repository in SmartGit.
+Remote, Pull, Fetch only (rebase).
+--> Display "Fetch".
+When done, the repository is still in state <incomplete>.
+Again : Remote, pull
+--> Display "Restarting clone", and work in background (you see the progression in the bottom bar).
+and... BOOM !
+Repository is inconsistent (remote reference "refs/remotes/svn/branches/4.1 corresponds to SVN
+remote "svn", but has no fetched SVN commit).
+Please reclone the repository from scratch.
+
 ===============================================================================
 History of merges.
 

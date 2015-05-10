@@ -1,9 +1,8 @@
 <!--
 This file contains all of the error message definitions for the ooRexx interpreter.
-When this file is updated, run the genmsgs build script (e.g. platform/windows/genmsgs.bat)
-which will update the various header files used for error messages as well as generate the
-file that can be embedded in the documentation error messages section.  The fields have the
-following meanings:
+When this file is updated, cmake will update the various header files used for error messages
+as well as generate the file that can be embedded in the documentation error messages section.
+The fields have the following meanings:
 
 Code - This is the major error code.
 
@@ -1173,7 +1172,7 @@ special character (such as a parenthesis).
         <Component>Rexx</Component>
         <Severity>Warning</Severity>
         <SymbolicName>Error_Symbol_expected_annotation_attribute</SymbolicName>
-        <Text>Symbol expected as ::ANNOTATION attribute name; found <q><Sub position="1" name="name"/></q>.</Text>
+        <Text>Symbol expected as ::ANNOTATE attribute name; found <q><Sub position="1" name="name"/></q>.</Text>
       </SubMessage>
       <SubMessage>
         <Code>20</Code>

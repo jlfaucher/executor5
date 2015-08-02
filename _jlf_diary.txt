@@ -4,6 +4,34 @@ Hence the creation of a new Github repository Executor5...
 
 
 ===============================================================================
+2015 aug 02
+
+Building with Visual Studio 2015 Community (cl 19.00.23026).
+
+ClientMessage.cpp
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\INCLUDE\stdint.h(17):
+error C2371: 'int8_t': redefinition; different basic types
+main\trunk\api\platform\windows\rexxapitypes.h(70): note: see declaration of 'int8_t'
+...
+and several others.
+--> fixed by modifying CMakeLists.txt to have these checks under WIN32 too :
+check_include_file(inttypes.h HAVE_INTTYPES_H)
+check_include_file(stdint.h HAVE_STDINT_H)
+and then including config.h in api\platform\windows\rexxapitypes.h
+and testing HAVE_INTTYPES_H to let include inttypes.h (from Windows Kits\10) which includes stdint.h
+
+
+main\trunk\interpreter\classes\ArrayClass.cpp(123):
+error C2956: sized deallocation function 'operator delete(void*, size_t)' would be chosen as placement deallocation function.
+predefined C++ types (compiler internal)(30): note: see declaration of 'operator delete'
+https://llvm.org/bugs/show_bug.cgi?id=23513
+https://connect.microsoft.com/VisualStudio/feedback/details/1351894
+http://stackoverflow.com/questions/5367674/what-does-the-error-non-placement-deallocation-function
+http://www.geoffchappell.com/studies/msvc/language/predefined/
+--> not yet fixed.
+
+
+===============================================================================
 2014 nov 11
 
 Creation of the Github repository Executor5.

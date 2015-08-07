@@ -53,7 +53,7 @@ class NumberArray : public RexxInternalObject
 {
  public:
 
-    void *operator new(size_t base, size_t entries);
+    void *operator new(size_t base, size_t entries, bool placement=true);
 
     NumberArray(size_t entries);
     inline NumberArray(RESTORETYPE restoreType) { ; };

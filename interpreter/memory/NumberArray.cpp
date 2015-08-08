@@ -53,7 +53,7 @@
  *
  * @return The storage for creating a NumberArray
  */
-void *NumberArray::operator new(size_t size, size_t entries, bool)
+void *NumberArray::operator new(size_t size, size_t entries)
 {
    size_t bytes = size + (sizeof(size_t) * (entries - 1));
    return new_object(bytes, T_NumberArray);

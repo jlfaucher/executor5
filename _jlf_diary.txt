@@ -4,69 +4,39 @@ Hence the creation of a new Github repository Executor5...
 
 
 ===============================================================================
-2015 aug 03
+2015 aug 08
 
 Continue working on the build error "sized deallocation..."
+A possible solution is to add a parameter to the operator new function of the class NumberArray:
+    void *operator new(size_t base, size_t entries, bool placement=true);
+Another solution is to add this declaration to the class NumberArray:
+    inline void  operator delete(void *) {;}
+--> I choose the second solution because this is what's already in place for other classes.
 
-https://en.wikipedia.org/wiki/Placement_syntax
 
-http://en.cppreference.com/w/cpp/memory/new/operator_new
-    In section "Global replacements"
-        The placement form void* operator new(size_t, size_t) is not allowed
-        because the matching signature of the deallocation function,
-        void operator delete(void*, size_t), is a usual (not placement) deallocation function.
+Other build errors...
 
-http://en.cppreference.com/w/cpp/memory/new/operator_delete
-    In section "replaceable deallocation functions":
-        void operator delete  ( void* ptr, std::size_t sz );    (5)	(since C++14)
-        void operator delete[]( void* ptr, std::size_t sz );    (6)	(since C++14)
-        void operator delete  ( void* ptr, std::size_t sz, const std::nothrow_t& tag ); (7) (since C++14) (until C++17)
-        void operator delete[]( void* ptr, std::size_t sz, const std::nothrow_t& tag ); (8) (since C++14) (until C++17)
+main\trunk\interpreter\api\InterpreterAPI.cpp(245):
+error C3688: invalid literal suffix 'OOREXX_COPY_YEAR'; literal operator or literal operator template 'operator ""OOREXX_COPY_YEAR' not found
+--> fixed by adding spaces before & after OOREXX_COPY_YEAR.
 
-        JLF : this comment is incomprehensible
-        5-8) Called instead of (1-4) if a user-defined replacement is provided
-        except that it's implementation-defined whether (1-4) or (5-8) is called
-        when deleting objects of incomplete type and arrays of non-class and
-        trivially-destructible class types (since C++17).
-        The standard library implementations are identical to (1-4).
+main\trunk\interpreter\platform\windows\SysInterpreterInstance.cpp(117):
+error C2039: '_file': is not a member of '_iobuf'
+--> fixed by replacing
+    if ((stdin->_file == -1)
+by
+    if ((_fileno(stdin) < 0)
 
-    In section "class-specific deallocation functions":
-        void T::operator delete  ( void* ptr, std::size_t sz ); (15)
-        void T::operator delete[]( void* ptr, std::size_t sz ); (16)
-        15) If defined, and if (13) is not defined, called by the usual single-object delete-expressions if deallocating an object of type T.
-        16) If defined, and if (14) is not defined, called by the usual array delete[]-expressions if deallocating an array of objects of type T.
+C:\Program Files (x86)\Windows Kits\10\include\10.0.10150.0\ucrt\stdio.h(1927):
+fatal error C1189: #error:  Macro definition of snprintf conflicts with Standard Library function declaration
+main\trunk\extensions\platform\windows\oodialog\APICommon.hpp(44):
+note: see previous definition of 'snprintf'
+--> fixed by no longer defining snprintf
+#if _MSC_VER < 1900
+    #define snprintf _snprintf
+#endif
 
-https://isocpp.org/files/papers/n3778.html
-    3.7.4.2
-    The global operator delete with exactly two parameters, the second of which has
-    type std::size_t, is a usual deallocation function.
-    The global operator delete[] with exactly two parameters, the second of which has
-    type std::size_t, is a usual deallocation function.
-    [Footnote: This deallocation function precludes use of an allocation function
-    void operator new(std::size_t, std::size_t) as a placement allocation function
-    (C.?.? [diff.cpp11.basic]). —end footnote]
 
-    In C++ 2011, one could declare a global placement allocation function and deallocation function as follows.
-        void operator new(std::size_t, std::size_t);
-        void operator delete(void*, std::size_t) noexcept;
-    Now, however, the declaration of operator delete might match a predefined usual (non-placement) operator delete (3.7.4 [basic.stc.dynamic]).
-    If so, the program is ill-formed, as it was for class member allocation functions and deallocation functions (5.3.4 [new.expr])
-
-http://www.cplusplus.com/reference/new/operator%20delete/
-    ordinary (1)            void operator delete (void* ptr) noexcept;
-    nothrow (2)             void operator delete (void* ptr, const std::nothrow_t& nothrow_constant) noexcept;
-    placement (3)           void operator delete (void* ptr, void* voidptr2) noexcept;
-    with size (4)           void operator delete (void* ptr, std::size_t size) noexcept;
-    nothrow with size (5)   void operator delete (void* ptr, std::size_t size, const std::nothrow_t& nothrow_constant) noexcept;
-    Note that if one of the signatures with size is replaced, its corresponsing
-    version without size shall also be replaced (and the other way around).
-    I.e.: If either (1) or (4) is replaced, both shall be replaced.
-    Likewise, if either (2) or (5) is replaced, both shall be replaced.
-
---> The solution is to add a parameter to the operator new function.
-void *operator new(size_t base, size_t entries, bool placement=true);
-
-Other build errors fixed.
 Now build 100% with Visual Studio 2015 Community.
 
 
@@ -93,37 +63,6 @@ error C2956: sized deallocation function 'operator delete(void*, size_t)' would 
 predefined C++ types (compiler internal)(30): note: see declaration of 'operator delete'
 https://llvm.org/bugs/show_bug.cgi?id=23513
 https://connect.microsoft.com/VisualStudio/feedback/details/1351894
-http://stackoverflow.com/questions/5367674/what-does-the-error-non-placement-deallocation-function
-    One of the answers refers to this bug of ooRexx : https://sourceforge.net/p/oorexx/bugs/905/
-    The fix was in commit 6218.
-    Modified files :
-        ExpressionLogical.hpp · /main/trunk/interpreter/expression
-        ExpressionMessage.hpp · /main/trunk/interpreter/expression
-        NumberStringClass.hpp · /main/trunk/interpreter/classes
-        RexxBehaviour.hpp · /main/trunk/interpreter/behaviour
-        RexxListTable.hpp · /main/trunk/interpreter/classes/support
-        StackClass.hpp · /main/trunk/interpreter/classes
-
-JLF : review history of RexxBehaviour.hpp (one of the files impacted by the commit 6218)
-    before 6218
-        void *operator new(size_t, size_t);
-        inline void *operator new(size_t size, void *ptr) {return ptr;};
-        inline void  operator delete(void *) { ; }
-        inline void  operator delete(void *, void *) { ; }
-    6218 : add
-        inline void  operator delete(void *, size_t) { }
-    10289 : remove
-        inline void  operator delete(void *) { ; }
-    10400 : remove
-        inline void *operator new(size_t size, void *ptr) {return ptr;};
-        inline void  operator delete(void *, void *) { ; }
-    10469 : remove the 2nd arg size_t
-        before: inline void  operator delete(void *, size_t) { }
-        after:  inline void  operator delete(void *) { }
-    10540 : remove
-        void *operator new(size_t, size_t);
-        inline void  operator delete(void *) { }
-
 --> Current build error not yet fixed.
 
 

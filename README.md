@@ -5,7 +5,7 @@ Forked from http://sourceforge.net/projects/oorexx/
 - main/trunk
 
 The goal of this repository is to apply to ooRexx5 the same changes that were applied to ooRexx4 ([Executor][executor]),
-except those for Unicode (too many impacted files).
+except those for m17n (too many impacted files).
 
 Miscellaneous notes:
 

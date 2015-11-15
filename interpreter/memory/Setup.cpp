@@ -1292,7 +1292,7 @@ StartClassDefinition(MutableBuffer)
         AddMethod("SubChar", MutableBuffer::subchar, 1);
         AddMethod("GetBufferSize", MutableBuffer::getBufferSize, 0);
         AddMethod("SetBufferSize", MutableBuffer::setBufferSize, 1);
-        AddMethod("SetText", MutableBuffer::setText, 1);
+        AddMethod("SetText", MutableBuffer::setTextRexx, 1);
 
         AddMethod("Length", MutableBuffer::lengthRexx, 0);
         AddMethod("MakeArray", MutableBuffer::makeArrayRexx, 1);
@@ -1651,10 +1651,8 @@ EndClassDefinition(StackFrame);
 
     }
 
-    // disable the special class methods we only use during the image build phase.
-    // this removes this from all of the subclasses as well
-    TheObjectClass->removeClassMethod(new_string("DEFINECLASSMETHOD"));
-    TheObjectClass->removeClassMethod(new_string("INHERITINSTANCEMETHODS"));
+    // remove the special setup methods we created for the image build.
+    TheClassClass->removeSetupMethods();
 
     // now save the image
     memoryObject.saveImage();

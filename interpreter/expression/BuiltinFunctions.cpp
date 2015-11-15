@@ -1035,7 +1035,7 @@ BUILTIN(DATE)
     {
         if (option->getLength() == 0)
         {
-            reportException(Error_Incorrect_call_list, "DATE", IntegerOne, "BDEFLMNOSTUW", option);
+            reportException(Error_Incorrect_call_list, "DATE", IntegerOne, "BDEFILMNOSTUW", option);
         }
         else
         {
@@ -1054,7 +1054,7 @@ BUILTIN(DATE)
     {
         if (option2->getLength() == 0)
         {
-            reportException(Error_Incorrect_call_list, "DATE", IntegerThree, "BDEFNOSTU", option2);
+            reportException(Error_Incorrect_call_list, "DATE", IntegerThree, "BDEFINOSTU", option2);
         }
         else
         {
@@ -1183,7 +1183,12 @@ BUILTIN(DATE)
                 valid = timestamp.parseOrderedDate(indate->getStringData(), separator, current.year);
                 break;
 
-            // 'S'tandard format (ISO date)
+            // 'I'SO 8601 format
+            case 'I':
+                valid = timestamp.parseISODate(indate->getStringData(), separator);
+                break;
+
+            // 'S'tandard format
             case 'S':
                 valid = timestamp.parseStandardDate(indate->getStringData(), separator);
                 break;
@@ -1195,7 +1200,7 @@ BUILTIN(DATE)
 
             // invalid input option
             default:
-                reportException(Error_Incorrect_call_list, "DATE", IntegerThree, "BDEFNOTSU", new_string((char *)&style2, 1));
+                reportException(Error_Incorrect_call_list, "DATE", IntegerThree, "BDEFINOSTU", new_string((char *)&style2, 1));
                 break;
         }
 
@@ -1272,6 +1277,10 @@ BUILTIN(DATE)
             timestamp.formatOrderedDate(work, outputSeparator);
             break;
 
+        case 'I':
+            timestamp.formatISODate(work, outputSeparator);
+            break;
+
         case 'S':
             timestamp.formatStandardDate(work, outputSeparator);
             break;
@@ -1286,7 +1295,7 @@ BUILTIN(DATE)
 
         default:
             work[0] = style;
-            reportException(Error_Incorrect_call_list, "DATE", IntegerOne, "BDEFLMNOSTUW", new_string(work, 1));
+            reportException(Error_Incorrect_call_list, "DATE", IntegerOne, "BDEFILMNOSTUW", new_string(work, 1));
             break;
     }
     // return as a string object
@@ -2623,7 +2632,7 @@ BUILTIN(RXQUEUE)
             // the queue name is not allowed with the 'G'et option
             if (queueName != OREF_NULL)
             {
-                reportException(Error_Incorrect_call_maxarg, "RXQUEUE", IntegerTwo);
+                reportException(Error_Incorrect_call_maxarg, "RXQUEUE", IntegerOne);
             }
             RexxObject *queue = context->getLocalEnvironment(STDQUE);
             return queue->sendMessage(GlobalNames::GET, result);
@@ -2655,6 +2664,11 @@ BUILTIN(RXQUEUE)
         // 'S'et a new queue name
         case 'S':
         {
+            // queueName is required 
+            if (queueName == OREF_NULL)
+            {
+                reportException(Error_Incorrect_call_minarg, "RXQUEUE", IntegerTwo);
+            }
             // give the exit a pass at this
             context->getActivity()->callQueueNameExit(context, queueName);
             // this must be a valid symbol
@@ -2669,6 +2683,11 @@ BUILTIN(RXQUEUE)
         // 'O'pen a new queue name...creates if needed
         case 'O':
         {
+            // queueName is required 
+            if (queueName == OREF_NULL)
+            {
+                reportException(Error_Incorrect_call_minarg, "RXQUEUE", IntegerTwo);
+            }
             // we need the RexxQueue class for this
             RexxClass *rexxQueue = TheRexxPackage->findClass(REXXQUEUE);
             // this must be a valid symbol
@@ -2682,6 +2701,11 @@ BUILTIN(RXQUEUE)
         // 'E'xists
         case 'E':
         {
+            // queueName is required 
+            if (queueName == OREF_NULL)
+            {
+                reportException(Error_Incorrect_call_minarg, "RXQUEUE", IntegerTwo);
+            }
             // we need the RexxQueue class for this
             RexxClass *rexxQueue = TheRexxPackage->findClass(REXXQUEUE);
             // this must be a valid symbol
@@ -2695,6 +2719,11 @@ BUILTIN(RXQUEUE)
         // 'D'elete
         case 'D':
         {
+            // queueName is required 
+            if (queueName == OREF_NULL)
+            {
+                reportException(Error_Incorrect_call_minarg, "RXQUEUE", IntegerTwo);
+            }
             // we need the RexxQueue class for this
             RexxClass *rexxQueue = TheRexxPackage->findClass(REXXQUEUE);
             // this must be a valid symbol

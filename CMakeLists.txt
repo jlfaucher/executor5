@@ -210,6 +210,7 @@ else ()
    #jlf find_path(INSTALL_LIB_DIR libc.so PATHS ${CMAKE_INSTALL_PREFIX}/lib/* ${CMAKE_INSTALL_PREFIX}/lib64)
    set (INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/lib) #jlf
    set (INSTALL_MAN_DIR ${CMAKE_INSTALL_PREFIX}/share/man)
+   set (CMAKE_INSTALL_RPATH "@executable_path/../lib")
 endif ()
 
 # Set compiler and linker flags common to all build environments

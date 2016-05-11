@@ -1,15 +1,5 @@
 * text=auto !eol
-/CONTRIBUTORS -text
-/NOTICE -text
-/config.h.in.cmake -text
 extensions/csvStream/csvStream.cls -text
-extensions/hostemu/cmdparse.cpp -text
-extensions/hostemu/cmdparse.ypp -text
-extensions/hostemu/hostemu.h -text
-extensions/hostemu/platform/unix/hostemu.cpp -text
-extensions/hostemu/platform/windows/hostemu.cpp -text
-extensions/platform/unix/rxunixsys/rxunixsys.cpp -text
-extensions/platform/unix/rxunixsys/rxunixsys.h -text
 extensions/platform/windows/oodialog/0_READ_ME_FIRST.txt -text
 extensions/platform/windows/oodialog/AppIcon.ico -text
 extensions/platform/windows/oodialog/AppIcon2.ico -text
@@ -37,7 +27,6 @@ extensions/platform/windows/oodialog/oodialog.ico -text svneol=unset#applicatiio
 extensions/platform/windows/oodialog/rexx.ico -text
 extensions/platform/windows/oodialog/rexx32.exe.manifest -text
 extensions/platform/windows/oodialog/rexx64.exe.manifest -text
-interpreter/platform/unix/SysNativeMethods.h -text
 platform/unix/debian/changelog.in -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/cmake/postinst.in -text
 platform/unix/debian/cmake/prerm -text
@@ -72,7 +61,6 @@ platform/windows/orxw.ico -text svneol=unset#applicatiion/octet-stream
 platform/windows/rexx.ico -text svneol=unset#applicatiion/octet-stream
 rexxapi/common/RegistrationTable.cpp -text
 rexxapi/common/RegistrationTable.hpp -text
-rexxapi/server/platform/unix/rxapid -text
 rexxapi/server/platform/windows/rxapi.ico -text
 samples/CMakeLists.txt -text
 samples/native.api/ReadMe.txt -text

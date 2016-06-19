@@ -81,7 +81,7 @@ else ()
 endif ()
 
 find_package(Subversion)
-if(SUBVERSION_FOUND)
+if(SUBVERSION_FOUND AND IS_DIRECTORY ".svn")
   # If the specified directory is not an SVN working copy then Subversion_WC_INFO will
   # return an error and the generation of the makefile will be aborted.
   # So call Subversion_WC_INFO only if svn info doesn't return an error.

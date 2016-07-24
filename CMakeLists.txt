@@ -79,9 +79,17 @@ else ()
 endif ()
 
 find_package(Subversion)
-if(SUBVERSION_FOUND AND IS_DIRECTORY ".svn")
-  Subversion_WC_INFO(${PROJECT_SOURCE_DIR} ORX)
-  set(ORX_BLD_LVL ${ORX_WC_REVISION})
+if(SUBVERSION_FOUND)
+  # If the specified directory is not an SVN working copy then Subversion_WC_INFO will
+  # return an error and the generation of the makefile will be aborted.
+  # So call Subversion_WC_INFO only if svn info doesn't return an error.
+  # (the test AND IS_DIRECTORY ".svn" is too restrictive : .svn is not necessarily in trunk)
+  execute_process(COMMAND ${Subversion_SVN_EXECUTABLE} info ${PROJECT_SOURCE_DIR}
+    RESULT_VARIABLE Subversion_svn_info_result)
+  if(${Subversion_svn_info_result} EQUAL 0)
+    Subversion_WC_INFO(${PROJECT_SOURCE_DIR} ORX)
+    set(ORX_BLD_LVL ${ORX_WC_REVISION})
+  endif()
 endif()
 
 
@@ -125,7 +133,7 @@ include_directories(BEFORE api api/${ORX_PLATFORM_DIR})
 
 # Rexx search path
 set (CMAKE_REXXPATH ${CMAKE_CURRENT_BINARY_DIR}/bin)
-if (ORX_REXXPATH) 
+if (ORX_REXXPATH)
     message(STATUS "Setting REXX search path to ${ORX_REXXPATH}")
     set (CMAKE_REXXPATH ${ORX_REXXPATH})
 endif()
@@ -197,11 +205,15 @@ if (WIN32)
 
  else ()
    if (APPLE )
-     set (CMAKE_INSTALL_PREFIX ~/Applications/ooRexx${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL})
+     if (NOT DEFINED CMAKE_INSTALL_PREFIX)
+       set (CMAKE_INSTALL_PREFIX ~/Applications/ooRexx${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL})
+     endif ()
      set (INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/bin)
      set (CMAKE_INSTALL_RPATH @executable_path)
    else ()
-     set (CMAKE_INSTALL_PREFIX /usr)
+     if (NOT DEFINED CMAKE_INSTALL_PREFIX)
+       set (CMAKE_INSTALL_PREFIX /usr)
+     endif ()
         find_path(INSTALL_LIB_DIR libc.so PATHS ${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_INSTALL_PREFIX}/lib64)
    # at least on Ubuntu above doesn't seem to work; use fallback:
    if (${INSTALL_LIB_DIR} STREQUAL "INSTALL_LIB_DIR-NOTFOUND")

@@ -180,7 +180,7 @@ RexxRoutine1(RexxObjectPtr,
              SysSetuid,
              int, uid)
 {
-
+    setgroups(0, NULL);
     return context->WholeNumberToObject((wholenumber_t)setuid((uid_t)uid));
 }
 
@@ -279,7 +279,6 @@ RexxRoutine1(RexxObjectPtr,
              SysSetegid,
              int, gid)
 {
-
     return context->WholeNumberToObject((wholenumber_t)setegid((gid_t)gid));
 }
 
@@ -549,6 +548,7 @@ RexxRoutine1(int,
              SysChroot,
              CSTRING, path1)
 {
+    chdir("/");
     return chroot(path1);
 }
 
@@ -603,7 +603,7 @@ RexxRoutine2(RexxObjectPtr,
              CSTRING, user,
              CSTRING, ichar)
 {
-    if (strlen(user) == 0 || strlen(ichar) != 1) {
+    if (strlen(user) == 0 || strlen(ichar) == 0) {
         context->RaiseException1(40001, (RexxObjectPtr) context->NewStringFromAsciiz("SysGetpwnam"));
         return (RexxObjectPtr)context->NewStringFromAsciiz("\0");
     }
@@ -653,7 +653,7 @@ RexxRoutine2(RexxObjectPtr,
              int, uid,
              CSTRING, ichar)
 {
-    if (strlen(ichar) != 1) {
+    if (strlen(ichar) == 0) {
         context->RaiseException1(40001, (RexxObjectPtr) context->NewStringFromAsciiz("SysGetpwuid"));
         return (RexxObjectPtr)context->NewStringFromAsciiz("\0");
     }
@@ -703,7 +703,7 @@ RexxRoutine2(RexxObjectPtr,
              CSTRING, grpname,
              CSTRING, ichar)
 {
-    if (strlen(grpname) == 0 || strlen(ichar) != 1) {
+    if (strlen(grpname) == 0 || strlen(ichar) == 0) {
         context->RaiseException1(40001, (RexxObjectPtr) context->NewStringFromAsciiz("SysGetgrnam"));
         return (RexxObjectPtr)context->NewStringFromAsciiz("\0");
     }
@@ -747,7 +747,7 @@ RexxRoutine2(RexxObjectPtr,
              int, gid,
              CSTRING, ichar)
 {
-    if (strlen(ichar) != 1) {
+    if (strlen(ichar) == 0) {
         context->RaiseException1(40001, (RexxObjectPtr) context->NewStringFromAsciiz("SysGetgrgid"));
         return (RexxObjectPtr)context->NewStringFromAsciiz("\0");
     }
@@ -795,7 +795,7 @@ RexxRoutine2(RexxObjectPtr,
     struct stat64 mystat;
     char buf[32];  // used for both the file times and the permissions
 
-    if (strlen(fname) == 0 || strlen(ichar) != 1) {
+    if (strlen(fname) == 0 || strlen(ichar) == 0) {
         context->RaiseException1(40001, (RexxObjectPtr) context->NewStringFromAsciiz("SysStat"));
         return (RexxObjectPtr)context->NewStringFromAsciiz("\0");
     }
@@ -1019,7 +1019,7 @@ RexxRoutine3(RexxObjectPtr,
              CSTRING, proto,
              CSTRING, ichar)
 {
-    if (strlen(name) == 0 || strlen(proto) == 0 || strlen(ichar) != 1) {
+    if (strlen(name) == 0 || strlen(proto) == 0) {
         context->RaiseException1(40001, (RexxObjectPtr) context->NewStringFromAsciiz("SysGetservbyname"));
         return (RexxObjectPtr)context->NewStringFromAsciiz("\0");
     }
@@ -1031,7 +1031,7 @@ RexxRoutine3(RexxObjectPtr,
         return (RexxObjectPtr)context->NewStringFromAsciiz(se->s_name);
     }
     else if (*ichar == 'P' || *ichar == 'p') {
-        return (RexxObjectPtr)context->WholeNumberToObject((wholenumber_t)se->s_port);
+        return (RexxObjectPtr)context->WholeNumberToObject((wholenumber_t)ntohs(se->s_port));
     }
     else if (*ichar == 'A' || *ichar == 'a') {
         RexxArrayObject arr = context->NewArray(1);
@@ -1066,11 +1066,11 @@ RexxRoutine3(RexxObjectPtr,
              CSTRING, proto,
              CSTRING, ichar)
 {
-    if (port == 0 || strlen(proto) == 0 || strlen(ichar) != 1) {
+    if (port <= 0 || port >= 65535 || strlen(proto) == 0) {
         context->RaiseException1(40001, (RexxObjectPtr) context->NewStringFromAsciiz("SysGetservbyport"));
         return (RexxObjectPtr)context->NewStringFromAsciiz("\0");
     }
-    struct servent *se = getservbyport(port, proto);
+    struct servent *se = getservbyport(htons(port), proto);
     if (se == NULL) {
         return (RexxObjectPtr)context->NewStringFromAsciiz("\0");
     }
@@ -1078,7 +1078,7 @@ RexxRoutine3(RexxObjectPtr,
         return (RexxObjectPtr)context->NewStringFromAsciiz(se->s_name);
     }
     else if (*ichar == 'P' || *ichar == 'p') {
-        return (RexxObjectPtr)context->WholeNumberToObject((wholenumber_t)se->s_port);
+        return (RexxObjectPtr)context->WholeNumberToObject((wholenumber_t)ntohs(se->s_port));
     }
     else if (*ichar == 'A' || *ichar == 'a') {
         RexxArrayObject arr = context->NewArray(1);
@@ -1769,8 +1769,8 @@ RexxRoutineEntry orxnixclib_routines[] = {
     REXX_TYPED_ROUTINE(SysGeterrno, SysGeterrno),
     REXX_TYPED_ROUTINE(SysGeterrnomsg, SysGeterrnomsg),
     REXX_TYPED_ROUTINE(SysCrypt, SysCrypt),
-    REXX_TYPED_ROUTINE(SysMkdir, SysMkdir),
-    REXX_TYPED_ROUTINE(SysRmdir, SysRmdir),
+    REXX_TYPED_ROUTINE(SysMkdirUnix, SysMkdir),
+    REXX_TYPED_ROUTINE(SysRmdirUnix, SysRmdir),
     REXX_TYPED_ROUTINE(SysGetdirlist, SysGetdirlist),
     REXX_TYPED_ROUTINE(SysGettzname1, SysGettzname1),
     REXX_TYPED_ROUTINE(SysGettzname2, SysGettzname2),

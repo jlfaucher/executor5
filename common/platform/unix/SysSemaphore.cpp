@@ -50,6 +50,7 @@
 #include <pthread.h>
 #include <memory.h>
 #include <stdio.h>
+#include <sys/time.h>
 #ifdef AIX
     #include <sys/sched.h>
     #include <time.h>
@@ -192,17 +193,24 @@ void SysSemaphore::wait()
 
 bool SysSemaphore::wait(uint32_t t)           // takes a timeout in msecs
 {
-    struct timespec timestruct;
-    time_t *Tpnt = NULL;
+    struct timeval  tv;
+    struct timespec ts;
 
     int result = 0;
-    timestruct.tv_nsec = 0;
-    timestruct.tv_sec = t/1000+time(Tpnt);    // convert to secs and abstime
-    pthread_mutex_lock(&(this->semMutex));    // Lock access to semaphore
-    if (!this->postedCount)                   // Has it been posted?
+    gettimeofday(&tv, NULL);                  // get current time
+    tv.tv_usec += (t % 1000) * 1000;          // add fractions of seconds
+    if (tv.tv_usec > 1000000)                 // did microseconds overflow?
     {
-                                              // wait with timeout
-        result = pthread_cond_timedwait(&(this->semCond),&(this->semMutex),&timestruct);
+        tv.tv_usec -= 1000000;                // correct microsecond overflow ..
+        tv.tv_sec += 1;                       // .. by adding a second
+    }
+    tv.tv_sec += t / 1000;                    // add requested seconds
+    ts.tv_sec = tv.tv_sec;                    // copy timeval to timespec; seconds ..
+    ts.tv_nsec = tv.tv_usec * 1000;           // .. and microsecs to nanosecs
+    pthread_mutex_lock(&(this->semMutex));    // Lock access to semaphore
+    while (result == 0 && !this->postedCount) // Has it been posted? Spurious wakeups may occur
+    {                                         // wait with timeout 
+        result = pthread_cond_timedwait(&(this->semCond),&(this->semMutex),&ts);
     }
     pthread_mutex_unlock(&(this->semMutex));    // Release mutex lock
     // a false return means this timed out

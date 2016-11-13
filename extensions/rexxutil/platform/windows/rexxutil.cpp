@@ -3473,6 +3473,7 @@ size_t RexxEntry SysGetErrortext(const char *name, size_t numargs, CONSTRXSTRING
 {
     DWORD  errnum;
     char  *errmsg;
+    int length;
 
     if (numargs != 1)
     {
@@ -3488,7 +3489,21 @@ size_t RexxEntry SysGetErrortext(const char *name, size_t numargs, CONSTRXSTRING
     }
     else
     {                               /* succeeded                  */
-        if (strlen(errmsg)>=retstr->strlength)
+        length = strlen(errmsg);
+
+        // FormatMessage returns strings with trailing CrLf, which we want removed
+        if (length >= 1 && errmsg[length - 1] == 0x0a)
+        {
+          errmsg[length - 1] = 0x00;
+          length--;
+        }
+        if (length >= 1 && errmsg[length - 1] == 0x0d)
+        {
+          errmsg[length - 1] = 0x00;
+          length--;
+        }
+
+        if (length >= retstr->strlength)
         {
             retstr->strptr = (PCH)GlobalAlloc(GMEM_ZEROINIT | GMEM_FIXED, strlen(errmsg+1));
         }
@@ -6684,6 +6699,60 @@ RexxRoutine1(logical_t, SysFileExists, CSTRING, file)
 }
 
 
+/*************************************************************************
+* Function:  SysGetLongPathName                                          *
+*            Converts the specified path to its long form                *
+*                                                                        *
+* Syntax:    longPath = SysGetLongPathName(path)                         *
+*                                                                        *
+* Params:    path - a path to an existing file                           *
+*                                                                        *
+* Return:    longPath - path converted to its long form                  *
+*                       NULL string if path doesn't exist or call fails  *
+*************************************************************************/
+
+RexxRoutine1(RexxStringObject, SysGetLongPathName, CSTRING, path)
+{
+  CHAR  longPath[MAX];                 // long version of path
+  DWORD code = GetLongPathName(path, longPath, MAX);
+  if ((code == 0) || (code >= MAX))    // call failed of buffer too small
+  {
+    return context->NullString();
+  }
+  else
+  {
+    return context->NewStringFromAsciiz(longPath);
+  }
+}
+
+
+/*************************************************************************
+* Function:  SysGetShortPathName                                         *
+*            Converts the specified path to its short form               *
+*                                                                        *
+* Syntax:    shortPath = SysGetShortPathName(path)                       *
+*                                                                        *
+* Params:    path - a path to an existing file                           *
+*                                                                        *
+* Return:    shortPath - path converted to its short form                *
+*                        NULL string if path doesn't exist or call fails *
+*************************************************************************/
+
+RexxRoutine1(RexxStringObject, SysGetShortPathName, CSTRING, path)
+{
+  CHAR  shortPath[MAX];                // short version of path
+  DWORD code = GetShortPathName(path, shortPath, MAX);
+  if ((code == 0) || (code >= MAX))    // call failed of buffer too small
+  {
+    return context->NullString();
+  }
+  else
+  {
+    return context->NewStringFromAsciiz(shortPath);
+  }
+}
+
+
 // now build the actual entry list
 RexxRoutineEntry rexxutil_routines[] =
 {
@@ -6766,6 +6835,8 @@ RexxRoutineEntry rexxutil_routines[] =
     REXX_TYPED_ROUTINE(SysIsFileSparse,               SysIsFileSparse),
     REXX_TYPED_ROUTINE(SysIsFileTemporary,            SysIsFileTemporary),
     REXX_TYPED_ROUTINE(SysFileExists,                 SysFileExists),
+    REXX_TYPED_ROUTINE(SysGetLongPathName,            SysGetLongPathName),
+    REXX_TYPED_ROUTINE(SysGetShortPathName,           SysGetShortPathName),
     REXX_LAST_ROUTINE()
 };
 

@@ -699,7 +699,7 @@ StartClassDefinition(Array);
         AddMethod("Next", ArrayClass::nextRexx, A_COUNT);
         AddMethod("Previous", ArrayClass::previousRexx, A_COUNT);
         AddMethod("Append", ArrayClass::appendRexx, 1);
-        AddMethod("MakeString", ArrayClass::makeString, 2);
+        AddMethod("MakeString", ArrayClass::toString, 2);
         AddMethod("ToString", ArrayClass::toString, 2);
         AddMethod("AllIndexes", ArrayClass::allIndexes, 0);
         AddMethod("AllItems", ArrayClass::allItems, 0);
@@ -1207,6 +1207,12 @@ StartClassDefinition(RexxInfo)
         AddMethod("MajorVersion", RexxInfo::getMajorVersion, 0);
         AddMethod("Release", RexxInfo::getRelease, 0);
         AddMethod("Revision", RexxInfo::getRevision, 0);
+        AddMethod("internalMaxNumber", RexxInfo::getInternalMaxNumber, 0);
+        AddMethod("internalMinNumber", RexxInfo::getInternalMinNumber, 0);
+        AddMethod("maxExponent", RexxInfo::getMaxExponent, 0);
+        AddMethod("minExponent", RexxInfo::getMinExponent, 0);
+        AddMethod("maxPathLength", RexxInfo::getMaxPathLength, 0);
+        AddMethod("maxArraySize", RexxInfo::getMaxArraySize, 0);
 
     CompleteMethodDefinitions();
 
@@ -1323,6 +1329,7 @@ StartClassDefinition(MutableBuffer)
         AddMethod("EndsWith", MutableBuffer::endsWithRexx, 1);
         AddMethod("CaselessStartsWith", MutableBuffer::caselessStartsWithRexx, 1);
         AddMethod("CaselessEndsWith", MutableBuffer::caselessEndsWithRexx, 1);
+        AddMethod("makeString", MutableBuffer::makeStringRexx, 0);
 
     CompleteMethodDefinitions();
 

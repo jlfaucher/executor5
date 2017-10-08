@@ -7,6 +7,8 @@ Forked from http://sourceforge.net/projects/oorexx/
 The goal of this repository is to apply to ooRexx5 the same changes that were applied to ooRexx4 ([Executor][executor]),
 except those for m17n (too many impacted files).
 
+Not yet started, and not sure I will spend time on that goal...
+
 Miscellaneous notes:
 
 - [JLF diary][jlf_diary]

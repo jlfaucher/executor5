@@ -4,6 +4,41 @@ Hence the creation of a new Github repository Executor5...
 
 
 ===============================================================================
+2015 aug 09
+
+Review the warnings raised by AppleClang 6.1.0
+
+main/trunk/interpreter/classes/NumberStringMath.cpp:374:14: warning: comparison of array
+      'this->numberDigits' equal to a null pointer is always false [-Wtautological-pointer-compare]
+    else if (numberDigits == 0 && digitsCount == 1)
+             ^~~~~~~~~~~~    ~
+-->
+replace by numberDigits[0] == '\0'
+
+
+main/trunk/interpreter/parser/LanguageParser.cpp:3547:23: warning: case value not in enumerated type
+      'TokenClass' [-Wswitch]
+                 case OPERATOR_BACKSLASH:
+                      ^
+-->
+        case  TOKEN_OPERATOR:
+        {
+replace      switch (token->type())
+by           switch (token->subtype())
+
+
+main/trunk/interpreter/platform/unix/TimeSupport.cpp:167:1: warning: control reaches end of non-void
+-->
+add return 0;
+
+
+main/trunk/testbinaries/orxexits.hpp:37:9: warning: 'orxexits_included' is used as a header guard
+      here, followed by #define of a different macro [-Wheader-guard]
+-->
+replace #define orsexits_included
+by      #define orxexits_included
+
+===============================================================================
 2015 aug 08
 
 Continue working on the build error "sized deallocation..."
@@ -122,3 +157,12 @@ Please reclone the repository from scratch.
 History of merges.
 
 rev 10688
+
+Remember, to merge the last changes from SVN:
+pull from SVN
+open log
+select most recent commit from SVN
+Right clic: merge...
+Select create merge commit (Merge remote-tracking branch 'svn/trunk')
+push to Github: in log file, select most recent commit, right clic & choose push...
+select the rigth repository : gihub

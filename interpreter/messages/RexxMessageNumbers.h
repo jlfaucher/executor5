@@ -2,7 +2,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -273,6 +273,7 @@
 #define Error_Expression_result_trace_msg                            331
 #define Error_Expression_result_raise_msg                            332
 #define Error_Logical_value_if_msg                                   333
+#define Error_Incorrect_call_pad_or_name_msg                         334
 #define Error_Logical_value_while_msg                                335
 #define Error_Logical_value_until_msg                                336
 #define Error_Logical_value_logical_msg                              337
@@ -447,7 +448,7 @@
 #define Error_Translation_guard_interpret_msg                        516
 #define Error_Translation_guard_expose_msg                           517
 #define Error_Translation_directive_interpret_msg                    518
-#define Error_Translation_use_interpret_msg                          519
+#define Error_Translation_use_local_interpret_msg                    519
 #define Error_Translation_bad_directive_msg                          520
 #define Error_Translation_bad_external_msg                           521
 #define Error_Translation_use_comma_msg                              522
@@ -497,8 +498,10 @@
 #define Error_Symbol_or_string_mixinclass_msg                        566
 #define Error_Translation_class_external_bad_parameters_msg          580
 #define Error_Execution_no_concurrency_msg                           581
+#define Error_Translation_use_local_msg                              582
 #define Error_Translation_class_external_bad_class_name_msg          583
 #define Error_Translation_class_external_bad_class_server_msg        584
+#define Error_Interpretation_switch_msg                              585
 #define Error_Incorrect_call_parm_wrong_sep_msg                      586
 #define Error_Incorrect_call_format_incomp_sep_msg                   587
 #define Error_Incorrect_call_queue_no_char_msg                       588

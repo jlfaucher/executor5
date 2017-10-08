@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -263,11 +263,8 @@ RexxActivation::RexxActivation(Activity *_activity, RoutineClass *_routine, Rexx
     executionState = ACTIVE;       // we are now in active execution
     objectScope = SCOPE_RELEASED;  // scope not reserved yet
 
-    // a live marking can happen without a properly set up stack (::live()
-    // is called). Setting the NoRefBit when creating the stack avoids it.
-    setHasNoReferences();
-    _activity->allocateStackFrame(&stack, code->getMaxStackSize());
-    setHasReferences();
+    // get our evaluation stack
+    allocateStackFrame();
 
     // initialize with the package-defined settings
     inheritPackageSettings();
@@ -1320,6 +1317,8 @@ void RexxActivation::exitFrom(RexxObject * resultObj)
         {
             activity->callTerminationExit(this);
         }
+        // terminate this level
+        termination();
     }
     else
     {
@@ -1391,6 +1390,11 @@ void RexxActivation::termination()
     {
         contextObject->detach();
     }
+    // since we don't always control the order of garbage collection and the
+    // argument list source, clear the arglist pointers as a belt-and-braces
+    // situation.
+    argList = OREF_NULL;
+    argCount = 0;
 }
 
 
@@ -1420,7 +1424,7 @@ void RexxActivation::checkTrapTable()
  * @param condition The condition name being trapped.
  * @param handler   The instruction handling the trap.
  */
-void RexxActivation::trapOn(RexxString *condition, RexxInstructionTrapBase *handler)
+void RexxActivation::trapOn(RexxString *condition, RexxInstructionTrapBase *handler, bool signal)
 {
     // make sure we have a trap table (we create on demand)
     checkTrapTable();
@@ -1429,7 +1433,8 @@ void RexxActivation::trapOn(RexxString *condition, RexxInstructionTrapBase *hand
     settings.traps->put(new TrapHandler(condition, handler), condition);
     // if this is NOVALUE or ANY, then we need to flip on the switch in the
     // local variables indicating we're interested in NOVALUE events.
-    if (condition->strCompare(GlobalNames::NOVALUE) || condition->strCompare(GlobalNames::ANY))
+    // (we only need to check this for SIGNAL, not for CALL)
+    if (signal && (condition->strCompare(GlobalNames::NOVALUE) || condition->strCompare(GlobalNames::ANY)))
     {
         settings.localVariables.setNovalueOn();
     }
@@ -1441,14 +1446,15 @@ void RexxActivation::trapOn(RexxString *condition, RexxInstructionTrapBase *hand
  *
  * @param condition The name of the condition we're turning off.
  */
-void RexxActivation::trapOff(RexxString *condition)
+void RexxActivation::trapOff(RexxString *condition, bool signal)
 {
     checkTrapTable();
     // remove our existing trap.
     settings.traps->remove(condition);
     // if we no longer have NOVALUE or ANY enabled, then we can turn
     // off novalue processing in the variable pool
-    if (!settings.traps->hasIndex(GlobalNames::NOVALUE) && !settings.traps->hasIndex(GlobalNames::ANY))
+    // (we only need to check this for SIGNAL, not for CALL)
+    if (signal && !settings.traps->hasIndex(GlobalNames::NOVALUE) && !settings.traps->hasIndex(GlobalNames::ANY))
     {
         settings.localVariables.setNovalueOff();
     }
@@ -3642,7 +3648,7 @@ void RexxActivation::processClauseBoundary()
 
     // now set the boundary flag based on whether we still have pending stuff for
     // next go around.
-    clauseBoundary = settings.haveClauseExits() && (conditionQueue == OREF_NULL || conditionQueue->isEmpty());
+    clauseBoundary = settings.haveClauseExits() || !(conditionQueue == OREF_NULL || conditionQueue->isEmpty());
 }
 
 
@@ -4492,7 +4498,7 @@ StackFrameClass *RexxActivation::createStackFrame()
     // to be inadvertently reclaimed if a GC is triggered while evaluating the constructor
     // arguments.
     RexxString *traceback = getTraceBack();
-    return new StackFrameClass(type, getMessageName(), getExecutableObject(), target, arguments, traceback, getContextLineNumber());
+    return new StackFrameClass(type, getMessageName(), getExecutableObject(), target, arguments, traceback, getContextLineNumber(), this);
 }
 
 /**

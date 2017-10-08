@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -438,9 +438,8 @@ wholenumber_t Activity::error()
     // unwind to a base activation
     while (!topStackFrame->isStackBase())
     {
-        // if we're not to the very base of the stack, terminate the frame
-        topStackFrame->termination();
-        popStackFrame(false);
+        // pop and terminate te frame
+        popStackFrame(topStackFrame);
     }
 
     // go display
@@ -470,8 +469,7 @@ wholenumber_t Activity::error(ActivationBase *activation, DirectoryClass *errorI
     while (topStackFrame != activation)
     {
         // if we're not to the stack very base of the stack, terminate the frame
-        topStackFrame->termination();
-        popStackFrame(false);
+        popStackFrame(topStackFrame);
     }
 
     // go display
@@ -923,7 +921,7 @@ DirectoryClass *Activity::createExceptionObject(RexxErrorCodes errcode,
     char work[32];
 
     // get a version of the error code formatted in "dot" format.
-    sprintf(work,"%ld.%1ld", errcode/1000, errcode - primary);
+    sprintf(work,"%d.%1zd", errcode/1000, errcode - primary);
     RexxString *code = new_string(work);
     exobj->put(code, CODE);
 
@@ -1233,8 +1231,8 @@ void Activity::reraiseException(DirectoryClass *exobj)
     wholenumber_t primary = (errornumber / 1000) * 1000;
     if (errornumber != primary)
     {
-        char work[10];
-        sprintf(work,"%1ld%3.3ld", errornumber/1000, errornumber - primary);
+        char work[22];
+        sprintf(work,"%1zd%3.3zd", errornumber/1000, errornumber - primary);
         errornumber = atol(work);
 
         RexxString *message = SystemInterpreter::getMessageText(errornumber);
@@ -1520,6 +1518,8 @@ void Activity::createNewActivationStack()
     // This is a root activation that will allow API functions to be called
     // on this thread without having an active bit of ooRexx code first.
     NativeActivation *new_activation = ActivityManager::newNativeActivation(this);
+    // this indicates this is a new stack basepoint. Error/rollbacks will terminate
+    // at this point.
     new_activation->setStackBase();
     // create a new root element on the stack and bump the depth indicator
     activations->push(new_activation);
@@ -1669,8 +1669,7 @@ void Activity::unwindToFrame(RexxActivation *frame)
     // keep popping frames until we find the tarte frame
     while ((activation = getTopStackFrame()) != frame)
     {
-        activation->termination();
-        popStackFrame(false);
+        popStackFrame(activation);
     }
 }
 
@@ -1688,7 +1687,10 @@ void Activity::setupAttachedActivity(InterpreterInstance *interpreter)
     addToInstance(interpreter);
 
     // mark this as an attached activity
-    attached = true;
+    attachCount++;
+    // also mark this as being on a thread not originally controlled by the
+    // interpreter. This indicates that the base of the activity is the attach point
+    newThreadAttached = true;
     // This is a root activation that will allow API functions to be called
     // on this thread without having an active bit of ooRexx code first.
     createNewActivationStack();
@@ -1757,12 +1759,63 @@ void Activity::detachInstance()
 {
     // Undo this attached status
     instance = OREF_NULL;
-    attached = false;
+    // clear the attach trackers
+    attachCount = 0;
+    newThreadAttached = false;
     // if there's a nesting situation, restore the activity to active state.
     if (nestedActivity != OREF_NULL)
     {
         nestedActivity->setSuspended(false);
     }
+}
+
+
+/**
+ * Handle a nested attach on an Activity. In this situation,
+ * a program has exited the Rexx code to native code, which
+ * then has used AttachThread() to access API services. We
+ * Reuse the activity, but push another NativeActivation
+ * instance on to the stack to anchor allocated objects.
+ */
+void Activity::nestAttach()
+{
+    attachCount++;
+    // create the base marker for anchoring any objects returned by
+    // this instance.
+    createNewActivationStack();
+}
+
+
+/**
+ * Return from a nested attach. We need to pop our dummy
+ * native activation from the stack so that objects in the
+ * local reference table can be GC'd.
+ */
+void Activity::returnAttach()
+{
+    attachCount--;
+    // remove the stack frame we created as a GC anchor so that objects
+    // obtained using this nested thread instance can be GC'd.
+
+    // This is just a precaution. It might be possible that there are other activations
+    // present, so make sure we get back to a base activation.
+    while (!topStackFrame->isStackBase())
+    {
+        // if we're not to the very base of the stack, terminate the frame
+        popStackFrame(topStackFrame);
+    }
+
+    // NB: popStackframe has protections against popping a stack base activation,
+    // so we need to handle this activity here otherwise this ends up being a NOP.
+    ActivationBase *poppedStackFrame = (ActivationBase *)activations->pop();
+    stackFrameDepth--;
+    // the popped stack frame might still be in the save stack, but can
+    // also contain pointers back to locations on the C stack.  Make sure
+    // that this never tries to mark anything in case of a garbage collection
+    poppedStackFrame->setHasNoReferences();
+
+    // and make sure all of the frame markers are reset.
+    updateFrameMarkers();
 }
 
 

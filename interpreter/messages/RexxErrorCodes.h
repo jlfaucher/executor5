@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -370,6 +370,7 @@ Error_Incorrect_call_pad                                     = 40023,
 Error_Incorrect_call_binary                                  = 40024,
 Error_Incorrect_call_hex                                     = 40025,
 Error_Incorrect_call_symbol                                  = 40026,
+Error_Incorrect_call_pad_or_name                             = 40028,
 Error_Incorrect_call_list                                    = 40904,
 Error_Incorrect_call_trace                                   = 40905,
 Error_Incorrect_call_random                                  = 40033,
@@ -429,6 +430,7 @@ Error_System_service_service                                 = 48001,
 Error_System_service_user_defined                            = 48900,
 Error_Interpretation                                         = 49000,
 Error_Interpretation_initialization                          = 49001,
+Error_Interpretation_switch                                  = 49002,
 Error_Interpretation_user_defined                            = 49900,
 Error_Invalid_argument                                       = 88000,
 Error_Invalid_argument_user_defined                          = 88900,
@@ -613,13 +615,14 @@ Error_Translation_duplicate_requires                         = 99904,
 Error_Translation_missing_class                              = 99905,
 Error_Translation_bad_metaclass                              = 99927,
 Error_Translation_expose                                     = 99907,
+Error_Translation_use_local                                  = 99910,
 Error_Translation_expose_interpret                           = 99908,
 Error_Translation_guard                                      = 99909,
 Error_Translation_guard_guard                                = 99911,
 Error_Translation_guard_interpret                            = 99912,
 Error_Translation_guard_expose                               = 99913,
 Error_Translation_directive_interpret                        = 99914,
-Error_Translation_use_interpret                              = 99915,
+Error_Translation_use_local_interpret                        = 99915,
 Error_Translation_bad_directive                              = 99916,
 Error_Translation_bad_external                               = 99917,
 Error_Translation_use_comma                                  = 99918,

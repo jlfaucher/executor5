@@ -2,7 +2,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -272,6 +272,7 @@ BEGIN
    33903    "Incorrect expression result following VALUE keyword of TRACE instruction."
    33904    "Incorrect expression result following SYNTAX keyword of RAISE instruction."
    34001    "Value of expression following IF keyword must be exactly ""0"" or ""1""; found ""&1""."
+   40028    "&1 argument &2 must be a character class name or a single character; found ""&3""."
    34003    "Value of expression following WHILE keyword must be exactly ""0"" or ""1""; found ""&1""."
    34004    "Value of expression following UNTIL keyword must be exactly ""0"" or ""1""; found ""&1""."
    34005    "Value of expression to the left of the logical operator ""&1"" must be exactly ""0"" or ""1""; found ""&2""."
@@ -446,7 +447,7 @@ BEGIN
    99912    "INTERPRET data must not contain GUARD."
    99913    "GUARD instruction did not include references to exposed variables."
    99914    "INTERPRET data must not contain directive instructions."
-   99915    "INTERPRET data must not contain USE."
+   99915    "INTERPRET data must not contain USE LOCAL."
    99916    "Unrecognized directive instruction."
    99917    "Incorrect external directive name ""&1""."
    99918    "USE ARG requires a "","" between variable names; found ""&1""."
@@ -496,8 +497,10 @@ BEGIN
    19913    "String or symbol expected after MIXINCLASS keyword."
    99926    "Incorrect class external; too many parameters."
    98951    "Concurrency not supported."
+   99910    "USE LOCAL must be the first instruction executed after a method invocation."
    99928    "Incorrect class external; class name missing or invalid."
    99929    "Incorrect class external; invalid class server ""&1""."
+   49002    "Interpretation error: unmatched &1 &2."
    40043    "&1 argument &2 must be a single non-alphanumeric character or the null string; found ""&3""."
    40044    "&1 argument &2, ""&3"", is a format incompatible with the separator specified in argument &4."
    40915    "&1 cannot be used with QUEUE:."
@@ -660,7 +663,7 @@ BEGIN
    19922    "String or symbol expected after &1 keyword."
    25927    "Unknown keyword following ""&1""; found ""&2""."
    98986    "Reference to unassigned variable ""&1""."
-   34905    "SELECT CASE comparison result must be ""0"", ""1"", ""true"", or ""false""; found ""&1""."
+   34905    "SELECT CASE comparison result must be exactly ""0"" or ""1""; found ""&1""."
    35934    "Missing expression in WHEN case expression list."
    34002    "Value of expression following WHEN keyword must be exactly ""0"" or ""1""; found ""&1""."
    20919    "Symbol expected as ::ANNOTATE attribute name; found ""&1""."

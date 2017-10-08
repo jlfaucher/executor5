@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -62,6 +62,13 @@
 #include "Utilities.hpp"
 #include "ActivityManager.hpp"
 
+#if defined __APPLE__
+// avoid warning: '(f)stat64' is deprecated: first deprecated in macOS 10.6
+# define stat64 stat
+# define fstat64 fstat
+#endif
+
+
 const char SysFileSystem::EOF_Marker = 0x1A;
 const char *SysFileSystem::EOL_Marker = "\n";
 const char SysFileSystem::PathDelimiter = '/';
@@ -101,7 +108,10 @@ bool SysFileSystem::searchFileName(const char* name, char *fullName )
 
     /* there was no leading path so try the current directory */
     char tempPath[MaximumFileNameBuffer];// temporary place to store the path/name
-    getcwd(tempPath, MaximumFileNameBuffer);
+    if (getcwd(tempPath, MaximumFileNameBuffer) == NULL)
+    {
+        return false;
+    }
     strcat(tempPath, "/");
     strcat(tempPath, name);
     if (fileExists(tempPath) == true)
@@ -631,7 +641,10 @@ bool SysFileSystem::canonicalizeName(char *name)
         char tempName[PATH_MAX + 2];
         // make a copy of the name
         strncpy(tempName, name, PATH_MAX + 1);
-        getcwd(name, PATH_MAX + 1);
+        if (getcwd(name, PATH_MAX + 1) == NULL)
+        {
+            return false;
+        }
         strncat(name, "/", PATH_MAX - strlen(name));
         strncat(name, tempName, PATH_MAX - strlen(name));
     }

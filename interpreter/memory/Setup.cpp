@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -758,6 +758,16 @@ StartClassDefinition(Queue);
         RemoveMethod("Dimensions");
         RemoveMethod("Fill");
 
+        // to be consistent with our other Collections, also
+        // - remove all four sort methods (will always be inherited from OrderedCollection)
+        // - remove makeString, toString
+        RemoveMethod("sort");
+        RemoveMethod("sortWith");
+        RemoveMethod("stableSort");
+        RemoveMethod("stableSortWith");
+        RemoveMethod("makeString");
+        RemoveMethod("toString");
+
     CompleteMethodDefinitions();
 
     CompleteClassDefinition(Queue);
@@ -862,6 +872,11 @@ StartClassDefinition(Set)
         // most of the hash collection methods can be inherited
         InheritInstanceMethods(IdentityTable);
 
+        // hasItem() is the same as hasIndex() for the Set class
+        AddMethod("HasItem", IdentityTable::hasIndexRexx, 1);
+        // removeItem() is the same as remove() for the Set class
+        AddMethod("RemoveItem", IdentityTable::removeRexx, 1);
+
     CompleteMethodDefinitions();
 
     CompleteClassDefinition(Set);
@@ -934,8 +949,11 @@ StartClassDefinition(Bag)
 
     CompleteClassMethodDefinitions();
 
-    // many of the hash collection methods can be inherited
+        // many of the hash collection methods can be inherited
         InheritInstanceMethods(Relation);
+
+        AddMethod("HasItem", BagClass::hasItemRexx, 2);
+        AddMethod("RemoveItem", BagClass::removeItemRexx, 2);
 
     CompleteMethodDefinitions();
 
@@ -1036,7 +1054,7 @@ EndClassDefinition(Message);
 StartClassDefinition(Method)
 
         AddClassMethod("New", MethodClass::newRexx, A_COUNT);
-        AddClassMethod("NewFile", MethodClass::newFileRexx, 1);
+        AddClassMethod("NewFile", MethodClass::newFileRexx, 2);
         AddClassMethod("LoadExternalMethod", MethodClass::loadExternalMethod, 2);
 
     CompleteClassMethodDefinitions();
@@ -1072,7 +1090,7 @@ EndClassDefinition(Method);
 StartClassDefinition(Routine)
 
         AddClassMethod("New", RoutineClass::newRexx, A_COUNT);
-        AddClassMethod("NewFile", RoutineClass::newFileRexx, 1);
+        AddClassMethod("NewFile", RoutineClass::newFileRexx, 2);
         AddClassMethod("LoadExternalRoutine", RoutineClass::loadExternalRoutine, 2);
 
     CompleteClassMethodDefinitions();
@@ -1568,6 +1586,7 @@ StartClassDefinition(StackFrame)
         // the string method just maps to TRACELINE
         AddMethod("String", StackFrameClass::getTraceLine, 0);
         AddMethod("MakeString", StackFrameClass::getTraceLine, 0);
+        AddMethod("context", StackFrameClass::getContextObject, 0);
 
     CompleteMethodDefinitions();
 

@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -1236,20 +1236,30 @@ BUILTIN(DATE)
     {
 
         case 'B':
-            timestamp.formatBaseDate(work);
-            break;
+            // always return RexxInteger instead of String
+            return new_integer(timestamp.getBaseDate());
 
         case 'F':
+            // if possible, return RexxInteger instead of String
+#ifdef __REXX64__
+            return new_integer(timestamp.getBaseTime());
+#else
             timestamp.formatBaseTime(work);
             break;
+#endif
 
         case 'T':
+            // if possible, return RexxInteger instead of String
+#ifdef __REXX64__
+            return new_integer(timestamp.getUnixTime());
+#else
             timestamp.formatUnixTime(work);
             break;
+#endif
 
         case 'D':
-            timestamp.formatDays(work);
-            break;
+            // always return RexxInteger instead of String
+            return new_integer(timestamp.getYearDay());
 
         case 'E':
             timestamp.formatEuropeanDate(work, outputSeparator);
@@ -1260,7 +1270,7 @@ BUILTIN(DATE)
             // the month name comes from the message repository
             RexxString *month_name = SystemInterpreter::getMessageText(Message_Translations_January + month - 1);
 
-            sprintf(work, "%ld %s %4.4ld", day, month_name->getStringData(), year);
+            sprintf(work, "%zd %s %4.4zd", day, month_name->getStringData(), year);
             break;
 
         }
@@ -1490,36 +1500,51 @@ BUILTIN(TIME)
             break;
 
         case 'H':                         // 'Hours'
-            timestamp.formatHours(work);
-            break;
+            // always return RexxInteger instead of String
+            return new_integer(timestamp.hours);
 
         case 'L':                         // 'L'ong format
             timestamp.formatLongTime(work);
             break;
 
         case 'M':                         // 'M'inutes format
-            timestamp.formatMinutes(work);
-            break;
+            // always return RexxInteger instead of String
+            return new_integer(timestamp.hours * MINUTES_IN_HOUR + timestamp.minutes);
 
         case 'N':                         // 'N'ormal format...the default
             timestamp.formatNormalTime(work);
             break;
 
         case 'S':                         // 'S'econds format...total seconds
-            timestamp.formatSeconds(work);
-            break;
+            // always return RexxInteger instead of String
+            return new_integer((timestamp.hours * MINUTES_IN_HOUR + timestamp.minutes) * SECONDS_IN_MINUTE + timestamp.seconds);
 
         case 'F':                          // 'F'ull
+            // if possible, return RexxInteger instead of String
+#ifdef __REXX64__
+            return new_integer(timestamp.getBaseTime());
+#else
             timestamp.formatBaseTime(work);
             break;
+#endif
 
         case 'T':                          // 'T'icks
+            // if possible, return RexxInteger instead of String
+#ifdef __REXX64__
+            return new_integer(timestamp.getUnixTime());
+#else
             timestamp.formatUnixTime(work);
             break;
+#endif
 
         case 'O':                          // 'O'ffset.  microseconds offset from UTC
+            // if possible, return RexxInteger instead of String
+#ifdef __REXX64__
+            return new_integer(timestamp.timeZoneOffset);
+#else
             timestamp.formatTimeZone(work);
             break;
+#endif
 
         // unknown output format
         default:
@@ -1568,50 +1593,159 @@ BUILTIN(RANDOM)
 BUILTIN(XRANGE)
 {
     const size_t XRANGE_Min = 0;
-    const size_t XRANGE_Max = 2;
-    const size_t XRANGE_start =   1;
-    const size_t XRANGE_end =     2;
+    const size_t XRANGE_Max = argcount;
 
     fix_args(XRANGE);
 
-    // default start and end positions are the full range
-    char startchar = 0;
-    char endchar = (char)0xff;
+    char startchar, endchar;           // start and end positions
+    typedef enum {START_END, CHAR_CLASS} arg_t;
+    arg_t argumentType;                // character class or start/end range
 
-    RexxString *start = optional_string(XRANGE, start);
-    RexxString *end = optional_string(XRANGE, end);
+    RexxString *first, *second, *result;
+    RexxString::StringBuilder result_builder;
+    size_t length, totalLength = 0;
+    size_t XRANGE_arg;
+    const char *characterClass;
 
-    // validate the starts and end
-    if (start != OREF_NULL)
+    // we will need to know the total length of the result string
+    // before we can begin to build it
+    // if there are more than one or two args, we'll have to step through
+    // all our args twice: first, to count the total string length, and
+    // a second time to append all the pieces together
+    typedef enum {CALC_LENGTH, BUILD_STRING} work_t;
+    work_t mode = CALC_LENGTH;         // step one: calculate total length
+
+    for (size_t loops = 1; loops <= 2; loops++)
     {
-        // must be just a single character
-        if (start->getLength() != 1)
+        XRANGE_arg = 0;
+        // we want to enter our loop even if argcount is zero
+        while (XRANGE_arg == 0 || XRANGE_arg < argcount)
         {
-            reportException(Error_Incorrect_call_pad, "XRANGE", IntegerOne, start);
+            // default start and end positions are the full range
+            startchar = 0;
+            endchar = (char)0xff;
+            argumentType = START_END;
+
+            // for each loop, we can accept either:
+            // - no args
+            // - first arg length 1, no second arg: a start byte only
+            // - first arg length larger than 1, no second arg: a character class
+            // - no first arg, second arg length 1: an end byte only
+            // - first arg length 1, second arg length 1: both a start and an end byte
+
+            XRANGE_arg++;
+            if ((first = optional_string(XRANGE, arg)) != OREF_NULL)
+            {
+                // must be a single character or a character class name
+                if (first->getLength() == 1)
+                {
+                    // single character means a start byte
+                    startchar = first->getChar(0);
+                }
+                else
+                {
+                    // must be a character class name
+                    argumentType = CHAR_CLASS;
+                    if      (first->strCaselessCompare("alnum")) characterClass = RexxString::ALNUM;
+                    else if (first->strCaselessCompare("alpha")) characterClass = RexxString::ALPHA;
+                    else if (first->strCaselessCompare("blank")) characterClass = RexxString::BLANK;
+                    else if (first->strCaselessCompare("cntrl")) characterClass = RexxString::CNTRL;
+                    else if (first->strCaselessCompare("digit")) characterClass = RexxString::DIGIT;
+                    else if (first->strCaselessCompare("graph")) characterClass = RexxString::GRAPH;
+                    else if (first->strCaselessCompare("lower")) characterClass = RexxString::LOWER;
+                    else if (first->strCaselessCompare("print")) characterClass = RexxString::PRINT;
+                    else if (first->strCaselessCompare("punct")) characterClass = RexxString::PUNCT;
+                    else if (first->strCaselessCompare("space")) characterClass = RexxString::SPACE;
+                    else if (first->strCaselessCompare("upper")) characterClass = RexxString::UPPER;
+                    else if (first->strCaselessCompare("xdigit")) characterClass = RexxString::XDIGIT;
+                    else reportException(Error_Incorrect_call_pad_or_name, "XRANGE", new_integer(XRANGE_arg), first);
+
+                }
+            }
+            if (argumentType == CHAR_CLASS)
+            {
+                // CNTRL contains a leading NUL character, so we calculate length here
+                length = 1 + strlen(characterClass + 1);
+
+                // just one character class arg?  we can finish this early
+                if (mode == CALC_LENGTH && argcount == 1)
+                {
+                    return new_string(characterClass, length);
+                }
+                else if (mode == CALC_LENGTH)
+                {
+                    totalLength += length;
+                }
+                else // mode == BUILD_STRING
+                {
+                    result_builder.append(characterClass, length);
+                }
+
+                // if this was a character class, we won't have a second arg
+                continue;
+            }
+
+            // if run out of args, endchar is already set to its default
+            XRANGE_arg++;
+            if ((second = optional_string(XRANGE, arg)) != OREF_NULL)
+            {
+                // must be a single character
+                if (second->getLength() != 1)
+                {
+                    reportException(Error_Incorrect_call_pad, "XRANGE", new_integer(XRANGE_arg), second);
+                }
+                else
+                {
+                    // the single character is the end byte
+                    endchar = second->getChar(0);
+                }
+            }
+
+            length = 1 + (endchar < startchar ? 256 - startchar + endchar : endchar - startchar);
+
+            // just two args?  we can finish this early
+            if (mode == CALC_LENGTH && argcount <= 2)
+            {
+                // create a new string to build the result
+                result = raw_string(length);
+                result_builder.init(result);
+                for (size_t i = 0; i < length; i++)
+                {
+                    // NOTE:  This depends on the fact that we are only inserting the
+                    // least significant byte here, so the wrap situation is handled
+                    // automatically.
+                    result_builder.append(startchar++);
+                }
+                return result;
+            }
+            else if (mode == CALC_LENGTH)
+            {
+                totalLength += length;
+            }
+            else // mode == BUILD_STRING
+            {
+                for (size_t i = 0; i < length; i++)
+                {
+                    // NOTE:  This depends on the fact that we are only inserting the
+                    // least significant byte here, so the wrap situation is handled
+                    // automatically.
+                    result_builder.append(startchar++);
+                }
+            }
         }
-        startchar = start->getChar(0);
-    }
-    // same rules with the end
-    if (end != OREF_NULL)
-    {
-        if (end->getLength() != 1)
+
+        if (mode == CALC_LENGTH)
         {
-            reportException(Error_Incorrect_call_pad, "XRANGE", IntegerTwo, end);
+            // finished counting length, switch to building string
+            mode = BUILD_STRING;       // step two: build the string
+
+            // create a new string to build the result
+            result = raw_string(totalLength);
+            result_builder.init(result);
         }
-        endchar = end->getChar(0);
     }
 
-    // calculate the result size...note that XRANGE can wrap if the end precedes the start
-    size_t length = ((endchar < startchar) ? (256 - startchar) + endchar : (endchar - startchar)) + 1;
-
-    RexxString *result = raw_string(length);
-    for (size_t i = 0; i < length; i++)
-    {
-        // NOTE:  This depends on the fact that we are only inserting the
-        // least significant byte here, so the wrap situation is handled
-        // automatically.
-        result->putChar(i, startchar++);
-    }
+    // finished building string
     return result;
 }
 
@@ -1796,7 +1930,7 @@ BUILTIN(SIGN)
 
     RexxObject *argument = get_arg(SIGN, n);
 
-    // check for the numeric forms and use them directory, otherwise
+    // check for the numeric forms and use them directly, otherwise
     // do this on the string value
     if (isInteger(argument))
     {
@@ -1844,8 +1978,13 @@ BUILTIN(MAX)
 
     RexxObject *argument = get_arg(MAX, target);
 
-    // if in number string form, we can do this directory
-    if (isNumberString(argument))
+    // check for the numeric forms and use them directly, otherwise
+    // do this on the string value
+    if (isInteger(argument))
+    {
+        return((RexxInteger *)argument)->Max(stack->arguments(argcount - 1), argcount - 1);
+    }
+    else if (isNumberString(argument))
     {
         return((NumberString *)argument)->Max(stack->arguments(argcount - 1), argcount - 1);
     }
@@ -1868,8 +2007,13 @@ BUILTIN(MIN)
 
     RexxObject *argument = get_arg(MIN, target);
 
-    // the numberstring gives us a leg up on the first one
-    if (isNumberString(argument))
+    // check for the numeric forms and use them directly, otherwise
+    // do this on the string value
+    if (isInteger(argument))
+    {
+        return((RexxInteger *)argument)->Min(stack->arguments(argcount - 1), argcount - 1);
+    }
+    else if (isNumberString(argument))
     {
         return((NumberString *)argument)->Min(stack->arguments(argcount - 1), argcount - 1);
     }
@@ -2426,7 +2570,7 @@ BUILTIN(CONDITION)
         // null string is not a valid option
         if (option->getLength() == 0)
         {
-            reportException(Error_Incorrect_call_list, "CONDITION", IntegerOne, "ACDIOS", option);
+            reportException(Error_Incorrect_call_list, "CONDITION", IntegerOne, "ACDIORS", option);
         }
 
         style = toupper(option->getChar(0));
@@ -2442,14 +2586,14 @@ BUILTIN(CONDITION)
             if (conditionobj != OREF_NULL)
             {
                 RexxObject *result = (RexxObject *)conditionobj->get(ADDITIONAL);
-                // return either .nil or a copy of the additional informaion
+                // return either .nil or the additional information
                 if (result == OREF_NULL)
                 {
                     return TheNilObject;
                 }
                 else
                 {
-                    return (RexxObject *)result->copy();
+                    return (RexxObject *)result;
                 }
             }
             else
@@ -2498,7 +2642,7 @@ BUILTIN(CONDITION)
             }
             return TheNilObject;
 
-        // condition('S'tate
+        // condition('S'tate)
         case 'S':
             // get the current trap state from the condition object if we have one
             if (conditionobj != OREF_NULL)
@@ -2507,9 +2651,16 @@ BUILTIN(CONDITION)
             }
             break;
 
+        // condition('R'eset)
+        case 'R':
+            // clear the current condition object
+            context->setConditionObj(OREF_NULL);
+            return GlobalNames::NULLSTRING;
+            break;
+
         // an unknown option
         default:
-            reportException(Error_Incorrect_call_list, "CONDITION", IntegerOne, "ACDIOS", option);
+            reportException(Error_Incorrect_call_list, "CONDITION", IntegerOne, "ACDIORS", option);
             break;
     }
 
@@ -2664,7 +2815,7 @@ BUILTIN(RXQUEUE)
         // 'S'et a new queue name
         case 'S':
         {
-            // queueName is required 
+            // queueName is required
             if (queueName == OREF_NULL)
             {
                 reportException(Error_Incorrect_call_minarg, "RXQUEUE", IntegerTwo);
@@ -2683,7 +2834,7 @@ BUILTIN(RXQUEUE)
         // 'O'pen a new queue name...creates if needed
         case 'O':
         {
-            // queueName is required 
+            // queueName is required
             if (queueName == OREF_NULL)
             {
                 reportException(Error_Incorrect_call_minarg, "RXQUEUE", IntegerTwo);
@@ -2701,7 +2852,7 @@ BUILTIN(RXQUEUE)
         // 'E'xists
         case 'E':
         {
-            // queueName is required 
+            // queueName is required
             if (queueName == OREF_NULL)
             {
                 reportException(Error_Incorrect_call_minarg, "RXQUEUE", IntegerTwo);
@@ -2719,7 +2870,7 @@ BUILTIN(RXQUEUE)
         // 'D'elete
         case 'D':
         {
-            // queueName is required 
+            // queueName is required
             if (queueName == OREF_NULL)
             {
                 reportException(Error_Incorrect_call_minarg, "RXQUEUE", IntegerTwo);

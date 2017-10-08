@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -135,6 +135,7 @@ void NativeActivation::live(size_t liveMark)
     memory_mark(activity);
     memory_mark(activation);
     memory_mark(messageName);
+    memory_mark(firstSavedObject);
     memory_mark(saveList);
     memory_mark(result);
     memory_mark(objectVariables);
@@ -164,6 +165,7 @@ void NativeActivation::liveGeneral(MarkReason reason)
     memory_mark_general(activity);
     memory_mark_general(activation);
     memory_mark_general(messageName);
+    memory_mark_general(firstSavedObject);
     memory_mark_general(saveList);
     memory_mark_general(result);
     memory_mark_general(objectVariables);
@@ -1158,14 +1160,26 @@ void NativeActivation::createLocalReference(RexxInternalObject *objr)
     // if we have a real object, then add to the list
     if (objr != OREF_NULL)
     {
-        // make sure we protect this from a GC triggered by this table creation.
-        ProtectedObject p1(objr);
-        // create an identity table if this is the first reference we need to protect.
-        if (saveList == OREF_NULL)
+        // It is a fairly common pattern that a single object gets allocated
+        // by a method call that is being returned as a result. This is common if
+        // a string value is getting returned. This pushes the allocation of the
+        // save list off until it is needed for more than one object.
+        if (firstSavedObject == OREF_NULL)
         {
-            saveList = new_identity_table();
+            firstSavedObject = objr;
         }
-        saveList->put(objr, objr);
+
+        else
+        {
+            // make sure we protect this from a GC triggered by this table creation.
+            ProtectedObject p1(objr);
+            // create an identity table if this is the first reference we need to protect.
+            if (saveList == OREF_NULL)
+            {
+                saveList = new_identity_table();
+            }
+            saveList->put(objr, objr);
+        }
     }
 }
 
@@ -1180,13 +1194,22 @@ void NativeActivation::removeLocalReference(RexxInternalObject *objr)
     // if the reference is non-null
     if (objr != OREF_NULL)
     {
-        // make sure we have a savelist before trying to remove this
-        if (saveList != OREF_NULL)
+        // if this is our first object we can just null this out
+        if (firstSavedObject == objr)
         {
-            // NB...this is a special remove that functions using the object
-            // identify to avoid false positives or potential exceptions caused
-            // by calling EQUALS methods.
-            saveList->remove(objr);
+            firstSavedObject = OREF_NULL;
+        }
+        else
+        {
+
+            // make sure we have a savelist before trying to remove this
+            if (saveList != OREF_NULL)
+            {
+                // NB...this is a special remove that functions using the object
+                // identify to avoid false positives or potential exceptions caused
+                // by calling EQUALS methods.
+                saveList->remove(objr);
+            }
         }
     }
 }
@@ -2105,7 +2128,7 @@ bool NativeActivation::form()
 void NativeActivation::setDigits(wholenumber_t _digits)
 {
     // if we're in a call context, set this
-    if (activation == OREF_NULL)
+    if (activation != OREF_NULL)
     {
         activation->setDigits(_digits);
     }
@@ -2137,7 +2160,7 @@ void NativeActivation::setForm(bool _form)
 /******************************************************************************/
 {
     // only process if we're in a call context.
-    if (activation == OREF_NULL)
+    if (activation != OREF_NULL)
     {
         activation->setForm(_form);
     }
@@ -3336,7 +3359,7 @@ StackFrameClass *NativeActivation::createStackFrame()
 
         RexxString *message = activity->buildMessage(Message_Translations_compiled_routine_invocation, info);
         p = message;
-        return new StackFrameClass(StackFrameClass::FRAME_ROUTINE, getMessageName(), (BaseExecutable *)getExecutableObject(), NULL, getArguments(), message, SIZE_MAX);
+        return new StackFrameClass(StackFrameClass::FRAME_ROUTINE, getMessageName(), (BaseExecutable *)getExecutableObject(), NULL, getArguments(), message, SIZE_MAX, OREF_NULL);
     }
     else
     {
@@ -3345,7 +3368,7 @@ StackFrameClass *NativeActivation::createStackFrame()
 
         RexxString *message = activity->buildMessage(Message_Translations_compiled_method_invocation, info);
         p = message;
-        return new StackFrameClass(StackFrameClass::FRAME_METHOD, getMessageName(), (BaseExecutable *)getExecutableObject(), receiver, getArguments(), message, SIZE_MAX);
+        return new StackFrameClass(StackFrameClass::FRAME_METHOD, getMessageName(), (BaseExecutable *)getExecutableObject(), receiver, getArguments(), message, SIZE_MAX, OREF_NULL);
     }
 }
 

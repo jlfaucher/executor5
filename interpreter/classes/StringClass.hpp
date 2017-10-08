@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -85,14 +85,32 @@ class RexxString : public RexxObject
      class StringBuilder
      {
      public:
+         inline StringBuilder()  {}
          inline StringBuilder(char *b) : current(b) {}
          inline StringBuilder(RexxString *s) : current(s->getWritableData()) {}
 
+         inline void init(RexxString *s)  { current = s->getWritableData(); }
          inline void append(const char *d, size_t l)  { memcpy(current, d, l); current += l; }
          inline void append(const char *d)  { size_t l = strlen(d); memcpy(current, d, l); current += l; }
          inline void append(char c) { *current++ = c; }
          inline void append(RexxString *s) { append(s->getStringData(), s->getLength()); }
          inline void pad(char c, size_t l)  { memset(current, c, l); current += l; }
+
+     protected:
+         char *current;   // current output pointer
+     };
+
+
+     /**
+      * A class for constructing a string value from a sequence
+      * of right-to-left put steps.
+      */
+     class StringBuilderRtL
+     {
+     public:
+         inline StringBuilderRtL(RexxString *s) : current(s->getWritableData() + s->getLength() - 1) {}
+
+         inline void put(char c) { *current-- = c; }
 
      protected:
          char *current;   // current output pointer
@@ -729,6 +747,21 @@ class RexxString : public RexxObject
     static const char *MIXED_ALPHA;
     static const char *UPPER_ALPHA;
     static const char *DIGITS_BASE64;
+
+    // POSIX character ranges returned by XRANGE() and .String class methods
+    static const char *ALNUM;
+    static const char *ALPHA;
+    static const char *BLANK;
+    static const char *CNTRL;
+    static const char *DIGIT;
+    static const char *GRAPH;
+    static const char *LOWER;
+    static const char *PRINT;
+    static const char *PUNCT;
+    static const char *SPACE;
+    static const char *UPPER;
+    static const char *XDIGIT;
+
 
   protected:
 

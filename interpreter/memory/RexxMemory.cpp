@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -117,8 +117,6 @@ MemoryObject::MemoryObject()
     // a lie.  Since this never participates in a sweep operation,
     // this works ok in the end.
     setObjectSize(Memory::roundObjectBoundary(sizeof(MemoryObject)));
-    // our first pool is the current one
-    currentPool = firstPool;
 
     // OR'ed into object headers to mark during gc
     markWord = 1;
@@ -143,12 +141,13 @@ MemoryObject::MemoryObject()
  */
 void MemoryObject::initialize(bool restoringImage)
 {
-    // create the initial memory pool and initialize everything.
-    firstPool = MemorySegmentPool::createPool();
-    currentPool = firstPool;
-
     // The constructor makes sure some crucial aspects of the Memory object are set up.
     new (this) MemoryObject;
+
+    // create the initial memory pool and initialize everything.
+    firstPool = MemorySegmentPool::createPool();
+    // our first pool is the current one
+    currentPool = firstPool;
 
     // create our various segment pools
     new (&newSpaceNormalSegments) NormalSegmentSet(this);
@@ -351,6 +350,12 @@ void  MemoryObject::runUninits()
             iterator.removeAndAdvance();
             // remove the pending item count
             pendingUninits--;
+
+            // because we've removed this from the uninit table, it is no longer
+            // proctected.  We need to ensure it does not get GC'd until after the
+            // uninit method runs
+            ProtectedObject p(uninitObject);
+
             // run this method with appropriate error trapping
             UninitDispatcher dispatcher(uninitObject);
             activity->run(dispatcher);
@@ -1011,6 +1016,17 @@ void MemoryObject::mark(RexxInternalObject *markObject)
 {
     // get the current live mark to use for testing
     size_t liveMark = markWord | ObjectHeader::OldSpaceBit;
+
+    // The following is useful for debugging some garbage collection problems where
+    // an object with a NULL VFT is getting pushed on the to stack. This is a somewhat
+    // critical performance pack, so only enable these lines when debugging problems.
+#ifdef CHECKOREFS
+    if (!markObject->checkVirtualFunctions())
+    {
+        Interpreter::logicError("Invalid object traced during garbage collection");
+    }
+#endif
+
     // mark this object as live
     markObject->setObjectLive(markWord);
 

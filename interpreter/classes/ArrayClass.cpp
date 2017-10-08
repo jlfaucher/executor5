@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -2035,10 +2035,10 @@ void ArrayClass::extend(size_t toSize)
         reportException(Error_Incorrect_method_array_too_big, MaxFixedArraySize - 1);
     }
 
-    // add some extra...tack on half of our existing size, but once we start
-    // getting really large, cap how large we extend by.
-    size_t extendSize = Numerics::minVal(size() / 2, MaximumExtendSize);
-    size_t newSize = size() + extendSize;
+    // double the size for small Arrays
+    // for Arrays above the limit, just add half of the actual size
+    size_t newSize = size(); 
+    newSize += newSize <= ExpansionDoubleLimit ? newSize : newSize / 2;
 
     // now allocate the extension array of the required size + some extra.
     ArrayClass *newArray = new (toSize, newSize) ArrayClass;
@@ -2515,7 +2515,11 @@ void ArrayClass::mergeSort(BaseSortComparator &comparator, ArrayClass *working, 
     {
         for (size_t i = left + 1; i <= right; i++)
         {
-            RexxInternalObject *current = get(i);
+            // During the insertion sort operation, 'current' may be temporarily
+            // out of both the source and working arrays, so it is vulnerable to
+            // garbage collection during subsequent compare operations.
+            // We need to give an extra layer of protection here.
+            Protected<RexxInternalObject> current = get(i);
             RexxInternalObject *prev = get(i - 1);
             if (comparator.compare(current, prev) < 0)
             {
@@ -2760,7 +2764,6 @@ ArrayClass *ArrayClass::stableSortWithRexx(RexxObject *comparator)
 
     // the merge sort requires a temporary scratch area for the sort.
     Protected<ArrayClass> working = new_array(count);
-    ProtectedObject p(working);
 
     WithSortComparator c(comparator);
 

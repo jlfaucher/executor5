@@ -2406,7 +2406,7 @@ special character (such as a parenthesis).
         <Component>Rexx</Component>
         <Severity>Warning</Severity>
         <SymbolicName>Error_Logical_value_when_case</SymbolicName>
-        <Text>SELECT CASE comparison result must be <q>0</q>, <q>1</q>, <q>true</q>, or <q>false</q>; found <q><Sub position="1" name="value"/></q>.</Text>
+        <Text>SELECT CASE comparison result must be exactly <q>0</q> or <q>1</q>; found <q><Sub position="1" name="value"/></q>.</Text>
       </SubMessage>
       <SubMessage>
         <Code>34</Code>
@@ -3079,6 +3079,15 @@ special character (such as a parenthesis).
       </SubMessage>
       <SubMessage>
         <Code>40</Code>
+        <Subcode>028</Subcode>
+        <MessageNumber>334</MessageNumber>
+        <Component>Rexx</Component>
+        <Severity>Warning</Severity>
+        <SymbolicName>Error_Incorrect_call_pad_or_name</SymbolicName>
+        <Text><Sub position="1" name="function_name"/> argument <Sub position="2" name="argument_number"/> must be a character class name or a single character; found <q><Sub position="3" name="value"/></q>.</Text>
+      </SubMessage>
+      <SubMessage>
+        <Code>40</Code>
         <Subcode>904</Subcode>
         <MessageNumber>389</MessageNumber>
         <Component>Rexx</Component>
@@ -3646,6 +3655,18 @@ special character (such as a parenthesis).
         <SymbolicName>Error_Interpretation_initialization</SymbolicName>
         <Text>Interpretation error: unexpected failure initializing the interpreter.</Text>
       </SubMessage>
+
+      <SubMessage>
+        <Code>49</Code>
+        <Subcode>002</Subcode>
+        <MessageNumber>585</MessageNumber>
+        <Component>Rexx</Component>
+        <Severity>Warning</Severity>
+        <SymbolicName>Error_Interpretation_switch</SymbolicName>
+        <Text>Interpretation error: unmatched <Sub position="1" name="type"/> <Sub position="2" name="number"/>.</Text>
+        <Explanation><para>An internal interpreter error occured: a switch() statement couldn't match any of its case statements.</para></Explanation>
+      </SubMessage>
+
       <SubMessage>
         <Code>49</Code>
         <Subcode>900</Subcode>
@@ -5333,6 +5354,15 @@ special character (such as a parenthesis).
       </SubMessage>
       <SubMessage>
         <Code>99</Code>
+        <Subcode>910</Subcode>
+        <MessageNumber>582</MessageNumber>
+        <Component>Rexx</Component>
+        <Severity>Warning</Severity>
+        <SymbolicName>Error_Translation_use_local</SymbolicName>
+        <Text>USE LOCAL must be the first instruction executed after a method invocation.</Text>
+      </SubMessage>
+      <SubMessage>
+        <Code>99</Code>
         <Subcode>908</Subcode>
         <MessageNumber>513</MessageNumber>
         <Component>Rexx</Component>
@@ -5391,8 +5421,8 @@ special character (such as a parenthesis).
         <MessageNumber>519</MessageNumber>
         <Component>Rexx</Component>
         <Severity>Warning</Severity>
-        <SymbolicName>Error_Translation_use_interpret</SymbolicName>
-        <Text>INTERPRET data must not contain USE.</Text>
+        <SymbolicName>Error_Translation_use_local_interpret</SymbolicName>
+        <Text>INTERPRET data must not contain USE LOCAL.</Text>
       </SubMessage>
       <SubMessage>
         <Code>99</Code>

@@ -23,8 +23,6 @@ platform/unix/debian/postrm -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/prerm -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/rules -text svnc_snv_003aeol_002dstyle=native
 platform/unix/macosx/MakeRexxPackage.in -text
-platform/unix/macosx/postflight.in -text
-platform/unix/macosx/preflight.in -text
 platform/unix/menu/rexxtry.xml svneol=native#text
 platform/unix/oorexx.appdata.xml svneol=native#text
 platform/unix/oorexx.png -text svneol=unset#image/png

@@ -1692,7 +1692,7 @@ special character (such as a parenthesis).
 <varlistentry>
 <term>905</term>
 <listitem>
-<para>SELECT CASE comparison result must be "0", "1", "true", or "false"; found "<emphasis role="italic">value</emphasis>".</para>
+<para>SELECT CASE comparison result must be exactly "0" or "1"; found "<emphasis role="italic">value</emphasis>".</para>
 </listitem>
 </varlistentry>
 <varlistentry>
@@ -2184,6 +2184,13 @@ special character (such as a parenthesis).
 </listitem>
 </varlistentry>
 <varlistentry>
+<term>028</term>
+<listitem>
+<para>
+<emphasis role="italic">function_name</emphasis> argument <emphasis role="italic">argument_number</emphasis> must be a character class name or a single character; found "<emphasis role="italic">value</emphasis>".</para>
+</listitem>
+</varlistentry>
+<varlistentry>
 <term>029</term>
 <listitem>
 <para>
@@ -2613,6 +2620,12 @@ special character (such as a parenthesis).
 <term>001</term>
 <listitem>
 <para>Interpretation error: unexpected failure initializing the interpreter.</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>002</term>
+<listitem>
+<para>Interpretation error: unmatched <emphasis role="italic">type</emphasis> <emphasis role="italic">number</emphasis>.</para>
 </listitem>
 </varlistentry>
 <varlistentry>
@@ -3770,6 +3783,12 @@ special character (such as a parenthesis).
 </listitem>
 </varlistentry>
 <varlistentry>
+<term>910</term>
+<listitem>
+<para>USE LOCAL must be the first instruction executed after a method invocation.</para>
+</listitem>
+</varlistentry>
+<varlistentry>
 <term>911</term>
 <listitem>
 <para>GUARD can only be issued in an object method invocation.</para>
@@ -3796,7 +3815,7 @@ special character (such as a parenthesis).
 <varlistentry>
 <term>915</term>
 <listitem>
-<para>INTERPRET data must not contain USE.</para>
+<para>INTERPRET data must not contain USE LOCAL.</para>
 </listitem>
 </varlistentry>
 <varlistentry>

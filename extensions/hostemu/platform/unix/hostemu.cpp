@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
-/* Copyright (c) 2009-2016 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2009-2017 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -331,7 +331,7 @@ RexxReturnCode RexxEntry GrxHost(PCONSTRXSTRING command,
                /* DISKR */
                pll -> pFile = fopen(pll -> FileName, "r+");
                }
-            if ((pll -> pFile == NULL)) {
+            if (pll -> pFile == NULL) {
                /* file could be opened so return an error */
                free(pll);
                rc = ERR_EXECIO_BAD_PLIST; // Bad PLIST
@@ -599,7 +599,8 @@ static unsigned long ExecIO_Read_To_Stem (
    // skip until we reach line number 'StartRcd' 
    for (i = 1; i < ExecIO_Options.lStartRcd; i++)
    {
-     fgets(szInline, sizeof(szInline), pll -> pFile);
+     char* ignore; // avoid warning: ignoring return value of 'char* fgets(char*, int, FILE*)'
+     ignore = fgets(szInline, sizeof(szInline), pll -> pFile);
    }
 
    strcpy(Stem, ExecIO_Options.aStem);
@@ -681,7 +682,8 @@ static unsigned long ExecIO_Read_To_Queue (
    // skip until we reach line number 'StartRcd' 
    for (i = 1; i < ExecIO_Options.lStartRcd; i++)
    {
-     fgets(szInline, sizeof(szInline), pll -> pFile);
+     char* ignore; // avoid warning: ignoring return value of 'char* fgets(char*, int, FILE*)'
+     ignore = fgets(szInline, sizeof(szInline), pll -> pFile);
    }
 
    if (ExecIO_Options.lRcdCnt == -1) {

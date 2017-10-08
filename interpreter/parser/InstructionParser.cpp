@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -445,6 +445,10 @@ RexxInstruction *LanguageParser::nextInstruction()
                 syntaxError(Error_Unexpected_then_then);
                 break;
 
+            // invalid KEYWORD (should really never happen)
+            default:
+                reportException(Error_Interpretation_switch, "keyword", keyword);
+                break;
         }
     }
     // does not begin with a recognized keyword...this is a "command" instruction.
@@ -1073,6 +1077,13 @@ RexxInstruction *LanguageParser::newControlledLoop(RexxString *label, RexxToken 
                 conditional.conditional = parseLoopConditional(conditionalType, Error_None);
                 break;
             }
+
+            // invalid loop subkey (should really never happen)
+            default:
+            {
+                reportException(Error_Interpretation_switch, "loop subkey", token->subKeyword());
+                break;
+            }
         }
         token = nextReal();
     }
@@ -1108,6 +1119,12 @@ RexxInstruction *LanguageParser::newControlledLoop(RexxString *label, RexxToken 
             RexxInstruction *newObject = new_instruction(LOOP_CONTROLLED_UNTIL, ControlledDoUntil);
             ::new ((void *)newObject) RexxInstructionControlledDoUntil(label, control, conditional);
             return newObject;
+        }
+        // invalid controlled loop subkey (should really never happen)
+        default:
+        {
+            reportException(Error_Interpretation_switch, "controlled loop subkey", conditionalType);
+            break;
         }
     }
     return OREF_NULL;    // should never get here.
@@ -1181,6 +1198,13 @@ RexxInstruction *LanguageParser::newDoOverLoop(RexxString *label, RexxToken *nam
                 conditional.conditional = parseLoopConditional(conditionalType, Error_None);
                 break;
             }
+
+            // invalid DO OVER loop subkey (should really never happen)
+            default:
+            {
+                reportException(Error_Interpretation_switch, "DO OVER loop subkey", token->subKeyword());
+                break;
+            }
         }
         token = nextReal();
     }
@@ -1245,6 +1269,12 @@ RexxInstruction *LanguageParser::newDoOverLoop(RexxString *label, RexxToken *nam
                 ::new ((void *)newObject) RexxInstructionDoOverForUntil(label, control, forLoop, conditional);
                 return newObject;
             }
+        }
+        // invalid DO OVER conditional (should really never happen)
+        default:
+        {
+            reportException(Error_Interpretation_switch, "DO OVER conditional", conditionalType);
+            break;
         }
     }
     return OREF_NULL;    // should never get here.
@@ -1317,6 +1347,11 @@ RexxInstruction *LanguageParser::newDoWithLoop(RexxString *label)
                 token = nextReal();
                 continue;
             }
+
+            default:
+            {
+                break;
+            }
         }
 
         // found a keyword that is not INDEX or ITEM, break out of the loop
@@ -1375,6 +1410,13 @@ RexxInstruction *LanguageParser::newDoWithLoop(RexxString *label)
                 conditional.conditional = parseLoopConditional(conditionalType, Error_None);
                 break;
             }
+
+            // invalid DO WITH conditional (should really never happen)
+            default:
+            {
+                reportException(Error_Interpretation_switch, "DO WITH conditional", conditionalType);
+                break;
+            }
         }
         token = nextReal();
     }
@@ -1383,8 +1425,8 @@ RexxInstruction *LanguageParser::newDoWithLoop(RexxString *label)
     // so once we get here, there's no need for any end-of-clause checks.
 
     // we've parsed everything correctly and we have six potential types of
-    // loop now.  1)  A DO OVER loop with no conditional, 2) a DO OVER loop
-    // with a WHILE condition and 3) a DO OVER loop with a UNTIL condition.
+    // loop now.  1)  A DO WITH loop with no conditional, 2) a DO WITH loop
+    // with a WHILE condition and 3) a DO WITH loop with a UNTIL condition.
     // Each of those forms can also have a FOR modifier.
     // The conditionalType variable tells us which form it is, so we can create
     // the correct type instruction object, the forControl will tell us if we have a FOR
@@ -1392,7 +1434,7 @@ RexxInstruction *LanguageParser::newDoWithLoop(RexxString *label)
 
     switch (conditionalType)
     {
-        // DO OVER with no extra conditional.
+        // DO WITH with no extra conditional.
         case SUBKEY_NONE:
         {
             if (forLoop.forCount == OREF_NULL)
@@ -1408,7 +1450,7 @@ RexxInstruction *LanguageParser::newDoWithLoop(RexxString *label)
                 return newObject;
             }
         }
-        // DO OVER with a WHILE conditional
+        // DO WITH with a WHILE conditional
         case SUBKEY_WHILE:
         {
             if (forLoop.forCount == OREF_NULL)
@@ -1424,7 +1466,7 @@ RexxInstruction *LanguageParser::newDoWithLoop(RexxString *label)
                 return newObject;
             }
         }
-        // DO OVER with an UNTIL conditional.
+        // DO WITH with an UNTIL conditional.
         case SUBKEY_UNTIL:
         {
             if (forLoop.forCount == OREF_NULL)
@@ -1439,6 +1481,12 @@ RexxInstruction *LanguageParser::newDoWithLoop(RexxString *label)
                 ::new ((void *)newObject) RexxInstructionDoWithForUntil(label, withLoop, forLoop, conditional);
                 return newObject;
             }
+        }
+        // invalid DO WITH conditional (should really never happen)
+        default:
+        {
+            reportException(Error_Interpretation_switch, "DO WITH conditional", conditionalType);
+            break;
         }
     }
     return OREF_NULL;    // should never get here.
@@ -1552,6 +1600,12 @@ RexxInstruction *LanguageParser::parseForeverLoop(RexxString *label)
         {
             return newLoopUntil(label, conditional);
         }
+        // invalid DO FOREVER conditional (should really never happen)
+        default:
+        {
+            reportException(Error_Interpretation_switch, "DO FOREVER conditional", conditionalType);
+            break;
+        }
     }
     return OREF_NULL;    // should never get here.
 }
@@ -1620,6 +1674,12 @@ RexxInstruction *LanguageParser::parseCountLoop(RexxString *label)
             RexxInstruction *newObject = new_instruction(LOOP_COUNT_UNTIL, DoCountUntil);
             ::new ((void *)newObject) RexxInstructionDoCountUntil(label, forCount, conditional);
             return newObject;
+        }
+        // invalid DO count conditional (should really never happen)
+        default:
+        {
+            reportException(Error_Interpretation_switch, "DO count conditional", conditionalType);
+            break;
         }
     }
     return OREF_NULL;    // should never get here.
@@ -1929,8 +1989,16 @@ RexxInstruction *LanguageParser::exposeNew()
         syntaxError(Error_Translation_expose_interpret);
     }
 
-    // validate the placement at the beginning of the code block
-    isExposeValid();
+    // The EXPOSE must be the first instruction.
+    // NOTE:  labels are not allowed preceding, as that will give a target
+    // for SIGNAL or CALL that will result in an invalid EXPOSE execution.
+ 
+    // the last instruction in the chain must be our dummy
+    // first instruction
+    if (!lastInstruction->isType(KEYWORD_FIRST))
+    {
+        syntaxError(Error_Translation_expose);
+    }
 
     // process the variable list and create an instruction from this.
     // The variables are placed in the subTerms stack
@@ -1952,12 +2020,15 @@ RexxInstruction *LanguageParser::useLocalNew()
     // not valid in an interpret
     if (isInterpret())
     {
-        syntaxError(Error_Translation_expose_interpret);
+        syntaxError(Error_Translation_use_local_interpret);
     }
 
     // validate the placement at the beginning of the code block...
     // the rules are the same as with EXPOSE.
-    isExposeValid();
+    if (!lastInstruction->isType(KEYWORD_FIRST))
+    {
+        syntaxError(Error_Translation_use_local);
+    }
 
     // switch on auto expose tracking
     autoExpose();
@@ -2771,6 +2842,10 @@ RexxInstruction *LanguageParser::parseNew(InstructionSubKeyword argPull)
                     parseFlags[parse_caseless] = true;
                     // go directly to the start of the loop again.
                     continue;
+
+                // any other option?  just fall trough
+                default:
+                    break;
             }
 
             // if we've reached here, we've found a keyword that is not an option (or rejected
@@ -3985,30 +4060,6 @@ RexxInstruction *LanguageParser::useNew()
     ::new ((void *)newObject) RexxInstructionUse(variableCount, strictChecking, allowOptionals, variable_list, defaults_list);
 
     return newObject;
-}
-
-
-/**
- * Validate placement of an EXPOSE instruction.  The EXPOSE must
- * be the first instruction and this must not be an interpret
- * invocation.  NOTE:  labels are not allowed preceeding, as that
- * will give a target for SIGNAL or CALL that will result in an
- * invalid EXPOSE execution.
- */
-void LanguageParser::isExposeValid()
-{
-    // expose is never allowed in an interpret
-    if (isInterpret())
-    {
-        syntaxError(Error_Translation_expose_interpret);
-    }
-
-    // the last instruction in the chain must be our dummy
-    // first instruction
-    if (!lastInstruction->isType(KEYWORD_FIRST))
-    {
-        syntaxError(Error_Translation_expose);
-    }
 }
 
 

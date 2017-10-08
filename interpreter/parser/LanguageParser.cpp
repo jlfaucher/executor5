@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -124,18 +124,20 @@ MethodClass *LanguageParser::createMethod(RexxString *name, BufferClass *source)
  * Static method for creating a new MethodClass instance from a
  * file.
  *
- * @param name   The name given to the method and package.
- * @param source The code source as an array of strings.
+ * @param name   The filename to read the method source from.
+ * @param sourceContext
+ *               A parent source context that this method will inherit
+ *               a package environment from.
  *
  * @return An executable method object.
  */
-MethodClass *LanguageParser::createMethod(RexxString *name)
+MethodClass *LanguageParser::createMethod(RexxString *name, PackageClass *sourceContext)
 {
-    // create the appropriate array source, then the parser, then generate the
+    // create the appropriate program source, then the parser, then generate the
     // code.
     ProgramSource *programSource = new FileProgramSource(name);
     Protected<LanguageParser> parser = new LanguageParser(name, programSource);
-    return parser->generateMethod();
+    return parser->generateMethod(sourceContext);
 }
 
 
@@ -164,18 +166,20 @@ RoutineClass *LanguageParser::createRoutine(RexxString *name, ArrayClass *source
  * Static method for creating a new RoutineClass instance from a
  * file.
  *
- * @param name   The name given to the routine and package.
- * @param source The code source as an array of strings.
+ * @param name   The filename to read the routine source from.
+ * @param sourceContext
+ *               A parent source context that this routine will inherit
+ *               a package environment from.
  *
- * @return An executable method object.
+ * @return An executable routine object.
  */
-RoutineClass *LanguageParser::createRoutine(RexxString *name)
+RoutineClass *LanguageParser::createRoutine(RexxString *name, PackageClass *sourceContext)
 {
     // create the appropriate program source, then the parser, then generate the
     // code.
     ProgramSource *programSource = new FileProgramSource(name);
     Protected<LanguageParser> parser = new LanguageParser(name, programSource);
-    return parser->generateRoutine();
+    return parser->generateRoutine(sourceContext);
 }
 
 
@@ -762,7 +766,7 @@ StackFrameClass *LanguageParser::createStackFrame()
     RexxString *traceback = package->traceBack(OREF_NULL, clauseLocation, 0, true);
     ProtectedObject p(traceback);
     return new StackFrameClass(StackFrameClass::FRAME_COMPILE, package->programName, OREF_NULL,
-        OREF_NULL, OREF_NULL, traceback, clauseLocation.getLineNumber());
+        OREF_NULL, OREF_NULL, traceback, clauseLocation.getLineNumber(), OREF_NULL);
 }
 
 
@@ -1191,7 +1195,9 @@ RexxCode *LanguageParser::translateBlock()
                     // did we hit the end of file?, this is an error
                     if (!nextClause())
                     {
-                        syntaxError(Error_Then_expected_if, instruction);
+                        // select appropriate error message: either for the IF here,
+                        // or for the WHEN / WHEN_CASE we fell through from above
+                        syntaxError(type == KEYWORD_IF ? Error_Then_expected_if : Error_Then_expected_when, instruction);
                     }
 
                     // now check the next token and ensure it is a THEN keyword.
@@ -1199,7 +1205,9 @@ RexxCode *LanguageParser::translateBlock()
                     // Not a THEN keyword?  This is an error
                     if (token->keyword() != KEYWORD_THEN)
                     {
-                        syntaxError(Error_Then_expected_if, instruction);
+                        // select appropriate error message: either for the IF here,
+                        // or for the WHEN / WHEN_CASE we fell through from above
+                        syntaxError(type == KEYWORD_IF ? Error_Then_expected_if : Error_Then_expected_when, instruction);
                     }
                     // create a new then clause attached to the IF
                     second = thenNew(token, (RexxInstructionIf *)instruction);
@@ -2119,7 +2127,7 @@ RexxInternalObject *LanguageParser::addText(RexxToken *token)
                     // digits, create an integer object
                     if (token->isIntegerConstant())
                     {
-                        value = name->requestInteger(Numerics::DEFAULT_DIGITS);
+                        value = name->requestInteger(Numerics::REXXINTEGER_DIGITS);
                         // this should not happen, given we've already validated
                         // this, but belt and braces and all that...just
                         // stick with the string value if it does occur.
@@ -2199,6 +2207,13 @@ RexxInternalObject *LanguageParser::addText(RexxToken *token)
                     return retriever;
                     break;
                 }
+
+                // invalid symbol subtype (should really never happen)
+                default:
+                {
+                    reportException(Error_Interpretation_switch, "symbol subtype", token->subtype());
+                    break;
+                }
             }
             break;
         }
@@ -2219,6 +2234,12 @@ RexxInternalObject *LanguageParser::addText(RexxToken *token)
             // this to the table and return it directly
             literals->put(name,  name);
             return name;
+            break;
+        }
+
+        // not a token type that can have a retriever
+        default:
+        {
             break;
         }
     }
@@ -3538,7 +3559,7 @@ RexxInternalObject *LanguageParser::parseSubTerm(int terminators)
         // an error
         case  TOKEN_OPERATOR:
         {
-             switch (token->type())
+             switch (token->subtype())
              {
                  // +, -, and logical NOT variants are permitted here...except
                  // we don't actually process them here, so back up and say we got nothing.
@@ -3918,6 +3939,13 @@ void LanguageParser::blockError(RexxInstruction *instruction)
         case KEYWORD_ELSE:
             syntaxError(Error_Incomplete_do_else, instruction);
             break;
+
+        // invalid block instruction type (should really never happen)
+        default:
+        {
+            reportException(Error_Interpretation_switch, "block instruction type", instruction->getType());
+            break;
+        }
     }
 }
 

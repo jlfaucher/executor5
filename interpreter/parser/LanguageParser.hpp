@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -237,7 +237,6 @@ class LanguageParser: public RexxInternalObject
 
     // instruction parsing methods
     RexxInstruction *nextInstruction();
-    void        isExposeValid();
     size_t      processVariableList(InstructionKeyword);
 
     RexxInstruction *addressNew();
@@ -422,10 +421,10 @@ class LanguageParser: public RexxInternalObject
 
     static MethodClass *createMethod(RexxString *name, ArrayClass *source, PackageClass *sourceContext);
     static MethodClass *createMethod(RexxString *name, BufferClass *source);
-    static MethodClass *createMethod(RexxString *name);
+    static MethodClass *createMethod(RexxString *name, PackageClass *sourceContext);
     static RoutineClass *createRoutine(RexxString *name, ArrayClass *source, PackageClass *sourceContext);
     static RoutineClass *createRoutine(RexxString *name, BufferClass *source);
-    static RoutineClass *createRoutine(RexxString *name);
+    static RoutineClass *createRoutine(RexxString *name, PackageClass *sourceContext);
     static RoutineClass *createProgram(RexxString *name, BufferClass *source);
     static RoutineClass *createProgram(RexxString *name, ArrayClass *source, PackageClass *sourceContext);
     static RoutineClass *createProgram(RexxString *name);

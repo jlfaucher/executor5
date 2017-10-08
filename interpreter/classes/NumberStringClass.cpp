@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -715,11 +715,10 @@ bool NumberString::doubleValue(double &result)
  */
 RexxInteger *NumberString::integerValue(wholenumber_t digits)
 {
-
     wholenumber_t integerNumber;
 
     // try to convert and return .nil for any failures
-    if (!numberValue(integerNumber, number_digits()))
+    if (!numberValue(integerNumber, digits))
     {
         return (RexxInteger *)TheNilObject;
     }
@@ -792,7 +791,7 @@ bool  NumberString::createUnsignedValue(const char *thisnum, size_t intlength, i
     }
 
     // was ths out of range for this conversion?
-    if (intNumber >= maxValue)
+    if (intNumber > maxValue)
     {
         return false;
     }
@@ -1044,14 +1043,14 @@ bool NumberString::int64Value(int64_t *result, wholenumber_t numDigits)
     if (numberExp < 0)
     {
         // now convert this into an unsigned value
-        if (!createUnsignedInt64Value(numberDigits, numberLength + numberExp, carry, 0, ((uint64_t)INT64_MAX) + 1, intnum))
+        if (!createUnsignedInt64Value(numberDigits, numberLength + numberExp, carry, 0, ((uint64_t)INT64_MAX), intnum))
         {
             return false;                   // to big to handle
         }
     }
     else
     {
-        if (!createUnsignedInt64Value(numberDigits, numberLength, carry, numberExp, ((uint64_t)INT64_MAX) + 1, intnum))
+        if (!createUnsignedInt64Value(numberDigits, numberLength, carry, numberExp, ((uint64_t)INT64_MAX), intnum))
         {
             return false;                   // to big to handle
         }
@@ -1494,6 +1493,14 @@ RexxObject *NumberString::truncInternal(wholenumber_t needed_digits)
         }
     }
 
+    // let's see if we can return this as an integer.  this requires
+    // - no digits requested,
+    // - have at least one digit,
+    // - but no more than REXXINTEGER_DIGITS in result 
+    if (needed_digits == 0 && integerDigits >= 1 && integerDigits + integerPadding <= Numerics::REXXINTEGER_DIGITS)
+    {
+        return new_integer(signOverHead != 0, numberDigits, integerDigits, integerPadding);
+    }
 
     // add up the whole lot to get the result size
     wholenumber_t resultSize = overHead + signOverHead + integerDigits + integerPadding + leadDecimalPadding + decimalDigits + trailingDecimalPadding;
@@ -1936,6 +1943,7 @@ RexxString  *NumberString::formatRexx(RexxObject *Integers, RexxObject *Decimals
 RexxString *NumberString::formatInternal(wholenumber_t integers, wholenumber_t decimals, wholenumber_t mathexp,
     wholenumber_t exptrigger, NumberString *original, wholenumber_t digits, bool form)
 {
+
     // if we have an exponent, we will format this early
     // so that we know the length.  Set this up as a null string
     // value to start.
@@ -2070,6 +2078,19 @@ RexxString *NumberString::formatInternal(wholenumber_t integers, wholenumber_t d
                     digitsCount -= adjustedDecimals;
                     // go round the number digit
                     mathRound(numberDigits);
+
+                    // [bugs:#1474] has brought up a case, where although the initial
+                    // exponential notation trigger had been true, when re-doing
+                    // "the whole trigger thing" (see below), it became false.
+                    // Neither do we want format() to switch from exponential to
+                    // non-exponential just because of format() rounding reasons, nor
+                    // can the code further down build the result string for this case
+                    // without crashing (because trailingDecimalZeros becomes negative).
+                    // To fix we apply some sort of kludge here:
+                    // we simply remember the triggered exponential state and let it
+                    // override the outcome of the second trigger calulation
+                    bool showExponentWasTrue = showExponent;
+
                     // calculate new adjusted value, which means we have to redo
                     // the previous exponent calculation.
                     // needed for format(.999999,,4,2,2)
@@ -2088,7 +2109,7 @@ RexxString *NumberString::formatInternal(wholenumber_t integers, wholenumber_t d
                     wholenumber_t adjustedExponent = numberExponent + digitsCount - 1;
 
                     // redo the whole trigger thing
-                    if (mathexp != 0 && (adjustedExponent >= exptrigger || (adjustedExponent < 0 && Numerics::abs(numberExponent) > exptrigger * 2)))
+                    if (showExponentWasTrue | (mathexp != 0 && (adjustedExponent >= exptrigger || (adjustedExponent < 0 && Numerics::abs(numberExponent) > exptrigger * 2))))
                     {
                         // this might not have been set on originally, but only occurring because of
                         // the rounding.
@@ -2166,7 +2187,7 @@ RexxString *NumberString::formatInternal(wholenumber_t integers, wholenumber_t d
         // count of digits to the exponent.  If we end up losing
         // all of the integers, then our value is 1 (for the leading "0").
         integers = digitsCount + numberExponent;
-        if (integers < 0)
+        if (integers <= 0)
         {
             integers = 1;
             integerDigits = 0;

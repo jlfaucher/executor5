@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -62,10 +62,14 @@
 # include <sys/filio.h>
 #endif
 
-#if defined(__APPLE__) && defined(__MACH__)
+#if defined __APPLE__
 # define lseek64 lseek
 # define open64 open
+// avoid warning: '(f)stat64' is deprecated: first deprecated in macOS 10.6
+# define stat64 stat
+# define fstat64 fstat
 #endif
+
 
 #include "SysFile.hpp"
 
@@ -580,13 +584,6 @@ bool SysFile::ungetc(char ch)
     return true;
 }
 
-bool SysFile::getChar(char &ch)
-{
-    size_t len;
-
-    return read(&ch, 1, len);
-}
-
 bool SysFile::puts(const char *data, size_t &len)
 {
     return write(data, strlen(data), len);
@@ -624,36 +621,65 @@ bool SysFile::putLine(const char *mybuffer, size_t len, size_t &bytesWritten)
 }
 
 
-bool SysFile::gets(char *mybuffer, size_t bufferLen, size_t &bytesRead)
+/**
+ * Read characters from the stream until the next newline, or until the
+ * buffer fills up.  If the read characters end in a carriage return +
+ * newline sequence, collapse it into a single newline character.
+ * Return the line including the trailing newline character (if any).
+ *
+ * @param buffer Start of the line to write.
+ * @param bufferLen
+ *               The maximum length to read.
+ * @param bytesRead
+ *               The actual number of bytes read, including the line
+ *               terminator.
+ *
+ * @return A success/failure indicator.
+ */
+bool SysFile::gets(char *buffer, size_t bufferLen, size_t &bytesRead)
 {
     size_t i;
+
     for (i = 0; i < bufferLen - 1; i++)
     {
         size_t len;
 
         // if we don't get a character break out of here.
-        if (!this->read(mybuffer + i, 1, len))
+        if (!read(buffer + i, 1, len))
         {
             break;
         }
 
-        // we only look for a newline character.  On return, this
-        // line will have the terminator characters at the end, or
-        // if the buffer fills up before we find the terminator,
-        // this will just be null terminated.  If this us a multi
-        // character line terminator, both characters will appear
-        // at the end of the line.
-        if (mybuffer[i] == '\n')
+        // special handling for carriage return characters. we need to read the
+        // next character and if it is a newline, then we convert the carriage return
+        // into a newline and skip ahead in the file. Otherwise, we put the character back
+        // and leave the \r as data within the line.
+        if (buffer[i] == '\r')
         {
-            // once we hit a new line character, back up and see if the
-            // previous character is a carriage return.  If it is, collapse
-            // it to the single line delimiter.
-            if (i >= 1 && mybuffer[i - 1] == '\r')
+            char ch;
+
+            // we need to be able to read the character for this to work.
+            if (getChar(ch))
             {
-                i--;
-                mybuffer[i] = '\n';
+                // if this is the second character of the sequence, just replace the '\r'
+                if (ch == '\n')
+                {
+                    buffer[i] = '\n';
+                }
+                // not paired with a \n, so leave the \r as part of the line.
+                // and return the read character to the stream
+                else
+                {
+                    ungetc(ch);
+                }
             }
-            i++;   // we need to step the position so that the null terminator doesn't overwrite
+        }
+
+        // we only look for a newline character to terminate our line (if we have a
+        // paired \r\n, the code above has already collapsed this to a single \n).
+        if (buffer[i] == '\n')
+        {
+            i++;   // step the position to give the actual number of bytes read
             break;
         }
     }
@@ -664,9 +690,9 @@ bool SysFile::gets(char *mybuffer, size_t bufferLen, size_t &bytesRead)
         return false;
     }
 
-    // this is the length minus the terminating null
+    // this is the length of the read data (including the newline, if any)
     bytesRead = i;
-    // return an error state, but not EOF status.
+    // return any error state, but not EOF status.
     return !error();
 }
 
@@ -779,8 +805,8 @@ bool SysFile::seekForwardLines(int64_t startPosition, int64_t &lineCount, int64_
     flush();
 
     // get a buffer for searching
-    char *mybuffer = (char *)malloc(LINE_POSITIONING_BUFFER);
-    if (mybuffer == NULL)
+    char *buffer = (char *)malloc(LINE_POSITIONING_BUFFER);
+    if (buffer == NULL)
     {
         errInfo = ENOMEM;
         return false;
@@ -794,16 +820,16 @@ bool SysFile::seekForwardLines(int64_t startPosition, int64_t &lineCount, int64_
         // return our current count and indicate this worked.
         if (!setPosition(startPosition, startPosition))
         {
-            free(mybuffer);
+            free(buffer);
             // set the return position and get outta here
             endPosition = startPosition;
             return true;
         }
 
         size_t bytesRead;
-        if (!read(mybuffer, readLength, bytesRead))
+        if (!read(buffer, readLength, bytesRead))
         {
-            free(mybuffer);
+            free(buffer);
             // if we've hit an eof condition, this is the end
             if (atEof())
             {
@@ -817,7 +843,7 @@ bool SysFile::seekForwardLines(int64_t startPosition, int64_t &lineCount, int64_
         // have we hit the eof?
         if (bytesRead == 0)
         {
-            free(mybuffer);
+            free(buffer);
             // set the return position and get outta here
             endPosition = startPosition;
             return true;
@@ -829,7 +855,7 @@ bool SysFile::seekForwardLines(int64_t startPosition, int64_t &lineCount, int64_
         {
             // we're only interested in \n character, since this will
             // mark the transition point between lines.
-            if (mybuffer[offset] == '\n')
+            if (buffer[offset] == '\n')
             {
                 // reduce the line count by one.
                 lineCount--;
@@ -838,7 +864,7 @@ bool SysFile::seekForwardLines(int64_t startPosition, int64_t &lineCount, int64_
                 {
                     // set the return position and get outta here
                     endPosition = startPosition + offset + 1;
-                    free(mybuffer);
+                    free(buffer);
                     return true;
                 }
             }

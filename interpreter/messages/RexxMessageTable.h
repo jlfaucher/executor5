@@ -2,7 +2,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -372,6 +372,7 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Incorrect_call_binary)
       MINOR(Error_Incorrect_call_hex)
       MINOR(Error_Incorrect_call_symbol)
+      MINOR(Error_Incorrect_call_pad_or_name)
       MINOR(Error_Incorrect_call_list)
       MINOR(Error_Incorrect_call_trace)
       MINOR(Error_Incorrect_call_random)
@@ -431,6 +432,7 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_System_service_user_defined)
   MAJOR(Error_Interpretation)
       MINOR(Error_Interpretation_initialization)
+      MINOR(Error_Interpretation_switch)
       MINOR(Error_Interpretation_user_defined)
   MAJOR(Error_Invalid_argument)
       MINOR(Error_Invalid_argument_user_defined)
@@ -615,13 +617,14 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Translation_missing_class)
       MINOR(Error_Translation_bad_metaclass)
       MINOR(Error_Translation_expose)
+      MINOR(Error_Translation_use_local)
       MINOR(Error_Translation_expose_interpret)
       MINOR(Error_Translation_guard)
       MINOR(Error_Translation_guard_guard)
       MINOR(Error_Translation_guard_interpret)
       MINOR(Error_Translation_guard_expose)
       MINOR(Error_Translation_directive_interpret)
-      MINOR(Error_Translation_use_interpret)
+      MINOR(Error_Translation_use_local_interpret)
       MINOR(Error_Translation_bad_directive)
       MINOR(Error_Translation_bad_external)
       MINOR(Error_Translation_use_comma)

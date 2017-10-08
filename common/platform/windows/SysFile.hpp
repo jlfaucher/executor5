@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -98,7 +98,7 @@ public:
     bool write(const char *data, size_t len, size_t &bytesWritten);
     bool putChar(char ch);
     bool ungetc(char ch);
-    bool getChar(char &ch);
+    inline bool getChar(char &ch) { size_t len; return read(&ch, 1, len); }
     bool puts(const char *data, size_t &bytesWritten);
     bool gets(char *buffer, size_t len, size_t &bytesRead);
     bool setPosition(int64_t location, int64_t &position);
@@ -123,7 +123,7 @@ public:
     inline bool error() { return errInfo != 0; }
     inline int  errorInfo() { return errInfo; }
     inline void clearErrors() { errInfo = 0; }
-    inline bool atEof() { return !hasBufferedInput() && eof(fileHandle) == 1; }
+    inline bool atEof() { return !hasBufferedInput() && _eof(fileHandle) == 1; }
     inline bool hasBufferedInput() { return buffered && (bufferedInput > bufferPosition); }
     inline uintptr_t getHandle() { return (uintptr_t)fileHandle; }
 

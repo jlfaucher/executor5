@@ -2,7 +2,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -223,6 +223,7 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Invalid_subkeyword_signalonname)
       MINOR(Error_Invalid_subkeyword_parse)
       MINOR(Error_Invalid_subkeyword_use)
+      MINOR(Error_Invalid_subkeyword_use_strict)
       MINOR(Error_Invalid_subkeyword_raise)
       MINOR(Error_Invalid_subkeyword_raiseoption)
       MINOR(Error_Invalid_subkeyword_description)
@@ -333,7 +334,7 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Invalid_expression_forward_message)
       MINOR(Error_Invalid_expression_forward_class)
       MINOR(Error_Invalid_expression_logical_list)
-      MINOR(Error_Invalid_expression_use_strict_default)
+      MINOR(Error_Invalid_expression_use_arg_default)
       MINOR(Error_Invalid_expression_parse)
       MINOR(Error_Invalid_expression_call)
       MINOR(Error_Invalid_expression_select_case)
@@ -460,6 +461,9 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Invalid_argument_maxarg)
       MINOR(Error_Invalid_argument_array)
       MINOR(Error_Invalid_argument_array_size)
+      MINOR(Error_Invalid_argument_nonnegative_number)
+      MINOR(Error_Invalid_argument_positive_number)
+      MINOR(Error_Invalid_argument_logical)
   MAJOR(Error_Variable_expected)
       MINOR(Error_Variable_expected_USE)
       MINOR(Error_Variable_expected_PARSE)
@@ -524,6 +528,7 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Incorrect_method_supplier)
       MINOR(Error_Incorrect_method_nostring)
       MINOR(Error_Incorrect_method_noarray)
+      MINOR(Error_Incorrect_method_string_no_whole_number)
       MINOR(Error_Incorrect_method_exponent_oversize)
       MINOR(Error_Incorrect_method_before_oversize)
       MINOR(Error_Incorrect_method_string_nonumber)
@@ -637,7 +642,7 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Translation_class_external_bad_parameters)
       MINOR(Error_Translation_class_external_bad_class_name)
       MINOR(Error_Translation_class_external_bad_class_server)
-      MINOR(Error_Translation_use_strict_ellipsis)
+      MINOR(Error_Translation_use_arg_ellipsis)
       MINOR(Error_Translation_duplicate_attribute)
       MINOR(Error_Translation_duplicate_constant)
       MINOR(Error_Translation_abstract_method)
@@ -656,6 +661,7 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Translation_delegate_method)
       MINOR(Error_Translation_delegate_attribute)
       MINOR(Error_Translation_use_local_compound)
+      MINOR(Error_Translation_bad_class)
   MAJOR(Error_at_line)
       MINOR(Message_Translations_error)
       MINOR(Message_Translations_running)

@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -52,6 +52,8 @@ class ProgramSource;
 class RexxCode;
 class RoutineClass;
 class Activity;
+class DirectoryClass;
+class LibraryPackage;
 
 
 /**
@@ -86,6 +88,7 @@ public:
     ArrayClass   *extractSource(SourceLocation &);
     ArrayClass   *extractSource();
     void          mergeRequired(PackageClass *);
+    void          mergeLibrary(LibraryPackage *);
     PackageClass *loadRequires(Activity *activity, RexxString *target);
     PackageClass *loadRequires(Activity *activity, RexxString *target, ArrayClass *s);
     void          addPackage(PackageClass *package);
@@ -94,7 +97,7 @@ public:
     RoutineClass *findLocalRoutine(RexxString *);
     RoutineClass *findPublicRoutine(RexxString *);
     PackageClass *findNamespace(RexxString *);
-    RexxClass    *findClass(RexxString *);
+    RexxClass    *findClass(RexxString *, RexxObject *&);
     RexxClass    *findClass(RexxString *, RexxString *);
     RexxClass    *findInstalledClass(RexxString *name);
     RexxClass    *findPublicClass(RexxString *name);
@@ -202,6 +205,7 @@ public:
            RexxObject    *findProgramRexx(RexxObject *name);
            void           runProlog(Activity *);
            void addNamespace(RexxString *name, PackageClass *package);
+           DirectoryClass *getPackageLocal();
 
 protected:
 
@@ -242,9 +246,10 @@ protected:
     bool         installRequired;         // indicates we need to install stuff later
 
     PackageSetting packageSettings;       // the settings we use at run time.
+    DirectoryClass *packageLocal;         // the .local values attached to this package
 
     // settings inherited from ::options statements
-    intptr_t reserved[12];                // some reserved values for compatible expansion
+    intptr_t reserved[11];                // some reserved values for compatible expansion
 };
 
 #endif

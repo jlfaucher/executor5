@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -407,6 +407,7 @@ class RexxString : public RexxObject
     RexxObject *choiceRexx(RexxObject *trueResult, RexxObject *falseResult);
     RexxObject *Max(RexxObject **args, size_t argCount);
     RexxObject *Min(RexxObject **args, size_t argCount);
+    RexxObject *modulo(RexxObject *divisor);
     RexxObject *trunc(RexxInteger *decimals);
     RexxObject *floor();
     RexxObject *ceiling();
@@ -711,6 +712,7 @@ class RexxString : public RexxObject
     // Datatype method options
     static const char DATATYPE_ALPHANUMERIC =   'A';
     static const char DATATYPE_BINARY =         'B';
+    static const char DATATYPE_INTERNAL_WHOLE = 'I';
     static const char DATATYPE_LOWERCASE =      'L';
     static const char DATATYPE_MIXEDCASE =      'M';
     static const char DATATYPE_NUMBER =         'N';

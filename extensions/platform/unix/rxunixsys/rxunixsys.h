@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
-/* Copyright (c) 2009-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2009-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -59,8 +59,10 @@
 #include <grp.h>
 #include <time.h>
 #include <netdb.h>
+#if !defined(OPENBSD)
 #include <wordexp.h>
-#if !defined(AIX)
+#endif
+#if !defined(AIX) && !defined(OPENBSD)
 #include <alloca.h>
 #endif
 #include <pthread.h>
@@ -78,6 +80,10 @@
 
 #if defined(__APPLE__)
 # define stat64 stat
+# define HOST_NAME_MAX _POSIX_HOST_NAME_MAX
+#endif
+
+#ifdef __sun
 # define HOST_NAME_MAX _POSIX_HOST_NAME_MAX
 #endif
 

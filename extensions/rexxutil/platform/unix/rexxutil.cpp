@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -189,7 +189,6 @@
 #include <signal.h>
 #include <time.h>
 #include <netdb.h>
-#include <alloca.h>
 
 
 #if defined( HAVE_SYS_SEM_H )
@@ -2267,13 +2266,12 @@ void inline nullStringException(RexxThreadContext *c, CSTRING fName, size_t pos)
     c->RaiseException2(Rexx_Error_Incorrect_call_null, c->String(fName), c->StringSize(pos));
 }
 
-
 /**
  * <routineName>() argument <argPos> must be less than <len> characters in
  * length; length is <realLen>
  *
- * SysFileTree() argument 2 must be less than 255 characters in length; length
- * is 260
+ * SysFileTree() argument 2 must be less than 4095 characters in length; length
+ * is 5000
  *
  * Raises 88.900
  *
@@ -2771,10 +2769,8 @@ static bool getOptionsFromArg(RexxCallContext *context, CSTRING opts, uint32_t *
  *
  * @param context   Call context we are operating in.
  *
- * @param fSpec     The file specification as passed by the user.  Can not be
- *                  the empty string or longer than 255 characters.  The unix
- *                  version has always enforced that, although the Windows
- *                  version never has.
+ * @param fSpec     The file specification as passed by the user.
+ *                  Can not be the empty string and must be 494 chars or less.
  *
  * @param fileSpec  Buffer to contain the expanded file specification.  At this
  *                  time the buffer is 4096 in length, which seems more than
@@ -2788,17 +2784,9 @@ static bool getOptionsFromArg(RexxCallContext *context, CSTRING opts, uint32_t *
  * @return True if no error, otherwise false.  False is only returned if an
  *         exception has been raised.
  *
- * @remarks  The fileSpec buffer is IBUF_LEN, or 4096 bytes.  fSpec is
- *           restricted to 255 characters, so there is no problem with the input
- *           string being to long, o begin with.  Theoretically, if fSpec starts
- *           with the tilde, '~', the string could be too long after expanding
- *           the home directoy.
- *
- *           But that would mean the path to the user's home directory would be
- *           over about 3750 characters long.  That seems absurd.  I believe
- *           this will never happen, but to prevent a possible buffer overflow,
- *           an out of memory exception is raised for this seemingly impossible
- *           situation.
+ * @remarks  The fileSpec buffer is IBUF_LEN, or 4096 bytes.
+ *           Theoretically, if fSpec starts with the tilde, '~', the string
+ *           could be too long after expanding the home directoy.
  */
 static bool getFileSpecFromArg(RexxCallContext *context, CSTRING fSpec, char *fileSpec, size_t bufLen, size_t argPos)
 {
@@ -2809,12 +2797,11 @@ static bool getFileSpecFromArg(RexxCallContext *context, CSTRING fSpec, char *fi
         nullStringException(context->threadContext, "SysFileTree", argPos);
         return false;
     }
-    if ( len > 255 )
+    if ( len >= bufLen - 1) // take into account that a trailing "*" may be appended
     {
-        stringTooLongException(context->threadContext, "SysFileTree", argPos, 255, len);
+        stringTooLongException(context->threadContext, "SysFileTree", argPos, bufLen - 1, len);
         return false;
     }
-
     strcpy(fileSpec, fSpec);
 
     // If filespec is '*' then use './ *'
@@ -2839,10 +2826,9 @@ static bool getFileSpecFromArg(RexxCallContext *context, CSTRING fSpec, char *fi
             return false;
         }
 
-        size_t l = strlen(temp) + len + 1;
-        if ( l > bufLen )
+        if ( strlen(temp) >= bufLen )
         {
-            outOfMemoryException(context->threadContext);
+            stringTooLongException(context->threadContext, "SysFileTree", argPos, bufLen, strlen(temp));
             free(temp);
             return false;
         }

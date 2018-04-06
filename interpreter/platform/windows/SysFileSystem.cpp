@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -143,7 +143,7 @@ void SysFileSystem::qualifyStreamName(const char *unqualifiedName, char *qualifi
                                (DWORD)bufferSize, qualifiedName, &lpszLastNamePart);
     if ((length == 0) || (length >= bufferSize))
     {
-      // if GetFullPathName() failed or would need a larger buffer, return null string 
+      // if GetFullPathName() failed or would need a larger buffer, return null string
       qualifiedName[0] = '\0';
     }
     else
@@ -432,7 +432,7 @@ bool SysFileSystem::hasDirectory(const char *name)
     // hasDirectory() means we have enough absolute directory
     // information at the beginning to bypass performing path searches.
     // We really only need to look at the first character.
-    return name[0] == '\\' || name[0] == '.' || name[2] == ':';
+    return name[0] == '\\' || name[0] == '.' || name[1] == ':';
 }
 
 
@@ -473,6 +473,7 @@ bool SysFileSystem::checkCurrentFile(const char *name, char *resolvedName)
             return true;
         }
     }
+    SetErrorMode(errorMode);
     return false;        // not found
 }
 
@@ -507,6 +508,7 @@ bool SysFileSystem::searchPath(const char *name, const char *path, const char *e
             return true;
         }
     }
+    SetErrorMode(errorMode);
     return false;        // not found
 }
 
@@ -780,7 +782,7 @@ bool SysFileSystem::setLastModifiedDate(const char *name, int64_t time)
 
     // MSDN SetFileTime function: "The handle must have been created using
     // the CreateFile function with the FILE_WRITE_ATTRIBUTES"
-    HANDLE hFile = CreateFile (name, FILE_WRITE_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE,
+    HANDLE hFile = CreateFile(name, FILE_WRITE_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE,
        NULL, OPEN_EXISTING, flags, NULL);
     if (hFile == INVALID_HANDLE_VALUE)
     {
@@ -798,6 +800,7 @@ bool SysFileSystem::setLastModifiedDate(const char *name, int64_t time)
         CloseHandle(hFile);
         return true;
     }
+    CloseHandle(hFile);
     return false;
 }
 
@@ -828,6 +831,17 @@ bool SysFileSystem::setFileReadOnly(const char *name)
  * @return For Windows, always returns false.
  */
 bool SysFileSystem::isCaseSensitive()
+{
+    return false;
+}
+
+
+/**
+ * test if an individual file is a case sensitive name
+ *
+ * @return For Windows, always returns false.
+ */
+bool SysFileSystem::isCaseSensitive(const char *name)
 {
     return false;
 }

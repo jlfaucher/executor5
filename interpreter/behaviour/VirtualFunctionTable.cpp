@@ -3,7 +3,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -151,6 +151,7 @@
 #include "ExpressionQualifiedFunction.hpp"
 #include "PointerBucket.hpp"
 #include "PointerTable.hpp"
+#include "SpecialDotVariable.hpp"
 #include "RexxMemory.hpp"
 #include "InternalStack.hpp"
 #include "MemoryStack.hpp"
@@ -697,6 +698,9 @@ void MemoryObject::buildVirtualFunctionTable()
    
    objectPtr = ::new (objectLoc) PointerTable(RESTOREIMAGE);
    virtualFunctionTable[T_PointerTable] = getVftPointer(objectLoc);
+   
+   objectPtr = ::new (objectLoc) SpecialDotVariable(RESTOREIMAGE);
+   virtualFunctionTable[T_SpecialDotVariableTerm] = getVftPointer(objectLoc);
    
    objectPtr = ::new (objectLoc) RexxObject(RESTOREIMAGE);
    virtualFunctionTable[T_Memory] = getVftPointer(objectLoc);

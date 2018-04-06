@@ -208,7 +208,9 @@ RexxInternalObject *MessageClass::copy()
  */
 RexxObject *MessageClass::notify(RexxObject *notificationTarget)
 {
-    classArgument(notificationTarget, TheRexxPackage->findClass(GlobalNames::MessageNotification), "notification target");
+    RexxObject *t = OREF_NULL;   // required for the findClass call
+
+    classArgument(notificationTarget, TheRexxPackage->findClass(GlobalNames::MessageNotification, t), "notification target");
 
     // get a new array if this is the first one added.
     if (interestedParties == OREF_NULL)
@@ -258,7 +260,8 @@ RexxObject *MessageClass::wait()
         }
         // add our activity to the list
         waitingActivities->append(ActivityManager::currentActivity);
-        // and wait for the wake up call.
+        // and wait for the wake up call. We are handling this like
+        // it is a guard wait, which has its own semaphore rules.
         ActivityManager::currentActivity->waitReserve(this);
     }
 
@@ -650,7 +653,9 @@ void MessageClass::sendNotification()
         {
             // get each activity and give them a poke.
             Activity *waitingActivity = (Activity *)waitingActivities->get(i);
-            waitingActivity->postDispatch();
+            // we process this like it is a guard variable reserve, so
+            // we wake it up as if it was a guard wait.
+            waitingActivity->guardPost();
         }
         // clear the list so that we don't anchor those activities needlessly
         waitingActivities = OREF_NULL;

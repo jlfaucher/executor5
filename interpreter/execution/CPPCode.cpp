@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -603,6 +603,7 @@ CPPM(RexxObject::strictNotEqual),
 CPPM(RexxObject::copyRexx),
 CPPM(RexxObject::defaultNameRexx),
 CPPM(RexxObject::isInstanceOfRexx),
+CPPM(RexxObject::isNilRexx),
 CPPM(RexxObject::instanceMethodRexx),
 CPPM(RexxObject::instanceMethodsRexx),
 CPPM(RexxObject::identityHashRexx),
@@ -713,6 +714,7 @@ CPPM(RexxInteger::d2x),
 CPPM(RexxInteger::d2c),
 CPPM(RexxInteger::format),
 CPPM(RexxInteger::trunc),
+CPPM(RexxInteger::modulo),
 CPPM(RexxInteger::floor),
 CPPM(RexxInteger::ceiling),
 CPPM(RexxInteger::round),
@@ -835,11 +837,13 @@ CPPM(PackageClass::fuzzRexx),
 CPPM(PackageClass::traceRexx),
 CPPM(PackageClass::getMainRexx),
 CPPM(PackageClass::findProgramRexx),
+CPPM(PackageClass::getPackageLocal),
 
 CPPM(PackageClass::newRexx),
 
 CPPM(NumberString::formatRexx),
 CPPM(NumberString::trunc),
+CPPM(NumberString::modulo),
 CPPM(NumberString::floor),
 CPPM(NumberString::ceiling),
 CPPM(NumberString::round),
@@ -999,6 +1003,7 @@ CPPM(RexxString::x2c),
 CPPM(RexxString::x2d),
 CPPM(RexxString::format),
 CPPM(RexxString::trunc),
+CPPM(RexxString::modulo),
 CPPM(RexxString::floor),
 CPPM(RexxString::ceiling),
 CPPM(RexxString::round),
@@ -1170,7 +1175,6 @@ CPPM(StackFrameClass::getType),
 CPPM(StackFrameClass::getTarget),
 CPPM(StackFrameClass::getArguments),
 CPPM(StackFrameClass::newRexx),
-CPPM(StackFrameClass::getContextObject),
 
 CPPM(RexxInfo::newRexx),
 CPPM(RexxInfo::copyRexx),

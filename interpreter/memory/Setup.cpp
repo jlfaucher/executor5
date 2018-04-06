@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -512,6 +512,7 @@ StartClassDefinition(Object);
         AddMethod("SendWith", RexxObject::sendWith, 2);
         AddMethod("String", RexxObject::stringRexx, 0);
         AddMethod("IsInstanceOf", RexxObject::isInstanceOfRexx, 1);
+        AddMethod("isNil", RexxObject::isNilRexx, 0);
         AddMethod("IsA", RexxObject::isInstanceOfRexx, 1);
         AddMethod("InstanceMethod", RexxObject::instanceMethodRexx, 1);
         AddMethod("InstanceMethods", RexxObject::instanceMethodsRexx, 1);
@@ -572,6 +573,7 @@ StartClassDefinition(String)
         AddMethod("CEILING", RexxString::ceiling, 0);
         AddMethod("ROUND", RexxString::round, 0);
         AddMethod("Trunc", RexxString::trunc, 1);
+        AddMethod("modulo", RexxString::modulo, 1);
         AddMethod("Word", RexxString::word, 1);
         AddMethod("WordIndex", RexxString::wordIndex, 1);
         AddMethod("WordLength", RexxString::wordLength, 1);
@@ -1157,6 +1159,7 @@ StartClassDefinition(Package)
         AddMethod("Trace", PackageClass::traceRexx, 0);
         AddMethod("Prolog", PackageClass::getMainRexx, 0);
         AddMethod("FindProgram", PackageClass::findProgramRexx, 1);
+        AddMethod("Local", PackageClass::getPackageLocal, 0);
 
     CompleteMethodDefinitions();
 
@@ -1396,7 +1399,7 @@ StartClassDefinition(Integer)
         AddMethod("<=", RexxInteger::isLessOrEqual, 1);
         AddMethod("\\>", RexxInteger::isLessOrEqual, 1);
         AddMethod("==", RexxInteger::strictEqual, 1);
-        AddMethod("HashCode", RexxInteger::hashCode, 1);
+        AddMethod("HashCode", RexxInteger::hashCode, 0);
         AddMethod("\\==", RexxInteger::strictNotEqual, 1);
         AddMethod(">>", RexxInteger::strictGreaterThan, 1);
         AddMethod("<<", RexxInteger::strictLessThan, 1);
@@ -1407,6 +1410,7 @@ StartClassDefinition(Integer)
         AddMethod("MakeString", RexxObject::makeStringRexx, 0);
         AddMethod("Format", RexxInteger::format, 4);
         AddMethod("Trunc", RexxInteger::trunc, 1);
+        AddMethod("modulo", RexxInteger::modulo, 1);
         AddMethod("Floor", RexxInteger::floor, 0);
         AddMethod("Ceiling", RexxInteger::ceiling, 0);
         AddMethod("Round", RexxInteger::round, 0);
@@ -1470,6 +1474,7 @@ StartClassDefinition(NumberString)
         AddMethod("MakeString", RexxObject::makeStringRexx, 0);
         AddMethod("Format", NumberString::formatRexx, 4);
         AddMethod("Trunc", NumberString::trunc, 1);
+        AddMethod("modulo", NumberString::modulo, 1);
         AddMethod("Floor", NumberString::floor, 0);
         AddMethod("Ceiling", NumberString::ceiling, 0);
         AddMethod("Round", NumberString::round, 0);
@@ -1586,7 +1591,6 @@ StartClassDefinition(StackFrame)
         // the string method just maps to TRACELINE
         AddMethod("String", StackFrameClass::getTraceLine, 0);
         AddMethod("MakeString", StackFrameClass::getTraceLine, 0);
-        AddMethod("context", StackFrameClass::getContextObject, 0);
 
     CompleteMethodDefinitions();
 

@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -63,6 +63,7 @@ class SupplierClass;
 class PackageClass;
 class StackFrameClass;
 class RequiresDirective;
+class RoutineClass;
 
 
 /**
@@ -102,6 +103,7 @@ class RexxActivation : public ActivationBase
         TRACE_PREFIX_ASSIGNMENT,
         TRACE_PREFIX_INVOCATION,
         TRACE_PREFIX_NAMESPACE,
+        TRACE_PREFIX_KEYWORD,
     } TracePrefix;
 
    void *operator new(size_t);
@@ -197,14 +199,15 @@ class RexxActivation : public ActivationBase
    void              trapDelay(RexxString *);
    void              trapUndelay(RexxString *);
    bool              callExternalRexx(RexxString *, RexxObject **, size_t, RexxString *, ProtectedObject &);
-   RexxObject      * externalCall(RexxString *, RexxObject **, size_t, RexxString *, ProtectedObject &);
+   RexxObject      * externalCall(RoutineClass *&, RexxString *, RexxObject **, size_t, RexxString *, ProtectedObject &);
+   RexxObject      * externalCall(RexxString *, RoutineClass *, RexxObject **, size_t, RexxString *, ProtectedObject &);
    RexxObject      * internalCall(RexxString *, RexxInstruction *, RexxObject **, size_t, ProtectedObject &);
    RexxObject      * internalCallTrap(RexxString *, RexxInstruction *, DirectoryClass *, ProtectedObject &);
    bool              callMacroSpaceFunction(RexxString *, RexxObject **, size_t, RexxString *, int, ProtectedObject &);
    static RoutineClass* getMacroCode(RexxString *macroName);
    RexxString       *resolveProgramName(RexxString *name);
    RexxClass        *findClass(RexxString *name);
-   RexxObject       *resolveDotVariable(RexxString *name);
+   RexxObject       *resolveDotVariable(RexxString *name, RexxObject *&);
    void              command(RexxString *, RexxString *);
    int64_t           getElapsed();
    RexxDateTime      getTime();
@@ -241,7 +244,7 @@ class RexxActivation : public ActivationBase
    void              setDefaultAddress(RexxString *);
    bool              internalMethod();
    void              loadRequires(RequiresDirective *);
-   void              loadLibrary(RexxString *target, RexxInstruction *instruction);
+   void              loadLibrary(RexxString *target, RexxInstruction *instruction, PackageClass *package);
    RexxObject      * rexxVariable(RexxString *);
    void              pushEnvironment(RexxObject *);
    RexxObject      * popEnvironment();
@@ -323,6 +326,8 @@ class RexxActivation : public ActivationBase
        { if (settings.intermediateTrace) { traceTaggedValue(TRACE_PREFIX_VARIABLE, NULL, false, n, VALUE_MARKER, v); } };
    inline void              traceDotVariable(RexxString *n, RexxObject *v)
        { if (settings.intermediateTrace) { traceTaggedValue(TRACE_PREFIX_DOTVARIABLE, ".", false, n, VALUE_MARKER, v); } };
+   inline void              traceSpecialDotVariable(RexxString *n, RexxObject *v)
+       { if (settings.intermediateTrace) { traceTaggedValue(TRACE_PREFIX_DOTVARIABLE, NULL, false, n, VALUE_MARKER, v); } };
    inline void              traceFunction(RexxString *n, RexxObject *v)
        { if (settings.intermediateTrace) { traceTaggedValue(TRACE_PREFIX_FUNCTION, NULL, false, n, VALUE_MARKER, v); } };
    inline void              traceMessage(RexxString *n, RexxObject *v)
@@ -344,7 +349,8 @@ class RexxActivation : public ActivationBase
    inline bool              tracingAll() {return settings.packageSettings.traceSettings.tracingAll(); }
    inline bool              inDebug() { return settings.packageSettings.traceSettings.isDebug() && !debugPause;}
    inline void              traceResult(RexxObject * v) { if (tracingResults()) traceValue(v, TRACE_PREFIX_RESULT); };
-   inline void              traceResultValue(RexxObject * v) { traceValue(v, TRACE_PREFIX_RESULT); };
+   inline void              traceKeywordResult(RexxString *k, RexxObject *v) { if (tracingResults()) traceTaggedValue(TRACE_PREFIX_KEYWORD, NULL, true, k, VALUE_MARKER, v); }
+   inline void              traceResultValue(RexxObject * v) {  };
    inline bool              tracingInstructions() { return tracingAll(); }
    inline bool              tracingErrors() { return settings.packageSettings.traceSettings.tracingErrors(); }
    inline bool              tracingFailures() { return settings.packageSettings.traceSettings.tracingFailures(); }
@@ -363,6 +369,7 @@ class RexxActivation : public ActivationBase
        settings.setDebugBypass(true);
    }
    inline bool              isNovalueErrorEnabled() { return settings.packageSettings.isNovalueErrorEnabled(); }
+   inline void              disableNovalueError() { return settings.packageSettings.disableNovalueError(); }
 
 
    inline void              stopExecution(ExecutionState state)

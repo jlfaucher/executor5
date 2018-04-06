@@ -1664,6 +1664,15 @@ special character (such as a parenthesis).
       </SubMessage>
       <SubMessage>
         <Code>25</Code>
+        <Subcode>929</Subcode>
+        <MessageNumber>399</MessageNumber>
+        <Component>Rexx</Component>
+        <Severity>Warning</Severity>
+        <SymbolicName>Error_Invalid_subkeyword_use_strict</SymbolicName>
+        <Text>USE STRICT must be followed by the keyword ARG; found <q><Sub position="1" name="word"/></q>.</Text>
+      </SubMessage>
+      <SubMessage>
+        <Code>25</Code>
         <Subcode>906</Subcode>
         <MessageNumber>298</MessageNumber>
         <Component>Rexx</Component>
@@ -2705,8 +2714,8 @@ special character (such as a parenthesis).
         <MessageNumber>664</MessageNumber>
         <Component>Rexx</Component>
         <Severity>Warning</Severity>
-        <SymbolicName>Error_Invalid_expression_use_strict_default</SymbolicName>
-        <Text>Missing expression following <q>=</q> token of a USE STRICT ARG instruction.</Text>
+        <SymbolicName>Error_Invalid_expression_use_arg_default</SymbolicName>
+        <Text>Invalid or missing expression following <q>=</q> token of a USE ARG instruction.</Text>
       </SubMessage>
       <SubMessage>
         <Code>35</Code>
@@ -3913,6 +3922,33 @@ special character (such as a parenthesis).
           <SymbolicName>Error_Invalid_argument_array_size</SymbolicName>
           <Text><Sub position="1" name="name"/> argument <Sub position="2" name="argument_number"/> must be an array with exactly <Sub position="3" name="count"/> items.</Text>
         </SubMessage>
+        <SubMessage>
+          <Code>88</Code>
+          <Subcode>925</Subcode>
+          <MessageNumber>788</MessageNumber>
+          <Component>Rexx</Component>
+          <Severity>Warning</Severity>
+          <SymbolicName>Error_Invalid_argument_nonnegative_number</SymbolicName>
+          <Text>The <Sub position="1" name="argument"/> argument must be zero or a positive number; found <q><Sub position="2" name="value"/></q>.</Text>
+        </SubMessage>
+        <SubMessage>
+          <Code>88</Code>
+          <Subcode>926</Subcode>
+          <MessageNumber>789</MessageNumber>
+          <Component>Rexx</Component>
+          <Severity>Warning</Severity>
+          <SymbolicName>Error_Invalid_argument_positive_number</SymbolicName>
+          <Text>The <Sub position="1" name="argument"/> argument must be a positive number; found <q><Sub position="2" name="value"/></q>.</Text>
+        </SubMessage>
+        <SubMessage>
+          <Code>88</Code>
+          <Subcode>927</Subcode>
+          <MessageNumber>790</MessageNumber>
+          <Component>Rexx</Component>
+          <Severity>Warning</Severity>
+          <SymbolicName>Error_Invalid_argument_logical</SymbolicName>
+          <Text>The <Sub position="1" name="argument"/> argument must be exactly <q>0</q> or <q>1</q>; found <q><Sub position="2" name="value"/></q>.</Text>
+        </SubMessage>
     </Subcodes>
   </Message>
   <Message>
@@ -4505,6 +4541,15 @@ special character (such as a parenthesis).
         <Severity>Warning</Severity>
         <SymbolicName>Error_Incorrect_method_noarray</SymbolicName>
         <Text>Method argument <Sub position="1" name="argument"/> must have a single-dimensional array value.</Text>
+      </SubMessage>
+      <SubMessage>
+        <Code>93</Code>
+        <Subcode>940</Subcode>
+        <MessageNumber>403</MessageNumber>
+        <Component>Rexx</Component>
+        <Severity>Warning</Severity>
+        <SymbolicName>Error_Incorrect_method_string_no_whole_number</SymbolicName>
+        <Text><Sub position="1" name="method"/> method target must be a whole number; found <q><Sub position="2" name="value"/></q>.</Text>
       </SubMessage>
       <SubMessage>
         <Code>93</Code>
@@ -5538,7 +5583,7 @@ special character (such as a parenthesis).
         <MessageNumber>663</MessageNumber>
         <Component>Rexx</Component>
         <Severity>Error</Severity>
-        <SymbolicName>Error_Translation_use_strict_ellipsis</SymbolicName>
+        <SymbolicName>Error_Translation_use_arg_ellipsis</SymbolicName>
         <Text>The <q>...</q> argument marker can only appear at the end of the argument list.</Text>
       </SubMessage>
       <SubMessage>
@@ -5702,6 +5747,15 @@ special character (such as a parenthesis).
         <Severity>Warning</Severity>
         <SymbolicName>Error_Translation_use_local_compound</SymbolicName>
         <Text>USE LOCAL cannot process compound variables; found <q><Sub position="1" name="variable"/></q>.</Text>
+      </SubMessage>
+      <SubMessage>
+        <Code>99</Code>
+        <Subcode>949</Subcode>
+        <MessageNumber>787</MessageNumber>
+        <Component>Rexx</Component>
+        <Severity>Warning</Severity>
+        <SymbolicName>Error_Translation_bad_class</SymbolicName>
+        <Text><q><Sub position="1" name="classname"/></q> is not a valid class.</Text>
       </SubMessage>
     </Subcodes>
   </Message>
@@ -6099,8 +6153,6 @@ special character (such as a parenthesis).
         <Severity>Error</Severity>
         <SymbolicName>Error_RXQUE_notinit</SymbolicName>
         <Text>The REXX queuing system is not initialized.</Text>
-        <Explanation><para>The queuing system requires a housekeeping program to run. This program usually runs under the Presentation Manager shell.  The program is not running.</para></Explanation>
-        <UserAction><para>Report this message to your IBM service representative.</para></UserAction>
       </SubMessage>
       <SubMessage>
         <Code>999</Code>
@@ -6151,7 +6203,6 @@ special character (such as a parenthesis).
         <SymbolicName>Error_RXQUE_access</SymbolicName>
         <Text>The queue access mode is not correct.</Text>
         <Explanation><para>An internal error occurred in RXQUEUE. The RXQUEUE program tried to access a queue with an incorrect access mode. Correct access modes are LIFO and FIFO.</para></Explanation>
-        <UserAction><para>Report this message to your IBM service representative.</para></UserAction>
       </SubMessage>
       <SubMessage>
         <Code>999</Code>

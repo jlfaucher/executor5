@@ -2,7 +2,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -338,9 +338,11 @@
 #define Error_Incorrect_call_random_range_msg                        396
 #define Error_Incorrect_call_stream_name_msg                         397
 #define Error_Incorrect_method_stream_type_msg                       398
+#define Error_Invalid_subkeyword_use_strict_msg                      399
 #define Error_Incorrect_call_array_msg                               400
 #define Error_Incorrect_call_nostring_msg                            401
 #define Error_Incorrect_call_selector_msg                            402
+#define Error_Incorrect_method_string_no_whole_number_msg            403
 #define Error_Conversion_operator_msg                                404
 #define Error_Conversion_prefix_msg                                  405
 #define Error_Conversion_exponent_msg                                406
@@ -573,8 +575,8 @@
 #define Error_Invalid_expression_logical_list_msg                    660
 #define Error_Symbol_expected_namespace_class_msg                    661
 #define Error_Symbol_expected_namespace_msg                          662
-#define Error_Translation_use_strict_ellipsis_msg                    663
-#define Error_Invalid_expression_use_strict_default_msg              664
+#define Error_Translation_use_arg_ellipsis_msg                       663
+#define Error_Invalid_expression_use_arg_default_msg                 664
 #define Error_Incorrect_method_abstract_msg                          665
 #define Error_Invalid_whole_number_compareto_msg                     666
 #define Error_Invalid_whole_number_compare_msg                       667
@@ -697,6 +699,10 @@
 #define Error_Symbol_expected_after_keyword_msg                      784
 #define Error_Invalid_do_with_no_control_msg                         785
 #define Error_Invalid_do_with_no_over_msg                            786
+#define Error_Translation_bad_class_msg                              787
+#define Error_Invalid_argument_nonnegative_number_msg                788
+#define Error_Invalid_argument_positive_number_msg                   789
+#define Error_Invalid_argument_logical_msg                           790
 
 
 #endif

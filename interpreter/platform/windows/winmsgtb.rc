@@ -337,9 +337,11 @@ BEGIN
    40032    "RANDOM difference between argument 1 (""&1"") and argument 2 (""&2"") must not exceed 999,999,999."
    40027    "&1 argument 1 must be a valid stream name; found ""&2""."
    93958    "Positioning of transient streams is not valid."
+   25929    "USE STRICT must be followed by the keyword ARG; found ""&1""."
    40912    "&1 argument &2 must be a single-dimensional array; found ""&3""."
    40913    "&1 argument &2 must have a string value; found ""&3""."
    40914    "Unknown VALUE function variable environment selector; found ""&1""."
+   93940    "&1 method target must be a whole number; found ""&2""."
    41001    "Nonnumeric value (""&1"") used in arithmetic operation."
    41003    "Nonnumeric value (""&1"") used with prefix operator."
    41007    "Exponent exceeds &1 digits; found ""&2""."
@@ -573,7 +575,7 @@ BEGIN
    20921    "Symbol expected as a class name of qualified class name."
    20920    "Symbol expected after NAMESPACE keyword."
    99930    "The ""..."" argument marker can only appear at the end of the argument list."
-   35930    "Missing expression following ""="" token of a USE STRICT ARG instruction."
+   35930    "Invalid or missing expression following ""="" token of a USE ARG instruction."
    93965    "Method &1 is ABSTRACT and cannot be directly invoked."
    26902    "Result of a COMPARETO method call did not result in a whole number; found ""&1""."
    26903    "Result of a COMPARE method call did not result in a whole number; found ""&1""."
@@ -696,6 +698,10 @@ BEGIN
    20929    "Symbol expected after &1 keyword."
    27903    "No INDEX or ITEM control variable specified on a WITH loop."
    27904    "OVER keyword expected for a WITH loop."
+   99949    """&1"" is not a valid class."
+   88925    "The &1 argument must be zero or a positive number; found ""&2""."
+   88926    "The &1 argument must be a positive number; found ""&2""."
+   88927    "The &1 argument must be exactly ""0"" or ""1""; found ""&2""."
    
 END
 

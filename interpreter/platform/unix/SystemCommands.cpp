@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -61,21 +61,12 @@
 #include <pwd.h>
 #include <limits.h>
 
-#define CMDBUFSIZE 1024                     /* Max size of executable cmd     */
+// "sh" should be our initial ADDRESS() environment across all Unix platforms
+#define SYSINITIALADDRESS "sh"
+
 #define MAX_COMMAND_ARGS 400
-
-#if defined(AIX)
-#define CMDDEFNAME "/bin/ksh"               /* Korn shell is default for AIX */
-#elif defined(OPSYS_SUN)                        /*  path for AIX        */
-#define CMDDEFNAME "/bin/sh"                /* Bourne Again Shell is default */
-#else                                       /* shell for Linux               */
-#define CMDDEFNAME "/bin/bash"              /* Bourne Again Shell is default */
-#endif
-
 #define UNKNOWN_COMMAND 127                 /* unknown command return code    */
 
-#define SYSENV "command"                    /* Default cmd environment        */
-#define SHELL  "SHELL"                      /* UNIX cmd handler env. var. name*/
 #define EXPORT_FLAG 1
 #define SET_FLAG    2
 #define UNSET_FLAG  3
@@ -690,21 +681,6 @@ RexxObjectPtr RexxEntry systemCommandHandler(RexxExitContext *context, RexxStrin
     }
 
     int errCode = 0;
-#ifdef LINUX
-
-    // JLF : I don't know why a special case is made to call system()
-    // But something sure : it's wrong to call system() when the passed address is "bash".
-    // Since system() delegates always to /bin/sh, the only acceptable address is "sh".
-    if (Utilities::strCaselessCompare("sh", envName) == 0)
-    {
-        errCode = system( cmd );
-        if ( errCode >= 256 )
-        {
-            errCode = errCode / 256;
-        }
-    }
-    else
-#endif
     {
         int pid = fork();
         int status;
@@ -726,42 +702,46 @@ RexxObjectPtr RexxEntry systemCommandHandler(RexxExitContext *context, RexxStrin
                 }
             }
         }
-        else
-        {                                /* run the command in the child      */
+        else // we're in the spawned child process
+        {                               
             if (Utilities::strCaselessCompare("sh", envName) == 0)
             {
-                execl("/bin/sh", "sh", "-c", cmd, NULL);
-            }
-            else if (Utilities::strCaselessCompare("ksh", envName) == 0)
-            {
-                execl("/bin/ksh", "ksh", "-c", cmd, NULL);
-            }
-            else if (Utilities::strCaselessCompare("bsh", envName) == 0)
-            {
-                execl("/bin/bsh", "bsh", "-c", cmd, NULL);
-            }
-            else if (Utilities::strCaselessCompare("csh", envName) == 0)
-            {
-                execl("/bin/csh", "csh", "-c", cmd, NULL);
+                execl(SYSSHELLPATH "/sh", "sh", "-c", cmd, NULL);
             }
             else if (Utilities::strCaselessCompare("bash", envName) == 0)
             {
-                execl("/bin/bash", "bash", "-c", cmd, NULL);
+                execl(SYSSHELLPATH "/bash", "bash", "-c", cmd, NULL);
             }
-            else if (Utilities::strCaselessCompare("cmd", envName) == 0)
+            else if (Utilities::strCaselessCompare("ksh", envName) == 0)
+            {
+                execl(SYSSHELLPATH "/ksh", "ksh", "-c", cmd, NULL);
+            }
+            else if (Utilities::strCaselessCompare("bsh", envName) == 0)
+            {
+                execl(SYSSHELLPATH "/bsh", "bsh", "-c", cmd, NULL);
+            }
+            else if (Utilities::strCaselessCompare("csh", envName) == 0)
+            {
+                execl(SYSSHELLPATH "/csh", "csh", "-c", cmd, NULL);
+            }
+            else if (Utilities::strCaselessCompare("noshell", envName) == 0)
             {
                 char * args[MAX_COMMAND_ARGS+1];      /* Array for argument parsing */
-                if (!scan_cmd(cmd, args))             /* Parse cmd into arguments  */
+                if (scan_cmd(cmd, args))              /* Parse cmd into arguments   */
                 {
-                    exit(1);
+                    execvp(args[0], args);            /* Invoke command directly    */
                 }
-                execvp(args[0], args);           /* Invoke command directly   */
-                exit(1);                         /* we couldn't run the       */
             }
-            else
+            else // "command" environment (or anything else not covered by above)
             {
-                execl("/bin/sh", "sh", "-c", cmd, NULL);
+                execl(SYSSHELLPATH "/sh", "sh", "-c", cmd, NULL);
             }
+
+            // if the above exec..() calls are successful, the process image is 
+            // replaced with the command to be executed and execution will never
+            // reach this point
+            // but if an exec..() call fails to run, we must EXIT this child process
+            exit(UNKNOWN_COMMAND);
         }
     }
     // unknown command code?
@@ -794,6 +774,7 @@ void SysInterpreterInstance::registerCommandHandlers(InterpreterInstance *_insta
     _instance->addCommandHandler("CSH", (REXXPFN)systemCommandHandler);
     _instance->addCommandHandler("BSH", (REXXPFN)systemCommandHandler);
     _instance->addCommandHandler("BASH", (REXXPFN)systemCommandHandler);
+    _instance->addCommandHandler("NOSHELL", (REXXPFN)systemCommandHandler);
 }
 
 

@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -56,6 +56,7 @@
 #include "RexxActivation.hpp"
 #include "DirectoryClass.hpp"
 #include "LibraryDirective.hpp"
+#include "LibraryPackage.hpp"
 #include "RequiresDirective.hpp"
 #include "ClassDirective.hpp"
 #include "GlobalNames.hpp"
@@ -229,6 +230,7 @@ void PackageClass::live(size_t liveMark)
     memory_mark(mergedPublicClasses);
     memory_mark(mergedPublicRoutines);
     memory_mark(objectVariables);
+    memory_mark(packageLocal);
 }
 
 
@@ -271,6 +273,7 @@ void PackageClass::liveGeneral(MarkReason reason)
     memory_mark_general(mergedPublicClasses);
     memory_mark_general(mergedPublicRoutines);
     memory_mark_general(objectVariables);
+    memory_mark_general(packageLocal);
 }
 
 
@@ -308,6 +311,7 @@ void PackageClass::flatten (Envelope *envelope)
     flattenRef(mergedPublicClasses);
     flattenRef(mergedPublicRoutines);
     flattenRef(objectVariables);
+    flattenRef(packageLocal);
 
     cleanUpFlatten
 }
@@ -707,6 +711,32 @@ void PackageClass::mergeRequired(PackageClass *mergeSource)
 
 
 /**
+ * Merge the routine information from loaded libraries to our
+ * imported routines list
+ *
+ * @param source The source object we're merging from.
+ */
+void PackageClass::mergeLibrary(LibraryPackage *mergeSource)
+{
+    // we add the routines defined in the library (if any) to our package
+    // namespace, which greatly improves performance and also ensures
+    // that we get the named routine we really want.
+    if (mergeSource->getRoutines() != OREF_NULL)
+    {
+        // first merge attempt?  Create our directory...Note that the source
+        // public routines get added to our MERGED public routines
+        if (mergedPublicRoutines == OREF_NULL)
+        {
+            setField(mergedPublicRoutines, new_string_table());
+        }
+
+        // merge these together
+        mergeSource->getRoutines()->merge(mergedPublicRoutines);
+    }
+}
+
+
+/**
  * Resolve a directly defined routine object in this or a parent
  * context.
  *
@@ -1002,17 +1032,25 @@ RexxClass *PackageClass::findPublicClass(RexxString *name)
  * chained parent contexts).
  *
  * @param className The target name of the class.
+ * @param cachedValue
+ *                  If the returned value is resolved from the package context,
+ *                  we also return the value via this argument to indicate
+ *                  that the value can be cached in a dot variable expression
+ *                  object.
  *
  * @return The resolved class object, if any.
  */
-RexxClass *PackageClass::findClass(RexxString *className)
+RexxClass *PackageClass::findClass(RexxString *className, RexxObject *&cachedValue)
 {
-    RexxString *internalName = className->upper();   /* upper case it                     */
+    // we store all of these values in upper case.
+    RexxString *internalName = className->upper();
     // check for a directly defined one in the source context chain
     RexxClass *classObject = findInstalledClass(internalName);
     // return if we got one
     if (classObject != OREF_NULL)
     {
+        // we can cache the value from this source.
+        cachedValue = classObject;
         return classObject;
     }
     // now try for public classes we pulled in from other contexts
@@ -1020,6 +1058,8 @@ RexxClass *PackageClass::findClass(RexxString *className)
     // return if we got one
     if (classObject != OREF_NULL)
     {
+        // we can cache the value from this source also
+        cachedValue = classObject;
         return classObject;
     }
 
@@ -1030,6 +1070,22 @@ RexxClass *PackageClass::findClass(RexxString *className)
         // NOTE:  We only search public classes in the REXX package.
         classObject = TheRexxPackage->findPublicClass(internalName);
         // return if we got one
+        if (classObject != OREF_NULL)
+        {
+            // caching this one can significantly speed up access
+            cachedValue = classObject;
+            return classObject;
+        }
+    }
+
+    // beyond this point, the values can be dynamic, so nothing
+    // from these sources can be cached.
+
+    // the package local is owned by the package and is not subject to
+    // the security manager check.
+    if (packageLocal != OREF_NULL)
+    {
+        classObject = (RexxClass *)(packageLocal->get(internalName));
         if (classObject != OREF_NULL)
         {
             return classObject;
@@ -1083,10 +1139,13 @@ RexxClass *PackageClass::findClass(RexxString *namespaceName, RexxString *classN
 {
     // all of the lookups use uppercase names
     RexxString *internalName = className->upper();
+    RexxObject *t; // required for the findClass call
+
+
     // if no namespace has been specified, use the normal search order
     if (namespaceName == OREF_NULL)
     {
-        return findClass(className);
+        return findClass(className, t);
     }
 
     // now check for the target namespace
@@ -1137,13 +1196,13 @@ void PackageClass::processInstall(RexxActivation *activation)
     // functons loaded by the packages
     if (libraries != OREF_NULL)
     {
-        // now loop through the requires items
+        // now loop through the requires items                         y
         size_t count = libraries->items();
         for (size_t i = 1; i <= count; i++)
         {
             // and have it do the installs processing
             LibraryDirective *library = (LibraryDirective *)libraries->get(i);
-            library->install(activation);
+            library->install(this, activation);
         }
     }
 
@@ -1838,7 +1897,10 @@ RexxObject *PackageClass::addPublicClassRexx(RexxString *name, RexxClass *clazz)
 RexxObject *PackageClass::findClassRexx(RexxString *name)
 {
     name = stringArgument(name, "name");
-    return resultOrNil(findClass(name));
+
+    RexxObject *t = OREF_NULL;   // required for the findClass call
+
+    return resultOrNil(findClass(name, t));
 }
 
 
@@ -2036,4 +2098,22 @@ void PackageClass::addNamespace(RexxString *name, PackageClass *package)
     }
     // add the namespace name
     namespaces->put(package, name->upper());
+}
+
+
+/**
+ * Retrieve the package local directory for this package.
+ *
+ * @return A mutable directory object associated with this package.
+ */
+DirectoryClass *PackageClass::getPackageLocal()
+{
+    // if this is the first request, create a new directory for this.
+    // Note that we are using a directory because the setMethod() method
+    // can be useful for the various environment areas
+    if (packageLocal == OREF_NULL)
+    {
+        setField(packageLocal, new_directory());
+    }
+    return packageLocal;
 }

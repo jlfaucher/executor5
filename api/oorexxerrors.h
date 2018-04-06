@@ -219,6 +219,7 @@
 #define Rexx_Error_Invalid_subkeyword_signalonname                        25915
 #define Rexx_Error_Invalid_subkeyword_parse                               25012
 #define Rexx_Error_Invalid_subkeyword_use                                 25905
+#define Rexx_Error_Invalid_subkeyword_use_strict                          25929
 #define Rexx_Error_Invalid_subkeyword_raise                               25906
 #define Rexx_Error_Invalid_subkeyword_raiseoption                         25907
 #define Rexx_Error_Invalid_subkeyword_description                         25908
@@ -329,7 +330,7 @@
 #define Rexx_Error_Invalid_expression_forward_message                     35927
 #define Rexx_Error_Invalid_expression_forward_class                       35928
 #define Rexx_Error_Invalid_expression_logical_list                        35929
-#define Rexx_Error_Invalid_expression_use_strict_default                  35930
+#define Rexx_Error_Invalid_expression_use_arg_default                     35930
 #define Rexx_Error_Invalid_expression_parse                               35931
 #define Rexx_Error_Invalid_expression_call                                35932
 #define Rexx_Error_Invalid_expression_select_case                         35933
@@ -456,6 +457,9 @@
 #define Rexx_Error_Invalid_argument_maxarg                                88922
 #define Rexx_Error_Invalid_argument_array                                 88923
 #define Rexx_Error_Invalid_argument_array_size                            88924
+#define Rexx_Error_Invalid_argument_nonnegative_number                    88925
+#define Rexx_Error_Invalid_argument_positive_number                       88926
+#define Rexx_Error_Invalid_argument_logical                               88927
 #define Rexx_Error_Variable_expected                                      89000
 #define Rexx_Error_Variable_expected_USE                                  89001
 #define Rexx_Error_Variable_expected_PARSE                                89002
@@ -520,6 +524,7 @@
 #define Rexx_Error_Incorrect_method_supplier                              93937
 #define Rexx_Error_Incorrect_method_nostring                              93938
 #define Rexx_Error_Incorrect_method_noarray                               93939
+#define Rexx_Error_Incorrect_method_string_no_whole_number                93940
 #define Rexx_Error_Incorrect_method_exponent_oversize                     93941
 #define Rexx_Error_Incorrect_method_before_oversize                       93942
 #define Rexx_Error_Incorrect_method_string_nonumber                       93943
@@ -633,7 +638,7 @@
 #define Rexx_Error_Translation_class_external_bad_parameters              99926
 #define Rexx_Error_Translation_class_external_bad_class_name              99928
 #define Rexx_Error_Translation_class_external_bad_class_server            99929
-#define Rexx_Error_Translation_use_strict_ellipsis                        99930
+#define Rexx_Error_Translation_use_arg_ellipsis                           99930
 #define Rexx_Error_Translation_duplicate_attribute                        99931
 #define Rexx_Error_Translation_duplicate_constant                         99932
 #define Rexx_Error_Translation_abstract_method                            99933
@@ -652,6 +657,7 @@
 #define Rexx_Error_Translation_delegate_method                            99946
 #define Rexx_Error_Translation_delegate_attribute                         99947
 #define Rexx_Error_Translation_use_local_compound                         99948
+#define Rexx_Error_Translation_bad_class                                  99949
 
 
 #endif

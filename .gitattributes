@@ -9,8 +9,14 @@ extensions/platform/windows/oodialog/_downArrowBlue.ico -text
 extensions/platform/windows/oodialog/_upArrowBlue.ico -text
 extensions/platform/windows/oodialog/oodialog.ico -text svneol=unset#applicatiion/octet-stream
 extensions/platform/windows/oodialog/rexx.ico -text
+interpreter/classes/VariableReference.cpp -text
+interpreter/classes/VariableReference.hpp -text
 interpreter/expression/SpecialDotVariable.cpp -text
 interpreter/expression/SpecialDotVariable.hpp -text
+interpreter/expression/VariableReferenceOp.cpp -text
+interpreter/expression/VariableReferenceOp.hpp -text
+interpreter/instructions/UseArgVariableRef.cpp -text
+interpreter/instructions/UseArgVariableRef.hpp -text
 platform/unix/50-rxapid.preset -text
 platform/unix/debian/changelog.in -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/cmake/postinst.in -text

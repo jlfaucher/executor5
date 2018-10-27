@@ -119,68 +119,80 @@ samples/windows/oodialog/bmp/wlkfig5.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/wlkfig6.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/wlkfig7.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/wlkfig8.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/controls/ListView/rc/columnIcons.dll -text
 samples/windows/oodialog/controls/ListView/rc/columnIcons_16.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/controls/ListView/rc/columnIcons_32.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/controls/ToolBar/rc/ToolBar11IL.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/controls/ToolBar/rc/customizeToolBar.dll -text
+samples/windows/oodialog/controls/ToolBar/rc/toolBar.dll -text
 samples/windows/oodialog/controls/ToolTip/musicNote.ico -text
 samples/windows/oodialog/controls/TreeView/rc/treeViewCustomDraw.bmp -text svneol=unset#image/bmp
-samples/windows/oodialog/examples/resources/CheckIn.bmp -text
-samples/windows/oodialog/examples/resources/ClosePalette.bmp -text
-samples/windows/oodialog/examples/resources/CodeReview.bmp -text
+samples/windows/oodialog/examples/resources/CheckIn.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/examples/resources/ClosePalette.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/examples/resources/CodeReview.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/examples/resources/Default.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/examples/resources/Disabled.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/examples/resources/Hot.bmp -text svneol=unset#image/bmp
-samples/windows/oodialog/examples/resources/LinkToWeb.bmp -text
-samples/windows/oodialog/examples/resources/LockModule.bmp -text
-samples/windows/oodialog/examples/resources/LockProject.bmp -text
+samples/windows/oodialog/examples/resources/LinkToWeb.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/examples/resources/LockModule.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/examples/resources/LockProject.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/examples/resources/Normal.bmp -text svneol=unset#image/bmp
-samples/windows/oodialog/examples/resources/ProjectReview.bmp -text
+samples/windows/oodialog/examples/resources/ProjectReview.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/examples/resources/Pushed.bmp -text svneol=unset#image/bmp
-samples/windows/oodialog/examples/resources/SaveAll.bmp -text
-samples/windows/oodialog/examples/resources/SaveModule.bmp -text
-samples/windows/oodialog/examples/resources/SaveProject.bmp -text
-samples/windows/oodialog/examples/resources/SplitModule.bmp -text
-samples/windows/oodialog/examples/resources/Update.bmp -text
-samples/windows/oodialog/menus/UserMenuBar.bmp -text
+samples/windows/oodialog/examples/resources/SaveAll.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/examples/resources/SaveModule.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/examples/resources/SaveProject.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/examples/resources/SplitModule.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/examples/resources/Update.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/menus/UserMenuBar.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/mouse/dragging.cur -text
 samples/windows/oodialog/oleinfo/icons.bmp -text svneol=unset#image/bmp
-samples/windows/oodialog/ooRexxTry/doc/ooRexxTry.pdf -text
-samples/windows/oodialog/oophil.ico -text svneol=unset#applicatiion/octet-stream
+samples/windows/oodialog/ooRexxTry/doc/ooRexxTry.pdf -text svneol=unset#application/pdf
+samples/windows/oodialog/oophil.ico -text
+samples/windows/oodialog/propertysheet.tabControls/rc/PropertySheetDemo.dll -text
+samples/windows/oodialog/propertysheet.tabControls/rc/TabOwnerDemo.dll -text
 samples/windows/oodialog/propertysheet.tabControls/rc/TabOwnerDemoListView.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/propertysheet.tabControls/rc/TabOwnerDemoTab.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/propertysheet.tabControls/rc/TabOwnerDemoTreeView.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/propertysheet.tabControls/rc/oodListViews1.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/propertysheet.tabControls/rc/oodListViews2.bmp -text svneol=unset#image/bmp
-samples/windows/oodialog/propertysheet.tabControls/rc/propertySheetDemoListView.bmp -text
-samples/windows/oodialog/propertysheet.tabControls/rc/propertySheetDemoTab.bmp -text
-samples/windows/oodialog/propertysheet.tabControls/rc/propertySheetDemoTreeView.bmp -text
-samples/windows/oodialog/propertysheet.tabControls/rc/ticketWizardMovie.bmp -text
-samples/windows/oodialog/propertysheet.tabControls/rc/ticketWizardRexxLA.bmp -text
-samples/windows/oodialog/propertysheet.tabControls/rc/ticketWizardTheater.bmp -text
-samples/windows/oodialog/propertysheet.tabControls/rc/ticketWizardTicket.bmp -text
+samples/windows/oodialog/propertysheet.tabControls/rc/propertySheetDemoListView.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/propertysheet.tabControls/rc/propertySheetDemoTab.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/propertysheet.tabControls/rc/propertySheetDemoTreeView.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/propertysheet.tabControls/rc/ticketWizardMovie.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/propertysheet.tabControls/rc/ticketWizardRexxLA.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/propertysheet.tabControls/rc/ticketWizardTheater.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/propertysheet.tabControls/rc/ticketWizardTicket.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/res/AnimalGame.dll -text
+samples/windows/oodialog/res/oowalk2.dll -text
+samples/windows/oodialog/resizableDialogs/ResizingAdmin/rc/PropertySheetDemo.dll -text
 samples/windows/oodialog/resizableDialogs/ResizingAdmin/rc/propertySheetDemoListView.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/resizableDialogs/ResizingAdmin/rc/propertySheetDemoTab.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/resizableDialogs/ResizingAdmin/rc/propertySheetDemoTreeView.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/tutorial/add.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/tutorial/logo.bmp -text svneol=unset#image/bmp
-samples/windows/oodialog/userGuide/exercises/Exercise05/res/ProductIcon.bmp -text
+samples/windows/oodialog/userGuide/exercises/Exercise04/Extras/DlgData/res/ASimpleDialog.dll -text
+samples/windows/oodialog/userGuide/exercises/Exercise05/res/ProductIcon.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/userGuide/exercises/Exercise05/res/ProductView.dll -text
 samples/windows/oodialog/userGuide/exercises/Exercise06 svnc_bugtraq_003anumber=true
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer svnc_bugtraq_003anumber=true
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp svnc_bugtraq_003anumber=true
-samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp/CustList.bmp -text
+samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp/CustList.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp/CustList.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Customer/bmp/Customer.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order svnc_bugtraq_003anumber=true
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp svnc_bugtraq_003anumber=true
-samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderForm.bmp -text
+samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderForm.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderForm.ico -text
-samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderList.bmp -text
+samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderList.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/userGuide/exercises/Exercise06/Order/bmp/OrderList.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product svnc_bugtraq_003anumber=true
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res svnc_bugtraq_003anumber=true
-samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProdList.bmp -text
+samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProdList.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProdList.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/Product.ico -text
-samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProductIcon.bmp -text
+samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProductIcon.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/userGuide/exercises/Exercise06/Product/res/ProductView.dll -text
 samples/windows/oodialog/userGuide/exercises/Exercise07/Customer/bmp/CustList.BMP -text svneol=unset#image/bmp
 samples/windows/oodialog/userGuide/exercises/Exercise07/Customer/bmp/CustList.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise07/Customer/bmp/Customer.ico -text
@@ -192,6 +204,7 @@ samples/windows/oodialog/userGuide/exercises/Exercise07/Product/res/ProdList.BMP
 samples/windows/oodialog/userGuide/exercises/Exercise07/Product/res/ProdList.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise07/Product/res/Product.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise07/Product/res/ProductIcon.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/userGuide/exercises/Exercise07/Product/res/ProductView.dll -text
 samples/windows/oodialog/userGuide/exercises/Exercise08/Customer/bmp/CustList.BMP -text svneol=unset#image/bmp
 samples/windows/oodialog/userGuide/exercises/Exercise08/Customer/bmp/CustList.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise08/Customer/bmp/Customer.cur -text
@@ -205,6 +218,7 @@ samples/windows/oodialog/userGuide/exercises/Exercise08/Product/res/ProdList.ico
 samples/windows/oodialog/userGuide/exercises/Exercise08/Product/res/Product.cur -text
 samples/windows/oodialog/userGuide/exercises/Exercise08/Product/res/Product.ico -text
 samples/windows/oodialog/userGuide/exercises/Exercise08/Product/res/ProductIcon.bmp -text svneol=unset#image/bmp
+samples/windows/oodialog/userGuide/exercises/Exercise08/Product/res/ProductView.dll -text
 samples/windows/oodialog/wav/byebye.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/cancel.wav -text svneol=unset#audio/x-wav
 samples/windows/oodialog/wav/clap.wav -text svneol=unset#audio/x-wav

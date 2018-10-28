@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -72,6 +72,8 @@
 #include "SayInstruction.hpp"
 
 #include "AddressInstruction.hpp"             /* other instructions                */
+#include "AddressWithInstruction.hpp"
+#include "CommandIOConfiguration.hpp"
 #include "DropInstruction.hpp"
 #include "ExposeInstruction.hpp"
 #include "ForwardInstruction.hpp"
@@ -107,6 +109,7 @@
 #include "OtherwiseInstruction.hpp"
 #include "SelectInstruction.hpp"
 #include "ProtectedObject.hpp"
+#include "UseArgVariableRef.hpp"
 
 
 /**
@@ -563,6 +566,7 @@ RexxInstruction *LanguageParser::addressNew()
     RexxString *environment = OREF_NULL;
     RexxInternalObject *command = OREF_NULL;
     RexxToken *token = nextReal();
+    Protected<CommandIOConfiguration> ioConfig;
 
     // have something to process?  Having nothing is not an error, it
     // just toggles the environment
@@ -576,7 +580,15 @@ RexxInstruction *LanguageParser::addressNew()
             // back up to include this token in the expression
             previousToken();
             // and get the expression
-            dynamicAddress = parseExpression(TERM_EOC);
+            dynamicAddress = parseExpression(TERM_EOC | TERM_WITH | TERM_KEYWORD);
+            // Now check to see if we ended with the WITH keyword, if so, .
+            // we need to create an AddressWithInstruction rather than the
+            // normal AddressInstruction object.
+            token = nextToken();
+            if (token->subKeyword() == SUBKEY_WITH)
+            {
+                ioConfig = parseAddressWith();
+            }
         }
         else
         {
@@ -585,7 +597,15 @@ RexxInstruction *LanguageParser::addressNew()
             if (token->subKeyword() == SUBKEY_VALUE)
             {
                 // get the value expression
-                dynamicAddress = requiredExpression(TERM_EOC, Error_Invalid_expression_address);
+                dynamicAddress = requiredExpression(TERM_EOC | TERM_WITH | TERM_KEYWORD, Error_Invalid_expression_address);
+                // Now check to see if we ended with the WITH keyword, if so, .
+                // we need to create an AddressWithInstruction rather than the
+                // normal AddressInstruction object.
+                token = nextToken();
+                if (token->subKeyword() == SUBKEY_WITH)
+                {
+                    ioConfig = parseAddressWith();
+                }
             }
             else
             {
@@ -597,17 +617,285 @@ RexxInstruction *LanguageParser::addressNew()
                 {
                     // back up and create the expression
                     previousToken();
-                    command = parseExpression(TERM_EOC);
+                    // the command expression could be terminated by a WITH keyword,
+                    // in which case, we need to worry about command redirection,
+                    // which is a much more complicated parsing process.
+                    command = parseExpression(TERM_EOC | TERM_WITH | TERM_KEYWORD);
+                    // This could have been ADDRESS env WITH (i.e., no expresson)
+                    // which is set a configuration set, not a command .
+
+                    // the bit above will have terminated with either the WITH keyword
+                    // or the end of the clause. We know this will return something
+                    // for an expression if it started with anything other than WITH,
+                    // so the next token is either the symbol WITH or the end of cloase
+                    // Now check to see if we ended with the WITH keyword, if so, .
+                    // we end up attaching a configuration ruction rather than the
+                    // normal AddressInstruction object.
+                    token = nextToken();
+                    if (token->subKeyword() == SUBKEY_WITH)
+                    {
+                        ioConfig = parseAddressWith();
+                    }
                 }
             }
         }
     }
 
-    RexxInstruction *newObject = new_instruction(ADDRESS, Address);
-    ::new ((void *)newObject) RexxInstructionAddress(dynamicAddress, environment, command);
-    return newObject;
+    // if we don't have an io config, then use the older instruction version for
+    // program save/restore compatibility
+    if (ioConfig == OREF_NULL)
+    {
+        RexxInstruction *newObject = new_instruction(ADDRESS, Address);
+        ::new ((void *)newObject) RexxInstructionAddress(dynamicAddress, environment, command);
+        return newObject;
+    }
+    else
+    {
+        RexxInstruction *newObject = new_instruction(ADDRESS, AddressWith);
+        ::new ((void *)newObject) RexxInstructionAddressWith(dynamicAddress, environment, command, ioConfig);
+        return newObject;
+    }
 }
 
+
+/**
+ * Complete processing of an ADDRESS instruction that
+ * has specified WITH I/O redirection.
+ *
+ * @param environment
+ *                The already parsed environment string
+ * @param command The expression for the command to issue
+ *
+ * @return A new instruction object.
+ */
+CommandIOConfiguration *LanguageParser::parseAddressWith()
+{
+    Protected<CommandIOConfiguration> ioConfig = new CommandIOConfiguration();
+
+    // step to the next token and start processing
+    RexxToken *token = nextReal();
+
+    // we must have something after the WITH keyword, otherwise this is an error
+    if (token->isEndOfClause())
+    {
+        syntaxError(Error_Symbol_expected_address_with);
+    }
+
+    // and check options until we reach the end of the clause
+    while (!token->isEndOfClause())
+    {
+        // all options are symbol names,
+        if (!token->isSymbol())
+        {
+            syntaxError(Error_Invalid_subkeyword_address_with_option, token);
+        }
+
+        // map the keyword name to a symbolic identifier.
+        InstructionSubKeyword option = token->subKeyword();
+        switch (option)
+        {
+            // Address env cmd with INPUT
+            case SUBKEY_INPUT:
+            {
+                // not valid if we've had this before
+                if (ioConfig->inputType != RedirectionType::DEFAULT)
+                {
+                    syntaxError(Error_Invalid_subkeyword_address_input);
+                }
+                token = nextReal();
+                // is this specified as NORMAL? we don't parse any further.
+                if (checkRedirectNormal(token))
+                {
+                    ioConfig->inputType = RedirectionType::NORMAL;
+                }
+                // need to parse further
+                else
+                {
+                    previousToken();
+                    parseRedirectOptions(ioConfig->inputSource, ioConfig->inputType);
+                }
+                break;
+            }
+            case SUBKEY_OUTPUT:
+            {
+                // not valid if we've had this before
+                if (ioConfig->outputType != RedirectionType::DEFAULT)
+                {
+                    syntaxError(Error_Invalid_subkeyword_address_output);
+                }
+                token = nextReal();
+                // is this specified as NORMAL? we don't parse any further.
+                if (checkRedirectNormal(token))
+                {
+                    ioConfig->outputType = RedirectionType::NORMAL;
+                }
+                else
+                {
+                    // backup and parse off the output options and targets
+                    previousToken();
+                    ioConfig->outputOption = parseRedirectOutputOptions();
+                    parseRedirectOptions(ioConfig->outputTarget, ioConfig->outputType);
+                }
+                break;
+            }
+            case SUBKEY_ERROR:
+            {
+                // not valid if we've had this before
+                if (ioConfig->errorType != RedirectionType::DEFAULT)
+                {
+                    syntaxError(Error_Invalid_subkeyword_address_error);
+                }
+                token = nextReal();
+                // is this specified as NORMAL? we don't parse any further.
+                if (checkRedirectNormal(token))
+                {
+                    ioConfig->errorType = RedirectionType::NORMAL;
+                }
+                else
+                {
+                    // backup and parse off the output options and targets
+                    previousToken();
+                    ioConfig->errorOption = parseRedirectOutputOptions();
+                    parseRedirectOptions(ioConfig->errorTarget, ioConfig->errorType);
+                }
+                break;
+            }
+            default:
+            {
+                syntaxError(Error_Invalid_subkeyword_address_with_option, token);
+            }
+        }
+        // step to the next token position
+        token = nextReal();
+    }
+    // and return the constructed configuration
+    return ioConfig;
+}
+
+
+/**
+ * Check if this source or target is specified as NORMAL,
+ * which resets to default.
+ *
+ * @return true if the next keyword is NORMAL, false for anything else.
+ */
+bool LanguageParser::checkRedirectNormal(RexxToken *token)
+{
+    return token->isSymbol() && token->subKeyword() == SUBKEY_NORMAL;
+}
+
+
+/**
+ * Check for potential APPEND/REPLACE options on an
+ * ADDRESS WITH OUTPUT or ERROR keyword.
+ *
+ * @return The output option (including DEFAULT_REPLACE if
+ *         nothing was specified)
+ */
+OutputOption::Enum LanguageParser::parseRedirectOutputOptions()
+{
+    // any option must be a symbol. The next token after the
+    // option must also be a symbol, but we'll handle that elsewhere.
+    RexxToken *token = nextReal();
+    if (!token->isSymbol())
+    {
+        // back up and return the default
+        previousToken();
+        return OutputOption::DEFAULT;
+    }
+
+    // now see if this is one of our keyword values
+    switch (token->subKeyword())
+    {
+        case SUBKEY_REPLACE:
+            return OutputOption::REPLACE;
+
+        case SUBKEY_APPEND:
+            return OutputOption::APPEND;
+
+        // probably one of the target type keywords
+        default:
+            // back up and return the default
+            previousToken();
+            return OutputOption::DEFAULT;
+    }
+    return OutputOption::DEFAULT;
+}
+
+
+/**
+ * Parse the different redirection options on ADDRESS WITH
+ *
+ * @param ioType The type of I/O stream we're redirecting
+ * @param source A reference to the field for the evaluated target
+ *
+ * @param type   The type of redirection to apply
+ */
+void LanguageParser::parseRedirectOptions(RexxInternalObject *&source, RedirectionType::Enum &type)
+{
+    RexxToken *token = nextReal();
+
+    // all options are symbol names,
+    if (!token->isSymbol())
+    {
+        syntaxError(Error_Invalid_subkeyword_address_with_io_option, token);
+    }
+
+    // now handle the different I/O types.
+    switch (token->subKeyword())
+    {
+        // using a stem variable from the context
+        case SUBKEY_STEM:
+        {
+            type = RedirectionType::STEM_VARIABLE;
+            // this must be followed by a stem variable
+            token = nextReal();
+            if (!token->isStem())
+            {
+                syntaxError(Error_Symbol_expected_after_stem_keyword);
+            }
+            // resolve this to a variable expression type.
+            source = addText(token);
+            break;
+        }
+
+        // a string stream name. Can be a literal or an expression
+        case SUBKEY_STREAM:
+        {
+            type = RedirectionType::STREAM_NAME;
+
+            // we use the constant expression syntax here like the
+            // RAISE instruction
+            source = parseConstantExpression();
+            if (source == OREF_NULL)
+            {
+                syntaxError(Error_Invalid_expression_missing_general, GlobalNames::STREAM, GlobalNames::ADDRESS);
+            }
+            break;
+        }
+
+        // determined by evaluating an expression to an object and figuring
+        // out what to do at run time.
+        case SUBKEY_USING:
+        {
+            type = RedirectionType::USING_OBJECT;
+
+            // we use the constant expression syntax here like the
+            // RAISE instruction
+            source = parseConstantExpression();
+            if (source == OREF_NULL)
+            {
+                syntaxError(Error_Invalid_expression_missing_general, GlobalNames::USING, GlobalNames::ADDRESS);
+            }
+            break;
+        }
+
+        default:
+        {
+            syntaxError(Error_Invalid_subkeyword_address_with_io_option, token);
+        }
+    }
+}
 
 
 /**
@@ -1992,7 +2280,7 @@ RexxInstruction *LanguageParser::exposeNew()
     // The EXPOSE must be the first instruction.
     // NOTE:  labels are not allowed preceding, as that will give a target
     // for SIGNAL or CALL that will result in an invalid EXPOSE execution.
- 
+
     // the last instruction in the chain must be our dummy
     // first instruction
     if (!lastInstruction->isType(KEYWORD_FIRST))
@@ -2933,7 +3221,7 @@ RexxInstruction *LanguageParser::parseNew(InstructionSubKeyword argPull)
         // comma in the template?  Really the same as the end-of-clause case,
         // but we need to push a NULL on to the trigger stack to cause a switch to the
         // next parse string
-        else if (token->isType(TOKEN_COMMA))
+        else if (token->isComma())
         {
             if (variableCount > 0)
             {
@@ -3927,6 +4215,7 @@ RexxInstruction *LanguageParser::traceNew()
 RexxInstruction *LanguageParser::useNew()
 {
     bool strictChecking = false;  // no strict checking enabled yet
+    bool referencesUsed = false;  // no aliasing required yet
 
     // The STRICT keyword turns this into a different instruction with different
     // syntax rules
@@ -3963,7 +4252,7 @@ RexxInstruction *LanguageParser::useNew()
     while (!token->isEndOfClause())
     {
         // this could be a token to skip a variable
-        if (token->isType(TOKEN_COMMA))
+        if (token->isComma())
         {
             // this goes on as a variable, but an empty entry to process.
             // we also need to push empty entries on the other queues to keep everything in sync.
@@ -3993,7 +4282,56 @@ RexxInstruction *LanguageParser::useNew()
                     break;  // done parsing
                 }
             }
+            // this could be a '>' or ',' prefix used to indicate variable aliasing
+            else if (token->isOperator(OPERATOR_GREATERTHAN) || token->isOperator(OPERATOR_LESSTHAN))
+            {
+                // this must be a simple variable symbol or stem symbol
+                token = nextReal();
+                if (!token->isSymbol() || !token->isNonCompoundVariable())
+                {
+                    syntaxError(Error_Symbol_expected_after_use_arg_reference, token);
+                }
 
+                // get the variable retriever for this variable.
+                RexxInternalObject *retriever = addText(token);
+
+                // step to the next token, which should be a comma or a end of clause
+                token = nextReal();
+                // if this is not a comma, then we need to do some additional checking
+                if (!token->isComma())
+                {
+                    // Check to see if a default is specified. This is not
+                    // allowed for references. We could give a generic error, but
+                    // it is better to be explicit about the problem,
+                    if (token->isSubtype(OPERATOR_EQUAL))
+                    {
+                        syntaxError(Error_Translation_use_arg_reference_no_default);
+                    }
+                    // anything other than a end of clause is a generic error
+                    else if (!token->isEndOfClause())
+                    {
+                        // if not an assignment, this needs to be a comma.
+                        syntaxError(Error_Variable_reference_use, token);
+                    }
+                }
+                // we had a terminating comma, so step to the next token
+                else
+                {
+                    token = nextReal();
+                }
+
+                // we wrap this in a special retriever to handle the aliasing
+                Protected<UseArgVariableRef> ref = new UseArgVariableRef((RexxVariableBase *)retriever);
+
+                // add the reference proxy as the variable, and add a NULL to the defaults
+                // to keep them in sync.
+                variable_list->push(ref);
+                defaults_list->push(OREF_NULL);
+                variableCount++;
+                // continue the loop. Note that token is already positioned for the
+                // next section
+                continue;
+            }
 
             previousToken();       // push the current token back for term processing
             // see if we can get a variable or a message term from this
@@ -4012,7 +4350,7 @@ RexxInstruction *LanguageParser::useNew()
                 break;
             }
             // if we've hit a comma here, step to the next token and continue with the next variable
-            else if (token->isType(TOKEN_COMMA))
+            else if (token->isComma())
             {
                 defaults_list->push(OREF_NULL);
                 token = nextReal();
@@ -4042,7 +4380,7 @@ RexxInstruction *LanguageParser::useNew()
                     break;
                 }
                 // if we've hit a comma here, step to the next token and continue with the next variable
-                else if (token->isType(TOKEN_COMMA))
+                else if (token->isComma())
                 {
                     token = nextReal();
                     continue;
@@ -4052,7 +4390,6 @@ RexxInstruction *LanguageParser::useNew()
                 {
                     syntaxError(Error_Invalid_expression_use_arg_default);
                 }
-
             }
             else
             {

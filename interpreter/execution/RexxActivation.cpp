@@ -78,11 +78,15 @@
 #include "TrapHandler.hpp"
 #include "MethodArguments.hpp"
 #include "RequiresDirective.hpp"
+#include "CommandIOConfiguration.hpp"
+#include "CommandIOContext.hpp"
 #include "LibraryPackage.hpp"
 
 
-// max instructions without a yield
-const size_t MAX_INSTRUCTIONS = 100;
+
+
+
+
 
 /**
  * Create a new activation object
@@ -462,10 +466,6 @@ RexxObject * RexxActivation::run(RexxObject *_receiver, RexxString *name, RexxOb
     // add the frame to the execution stack
     RexxActivationFrame frame(activity, this);
 
-#ifndef FIXEDTIMERS
-    // this is the number of instructions to run without yielding
-    size_t instructionCount = 0;
-#endif
     receiver = _receiver;
     // the "msgname" can also be the name of an external routine, the label
     // name of an internal routine.
@@ -589,30 +589,18 @@ RexxObject * RexxActivation::run(RexxObject *_receiver, RexxString *name, RexxOb
     {
         try
         {
-#ifndef FIXEDTIMERS
-            // reset the instruction counter
-            instructionCount = 0;
-#endif
             RexxInstruction *nextInst = next;
             // loop until we no longer have a next instruction to process
             while (nextInst != OREF_NULL)
             {
-
-                // if we're time slicing, do a quick timeslice check and give
-                // up the kernel lock if has pinged.
-#ifdef FIXEDTIMERS
-                if (Interpreter::hasTimeSliceElapsed())
+                // concurrency is cooperative, so we release access every so often
+                // to allow other threads to run.
+                if (++instructionCount > yieldInstructions)
                 {
-                    activity->relinquish();
+                    instructionCount = 0;   // reset the instruction counter even if we didn't yield.
+                    // and have the activity manager decide if we need to give up control
+                    ActivityManager::relinquishIfNeeded(activity);
                 }
-#else
-                // not doing time slicing, so just relinquish every so often.
-                if (++instructionCount > MAX_INSTRUCTIONS)
-                {
-                    activity->relinquish();
-                    instructionCount = 0;
-                }
-#endif
                 // set the current instruction and prefetch the next one.  Control
                 // instructions may change next on us.
                 current = nextInst;
@@ -664,6 +652,7 @@ RexxObject * RexxActivation::run(RexxObject *_receiver, RexxString *name, RexxOb
                     // merge any pending conditions
                     parent->mergeTraps(conditionQueue);
                 }
+
                 resultObj = result;  // save the result
                 // pop this off of the activity stack and
                 activity->popStackFrame(false);
@@ -681,6 +670,7 @@ RexxObject * RexxActivation::run(RexxObject *_receiver, RexxString *name, RexxOb
                 resultObj = result;
                 // reset the next instruction
                 next = current->nextInstruction;
+
                 // now we need to create a new activity and
                 // attach this activation to it.
                 Activity *oldActivity = activity;
@@ -1474,6 +1464,63 @@ void RexxActivation::trapOff(RexxString *condition, bool signal)
 
 
 /**
+ * Create/copy an io config table as needed
+ */
+void RexxActivation::checkIOConfigTable()
+{
+    // no table created yet?  just create a new collection
+    if (settings.ioConfigs == OREF_NULL)
+    {
+        settings.ioConfigs = new_string_table();
+    }
+    // have to copy the trap table for an internal routine call?
+    else if (isInternalCall() && !settings.isIOConfigCopied())
+    {
+        // copy the table and remember that we've done that
+        settings.ioConfigs = (StringTable *)settings.ioConfigs->copy();
+        settings.setIOConfigCopied(true);
+    }
+}
+
+
+/**
+ * Retrieve the IO configuration for an address enviroment,
+ * if it exists
+ *
+ * @param environment
+ *               The name of the environment
+ *
+ * @return The configuration (if any) associated with the environment name.
+ */
+CommandIOConfiguration *RexxActivation::getIOConfig(RexxString *environment)
+{
+    // no config table means no need to check
+    if (settings.ioConfigs == OREF_NULL)
+    {
+        return OREF_NULL;
+    }
+
+    // see if we have one for this environment name
+    return (CommandIOConfiguration *)settings.ioConfigs->get(environment);
+}
+
+
+/**
+ * Add an i/o configuration to the config table.
+ *
+ * @param environment
+ *               The name of the address environment
+ * @param config The config we're adding
+ */
+void RexxActivation::addIOConfig(RexxString *environment, CommandIOConfiguration *config)
+{
+    // create or copy the config table as required
+    checkIOConfigTable();
+    settings.ioConfigs->put(config, environment);
+}
+
+
+/**
  * Return the top level external activation
  *
  * @return The main external call (a top level call or an external routine invocation)
@@ -1555,6 +1602,8 @@ void RexxActivation::raise(RexxString *condition, RexxObject *rc, RexxString *de
 {
     bool propagated = false;
 
+    Protected<DirectoryClass> p = conditionobj;
+
     // are we propagating an an existing condition?
     if (condition->strCompare(GlobalNames::PROPAGATE))
     {
@@ -1573,7 +1622,9 @@ void RexxActivation::raise(RexxString *condition, RexxObject *rc, RexxString *de
     else
     {
         // build a condition object for the condition
-        conditionobj = new_directory();
+        p = conditionobj = new_directory();
+
+        conditionobj = p;
         conditionobj->put(condition, GlobalNames::CONDITION);
         conditionobj->put(GlobalNames::NULLSTRING, GlobalNames::DESCRIPTION);
         conditionobj->put(TheFalseObject, GlobalNames::PROPAGATED);
@@ -1620,7 +1671,7 @@ void RexxActivation::raise(RexxString *condition, RexxObject *rc, RexxString *de
     else
     {
         // find a predecessor Rexx activation
-        RexxActivation *_sender = senderActivation();
+        ActivationBase *_sender = senderActivation(condition);
         // see if the sender level is trapping this condition
         bool trapped = false;
         if (_sender != OREF_NULL)
@@ -1740,6 +1791,7 @@ RexxObject *RexxActivation::resolveStream(RexxString *name, bool input, Protecte
             RexxObject *t = OREF_NULL;   // required for the findClass call
             RexxClass *streamClass = TheRexxPackage->findClass(GlobalNames::STREAM, t);
 
+
             ProtectedObject result;
             stream = streamClass->sendMessage(GlobalNames::NEW, name, result);
 
@@ -1844,10 +1896,17 @@ void RexxActivation::toggleAddress()
  * @param address The new address setting.  The current setting becomes
  *                the alternate.
  */
-void RexxActivation::setAddress(RexxString *address)
+void RexxActivation::setAddress(RexxString *address, CommandIOConfiguration *config)
 {
     settings.alternateAddress = settings.currentAddress;
     settings.currentAddress = address;
+    // if a config was specified, then make it the current for this
+    // environment
+    if (config != OREF_NULL)
+    {
+        // keep this in the table
+        addIOConfig(address, config);
+    }
 }
 
 
@@ -2400,20 +2459,27 @@ void RexxActivation::unwindTrap(RexxActivation * child )
 
 /**
  * Retrieve the activation that activated this activation (whew)
+ * with the intent of doing condition trapping.
  *
  * @return The parent activation.
  */
-RexxActivation * RexxActivation::senderActivation()
+ActivationBase *RexxActivation::senderActivation(RexxString *conditionName)
 {
     // get the sender from the activity
     ActivationBase *_sender = getPreviousStackFrame();
     // spin down to non-native activation
     while (_sender != OREF_NULL && isOfClass(NativeActivation, _sender))
     {
+        // if this is a native activation that is actively trapping conditions,
+        // then use that as the condition trap target
+        if (_sender->willTrap(conditionName))
+        {
+            return _sender;
+        }
         _sender = _sender->getPreviousStackFrame();
     }
     // that is our sender
-    return(RexxActivation *)_sender;
+    return _sender;
 }
 
 
@@ -3221,6 +3287,7 @@ static const char * trace_prefix_table[] =
   ">I>",                               // TRACE_PREFIX_INVOCATION
   ">N>",                               // TRACE_PREFIX_NAMESPACE
   ">K>",                               // TRACE_PREFIX_KEYWORD
+  ">R>",                               // TRACE_PREFIX_ALIAS
 };
 
 // size of a line number
@@ -3661,14 +3728,6 @@ void RexxActivation::processClauseBoundary()
         }
     }
 
-    // asked to yield control?
-    if (settings.haveExternalYield())
-    {
-        // turn off the flag and give up control
-        settings.setExternalYield(false);
-        activity->relinquish();
-    }
-
     // have a halt condition?
     if (settings.haveHaltCondition())
     {
@@ -3762,8 +3821,8 @@ bool RexxActivation::halt(RexxString *description )
  */
 void RexxActivation::yield()
 {
-    settings.setExternalYield(true);
-    clauseBoundary = true;
+    // max the instruction counter so that we will check immediately.
+    instructionCount = yieldInstructions;
 }
 
 
@@ -3906,16 +3965,46 @@ void RexxActivation::traceClause(RexxInstruction *clause, TracePrefix prefix)
     }
 }
 
+
+/**
+ * resolve an IO configuration from an address name.
+ *
+ * @param address The address environment name
+ * @param localConfig
+ *                The configuration that may have been specified on an
+ *                ADDRESS instruction.
+ *
+ * @return The IO context created by the potential merger of local
+ *         and global IO configurations.
+ */
+CommandIOContext *RexxActivation::resolveAddressIOConfig(RexxString *address, CommandIOConfiguration *localConfig)
+{
+    // see if we have something globally set, merge with any
+    // local settings that have been specified
+    CommandIOConfiguration *globalConfig = getIOConfig(address);
+    if (globalConfig != OREF_NULL)
+    {
+        return globalConfig->createIOContext(this, &stack, localConfig);
+    }
+    // no global, but might have a local one
+    if (localConfig != OREF_NULL)
+    {
+        return localConfig->createIOContext(this, &stack, OREF_NULL);
+    }
+    // no configuration, nothing to do
+    return OREF_NULL;
+}
+
+
 /**
  * Issue a command to a named host evironment
  *
+ * @param address  The target address
  * @param commandString
- *                The command to issue
- * @param address The target address
- *
- * @return The return code object
+ *                 The command to issue
+ * @param ioConfig A potential I/O redirection setup for this command.
  */
-void RexxActivation::command(RexxString *address, RexxString *commandString)
+void RexxActivation::command(RexxString *address, RexxString *commandString, CommandIOConfiguration *ioConfig)
 {
     // if we are tracing command instructions, then we need to add some
     // additional trace information afterward.  Also, if we're tracing errors or
@@ -3923,6 +4012,10 @@ void RexxActivation::command(RexxString *address, RexxString *commandString)
     bool instruction_traced = tracingAll() || tracingCommands();
     ProtectedObject condition;
     ProtectedObject commandResult;
+
+    // we possibly have local or global IO configurations in place for
+    Protected<CommandIOContext> ioContext = resolveAddressIOConfig(address, ioConfig);
+
 
     // give the command exit first pass at this.
     if (activity->callCommandExit(this, address, commandString, commandResult, condition))
@@ -3932,7 +4025,7 @@ void RexxActivation::command(RexxString *address, RexxString *commandString)
         CommandHandler *handler = activity->resolveCommandHandler(address);
         if (handler != OREF_NULL)
         {
-            handler->call(activity, this, address, commandString, commandResult, condition);
+            handler->call(activity, this, address, commandString, commandResult, condition, ioContext);
         }
         else
         {
@@ -3942,6 +4035,7 @@ void RexxActivation::command(RexxString *address, RexxString *commandString)
             condition = activity->createConditionObject(GlobalNames::FAILURE, commandResult, commandString, OREF_NULL, OREF_NULL);
         }
     }
+
 
     // now process the command result.
     RexxObject *rc = commandResult;
@@ -4250,6 +4344,33 @@ void RexxActivation::closeStreams()
 void RexxActivation::sayOutput(RexxString *line)
 {
     activity->sayOutput(this, line);
+}
+
+
+/**
+ * Handle PULL or PARSE PULL input
+ */
+RexxString *RexxActivation::pullInput()
+{
+    return activity->pullInput(this);
+}
+
+
+/**
+ * Handle PARSE LINEIN input
+ */
+RexxString *RexxActivation::lineIn()
+{
+    return activity->lineIn(this);
+}
+
+
+/**
+ * Handle PUSH/QUEUE output
+ */
+void RexxActivation::queue(RexxString *line, Activity::QueueOrder order)
+{
+    activity->queue(this, line, order);
 }
 
 

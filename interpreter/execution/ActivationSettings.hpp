@@ -110,7 +110,6 @@ class ActivationSettings
         traceOff,                // external trace OFF condition occurred
         sourceTraced,            // source string has been traced
         clauseExits,             // need to call clause boundary exits
-        externalYield,           // activity wants us to yield
         forwarded,               // forward instruction active
         replyIssued,             // reply has already been issued
         setTraceOn,              // trace turned on externally
@@ -121,6 +120,7 @@ class ActivationSettings
         traceSuppress,           // tracing is currently suppressed
         elapsedReset,            // The elapsed time stamp was reset via time('r')
         guardedMethod,           // this is a guarded method
+        ioConfigCopied,          // We have made a copy of the config table
     } ActivationFlag;
 
 
@@ -145,6 +145,8 @@ class ActivationSettings
       inline void setReplyIssued(bool v = true) { stateFlags[replyIssued] = v; }
       inline bool areTrapsCopied() { return stateFlags[trapsCopied]; }
       inline void setTrapsCopied(bool v = true) { stateFlags[trapsCopied] = v; }
+      inline bool isIOConfigCopied() { return stateFlags[ioConfigCopied]; }
+      inline void setIOConfigCopied(bool v = true) { stateFlags[ioConfigCopied] = v; }
       inline bool haveClauseExits() { return stateFlags[clauseExits]; }
       inline void setHaveClauseExits(bool v = true) { stateFlags[clauseExits] = v; }
       inline bool hasTransferFailed() { return stateFlags[transferFailed]; }
@@ -157,12 +159,11 @@ class ActivationSettings
       inline void setReturnStatus(bool v = true) { stateFlags[returnStatusSet] = v; }
       inline bool wasSourceTraced() { return stateFlags[sourceTraced]; }
       inline void setSourceTraced(bool v = true) { stateFlags[sourceTraced] = v; }
-      inline bool haveExternalYield() { return stateFlags[externalYield]; }
-      inline void setExternalYield(bool v = true) { stateFlags[externalYield] = v; }
       inline bool haveHaltCondition() { return stateFlags[haltCondition]; }
       inline void setHaltCondition(bool v = true) { stateFlags[haltCondition] = v; }
 
       StringTable    *traps;               // enabled condition traps
+      StringTable    *ioConfigs;           // address envronment io configurations
       DirectoryClass *conditionObj;        // current condition object
       RexxObject    **parentArgList;       // arguments to top level program
       size_t          parentArgCount;      // number of arguments to the top level program

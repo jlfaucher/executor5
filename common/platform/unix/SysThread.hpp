@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -50,6 +50,7 @@
 #define Included_SysThread
 
 #include <pthread.h>
+#include <sys/time.h>
 #include "rexx.h"
 
 
@@ -96,6 +97,13 @@ public:
     }
     bool equals(SysThread &other);
     inline size_t hash() { return (((size_t)_threadID) >> 8) * 37; }
+    void waitForTermination();
+    static uint64_t getMillisecondTicks()
+    {
+        struct timeval now;
+        gettimeofday(&now, NULL);
+        return (uint64_t)now.tv_sec * 1000 + now.tv_usec / 1000;
+    }
 
 
 protected:

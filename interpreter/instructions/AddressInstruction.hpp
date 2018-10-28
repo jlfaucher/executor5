@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -46,11 +46,14 @@
 
 #include "RexxInstruction.hpp"
 
+class CommandIOConfiguration;
+
 class RexxInstructionAddress : public RexxInstruction
 {
  public:
     inline void operator delete(void *) { }
 
+    RexxInstructionAddress() { ; }
     RexxInstructionAddress(RexxInternalObject *, RexxString *, RexxInternalObject *);
     inline RexxInstructionAddress(RESTORETYPE restoreType) { ; };
 
@@ -59,6 +62,7 @@ class RexxInstructionAddress : public RexxInstruction
     virtual void flatten(Envelope *);
 
     virtual void execute(RexxActivation *, ExpressionStack *);
+    virtual CommandIOConfiguration *getIOConfig() { return OREF_NULL; }
 
     RexxInternalObject *dynamicAddress;      // ADDRESS VALUE expression
     RexxString *environment;                 // An environment string (static form)

@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -252,11 +252,11 @@ RexxInternalObject *StemClass::getStemValue()
  */
 RexxObject *StemClass::unknownRexx(RexxString *message, ArrayClass *arguments)
 {
-    message = stringArgument(message, ARG_ONE);
-    arguments = arrayArgument(arguments, ARG_TWO);
+    Protected<RexxString> messageName = stringArgument(message, ARG_ONE);
+    Protected<ArrayClass> argumentList = arrayArgument(arguments, ARG_TWO);
 
     ProtectedObject result;
-    return value->sendMessage(message, arguments, result);
+    return value->sendMessage(messageName, argumentList, result);
 }
 
 
@@ -602,14 +602,14 @@ RexxInteger *StemClass::integerValue(wholenumber_t precision)
  * handle some of these directly, the rest are passed on
  * to the default value.
  *
- * @param makeclass The name of the class for the request.
+ * @param requestclass The name of the class for the request.
  *
  * @return The appropriate result for the request.
  */
-RexxObject *StemClass::request(RexxString *makeclass)
+RexxObject *StemClass::request(RexxString *requestclass)
 {
     ProtectedObject result;
-    makeclass = stringArgument(makeclass, ARG_ONE)->upper();
+    Protected<RexxString> makeclass = stringArgument(requestclass, ARG_ONE)->upper();
     // take care of any ARRAY requests, the rest go to the default value
     if (makeclass->strCompare("ARRAY"))
     {
@@ -1201,6 +1201,7 @@ RexxObject *StemClass::getElement(const char *tail)
     return getElement(resolved_tail);
 }
 
+
 /**
  * Resolve a compound variable as a result of an api call.
  *
@@ -1220,6 +1221,46 @@ RexxObject *StemClass::getElement(CompoundVariableTail &resolved_tail)
         return variable->getVariableValue();
     }
     return OREF_NULL;
+}
+
+
+/**
+ * Evaluate an array element including default value resolution
+ *
+ * @param tail   The direct tail value.
+ *
+ * @return The object value.  If the stem element does not exist or
+ *         has been dropped, this returns the default value.
+ */
+RexxObject *StemClass::getFullElement(size_t tail)
+{
+    CompoundVariableTail resolved_tail(tail);
+
+    return getFullElement(resolved_tail);
+}
+
+
+/**
+ * Resolve a compound variable as a result of an api call.
+ *
+ * @param resolved_tail
+ *               The resolved tail value.
+ *
+ * @return The variable value.  Returns default value if not
+ *         assigned or dropped.
+ */
+RexxObject *StemClass::getFullElement(CompoundVariableTail &resolved_tail)
+{
+    // see if we have a variable...if we do, return its value (a dropped variable
+    // has a value of OREF_NULL).  If not found, return OREF_NULL;
+    CompoundTableElement *variable = findCompoundVariable(resolved_tail);
+
+    RexxObject *varValue = OREF_NULL;
+    if (variable != OREF_NULL)
+    {
+        varValue = variable->getVariableValue();
+    }
+    return varValue != OREF_NULL ? varValue : value;
 }
 
 

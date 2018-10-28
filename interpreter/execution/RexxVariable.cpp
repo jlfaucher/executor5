@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -46,6 +46,8 @@
 #include "Activity.hpp"
 #include "ActivityManager.hpp"
 #include "StemClass.hpp"
+#include "VariableReference.hpp"
+#include "RexxActivation.hpp"
 
 
 /**
@@ -70,6 +72,7 @@ void RexxVariable::live(size_t liveMark)
 {
     memory_mark(variableValue);
     memory_mark(variableName);
+    memory_mark(creator);
     memory_mark(dependents);
 }
 
@@ -85,6 +88,7 @@ void RexxVariable::liveGeneral(MarkReason reason)
 {
     memory_mark_general(variableValue);
     memory_mark_general(variableName);
+    memory_mark_general(creator);
     memory_mark_general(dependents);
 }
 
@@ -100,6 +104,7 @@ void RexxVariable::flatten(Envelope *envelope)
 
      flattenRef(variableValue);
      flattenRef(variableName);
+     flattenRef(creator);
      flattenRef(dependents);
 
     cleanUpFlatten
@@ -191,6 +196,28 @@ void RexxVariable::notify()
 
 
 /**
+ * A "safe" assignment method that sorts out the differeces
+ * between simple variable vs. stem variable assignment.
+ *
+ * @param value  The new value to assign.
+ */
+void RexxVariable::setValue(RexxObject *value)
+{
+    // if this is a stem variable, we need to sort out how the
+    // assignment works from the type of object.
+    if (isStem())
+    {
+        setStem(value);
+    }
+    else
+    {
+        // just a simple replacement of the existing value
+        set(value);
+    }
+}
+
+
+/**
  * Set a variable to a stem value.  This handles all of the
  * details of stem-to-stem assignment and stem variable
  * re-initialization.
@@ -213,4 +240,36 @@ void RexxVariable::setStem(RexxObject *value)
         set(stem_table);                   // overlay the reference stem object
         stem_table->setValue(value);       // set the default value
     }
+}
+
+
+/**
+ * Create a variable reference from this variable.
+ *
+ * @return An object that provides an indirect reference to this variable.
+ */
+VariableReference *RexxVariable::createReference()
+{
+    return new VariableReference(this);
+}
+
+
+bool RexxVariable::isAliasable()
+{
+    // this has to be a local variable
+    if (!isLocal())
+    {
+        return false;
+    }
+
+    // stems are a bit more complicated. We consider them uninitialized
+    // if they are empty and the default value is also the variable name
+    if (isStem())
+    {
+        StemClass *stem = (StemClass *)variableValue;
+        return stem->isEmpty() && stem->getValue() == variableName;
+    }
+
+    // local variable, it must be uninitialized
+    return isDropped();
 }

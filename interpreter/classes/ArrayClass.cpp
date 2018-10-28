@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -125,10 +125,13 @@ RexxObject *ArrayClass::newRexx(RexxObject **arguments, size_t argCount)
 
         // finish the class initialization and init calls.
         classThis->completeNewObject(temp);
+        return temp;
     }
-
-    // more than one argument, so all arguments must be valid size values.
-    return createMultidimensional(arguments, argCount, classThis);
+    else
+    {
+        // more than one argument, so all arguments must be valid size values.
+        return createMultidimensional(arguments, argCount, classThis);
+    }
 }
 
 
@@ -278,8 +281,10 @@ ArrayClass *ArrayClass::allocateNewObject(size_t size, size_t items, size_t maxS
     // add in the max size value.  Note that we subtract one since
     // the first item is contained in the base object allocation.
     bytes += sizeof(RexxInternalObject *) * (maxSize - 1);
-    // now allocate the new object with that size.
-    ArrayClass *newArray = (ArrayClass *)new_object(bytes, type);
+    // now allocate the new object with that size.  We also give a hint to
+    // the language process about how many objects we can potentially mark during
+    // a garbage collection.
+    ArrayClass *newArray = (ArrayClass *)new_object(bytes, type, maxSize);
 
     // now fill in the various control bits.  Ideally, this
     // really should be done in the constructor, but that gets really too
@@ -392,6 +397,8 @@ void ArrayClass::liveGeneral(MarkReason reason)
     // but we need to mark our space too.
     memory_mark_general_array(arraySize, objects);
 }
+
+
 void ArrayClass::flatten(Envelope *envelope)
 {
     setUpFlatten(ArrayClass)
@@ -2037,7 +2044,7 @@ void ArrayClass::extend(size_t toSize)
 
     // double the size for small Arrays
     // for Arrays above the limit, just add half of the actual size
-    size_t newSize = size(); 
+    size_t newSize = size();
     newSize += newSize <= ExpansionDoubleLimit ? newSize : newSize / 2;
 
     // now allocate the extension array of the required size + some extra.

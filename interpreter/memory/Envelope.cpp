@@ -80,14 +80,11 @@ void Envelope::live(size_t liveMark)
     memory_mark(saveTable);
     memory_mark(buffer);
     memory_mark(rehashTable);
-    memory_mark(flattenStack);
 }
 
 
 /**
  * Generalized object marking
- *
- * NOTE: Do not mark flattenStack
  *
  * @param reason The reason for the marking call.
  */
@@ -99,7 +96,6 @@ void Envelope::liveGeneral(MarkReason reason)
     memory_mark_general(saveTable);
     memory_mark_general(buffer);
     memory_mark_general(rehashTable);
-    memory_mark_general(flattenStack);
 }
 
 
@@ -138,7 +134,7 @@ void Envelope::flattenReference(void *newThisVoid, size_t newSelf, void *objRefV
 
         // if this is a proxied object, we need to convert it to a proxy and
         // copy that object into the buffer and the reference table
-        if (obj->isProxyObject())
+        if (obj->requiresProxyObject())
         {
             // get a proxy and make sure it's in our protection table
             RexxInternalObject *proxyObj = obj->makeProxy(this);
@@ -202,11 +198,7 @@ BufferClass *Envelope::pack(RexxInternalObject *_receiver)
     dupTable = new MapTable(DefaultDupTableSize);
     buffer = new SmartBuffer(DefaultEnvelopeBuffer);
     // Allocate a flatten stack
-    flattenStack = new (Memory::LiveStackSize, true) LiveStack (Memory::LiveStackSize);
-    // we need to mark the flatten stack to protect it from GC, but we're
-    // going to be storing offsets in here, not object references, so we don't want
-    // this to be marked.
-    flattenStack->setHasNoReferences();
+    flattenStack = new (Memory::LiveStackSize) LiveStack (Memory::LiveStackSize);
     // push unique terminator onto stack
     flattenStack->push(OREF_NULL);
 
@@ -244,6 +236,8 @@ BufferClass *Envelope::pack(RexxInternalObject *_receiver)
     // behind it to the size we've written to it.
     BufferClass *letter = buffer->getBuffer();
     letter->setDataLength(buffer->getDataLength());
+    // delete the flatten stack, since that is not allocated from the object heap.
+    delete flattenStack;
     return letter;
 }
 

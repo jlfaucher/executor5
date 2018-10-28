@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -152,7 +152,7 @@ void RexxInstructionAddress::execute(RexxActivation *context, ExpressionStack *s
             // validate the address name using system rules
             SystemInterpreter::validateAddressName(environment);
             // and execute the command
-            context->command(environment, _command);
+            context->command(environment, _command, getIOConfig());
         }
         // we're just changing the current address target
         else
@@ -160,7 +160,7 @@ void RexxInstructionAddress::execute(RexxActivation *context, ExpressionStack *s
             // validate this environment name
             SystemInterpreter::validateAddressName(environment);
             // and make that the current address
-            context->setAddress(environment);
+            context->setAddress(environment, getIOConfig());
             context->pauseInstruction();
         }
     }
@@ -175,7 +175,7 @@ void RexxInstructionAddress::execute(RexxActivation *context, ExpressionStack *s
         context->traceResult(_address);
         // validate this using system rules, then set the new address
         SystemInterpreter::validateAddressName(_address);
-        context->setAddress(_address);
+        context->setAddress(_address, getIOConfig());
         context->pauseInstruction();
     }
 }

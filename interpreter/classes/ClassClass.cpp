@@ -883,13 +883,13 @@ RexxObject *RexxClass::defineMethod(RexxString *method_name, RexxObject *methodS
 RexxObject *RexxClass::defineClassMethod(RexxString *method_name, MethodClass *newMethod)
 {
     // validate the arguments
-    method_name = stringArgument(method_name, ARG_ONE)->upper();
+    Protected<RexxString> name = stringArgument(method_name, ARG_ONE)->upper();
     requiredArgument(newMethod, ARG_TWO);
-    newMethod = newMethod->newScope(this);
+    Protected<MethodClass> addedMethod = newMethod->newScope(this);
     // now add this directly to the behaviour
-    behaviour->defineMethod(method_name, newMethod);
+    behaviour->defineMethod(name, addedMethod);
     // also add to the class method dictionary
-    classMethodDictionary->addMethod(method_name, newMethod);
+    classMethodDictionary->addMethod(name, addedMethod);
     // called as a Rexx method, so we need a return value.
     return OREF_NULL;
 }
@@ -1451,9 +1451,9 @@ RexxObject *RexxClass::enhanced(RexxObject **args, size_t argCount)
 
     // create a dummy subclass of the receiver class
     Protected<RexxClass> dummy_subclass = subclass(OREF_NULL, new_string("Enhanced Subclass"), OREF_NULL, OREF_NULL);
-    // create a method dictionary from the collection of methods.  We use dummy subclass for the dictionary scope
-    // source scope.
-    Protected<MethodDictionary> enhanced_instance_mdict = dummy_subclass->createMethodDictionary(enhanced_methods, dummy_subclass);
+    // create a method dictionary from the collection of methods. We use .nil, so that these additional methods will look like
+    // they were added with setMethod
+    Protected<MethodDictionary> enhanced_instance_mdict = dummy_subclass->createMethodDictionary(enhanced_methods, (RexxClass *)TheNilObject);
     // enhance the instance behaviour of the dummy subclass with the new methods
     dummy_subclass->instanceMethodDictionary->merge(enhanced_instance_mdict);
     // and record the changes in behavior
@@ -1782,7 +1782,7 @@ RexxClass  *RexxClass::newRexx(RexxObject **args, size_t argCount)
     }
 
     // first argument is the class id...make sure it is a string value
-    RexxString *class_id = (RexxString *)args[0];
+    Protected<RexxString> class_id = (RexxString *)args[0];
     class_id = stringArgument(class_id, "class id");
 
     // get a copy of this class object

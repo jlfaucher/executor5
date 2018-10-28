@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -42,6 +42,7 @@
 #include "ActivationSettings.hpp"
 #include <deque>
 #include "GlobalNames.hpp"
+#include "SystemInterpreter.hpp"
 
 // the error code definitions are need for any code that
 // issues error messages, so place these here.
@@ -61,7 +62,11 @@ public:
     static void liveGeneral(MarkReason reason);
 
     static void addWaitingActivity(Activity *a, bool release);
-    static inline bool hasWaiters() { return !waitingActivities.empty(); }
+    static void addWaitingApiActivity(Activity *a);
+    static bool dispatchNext();
+    static inline bool hasWaiters() { return waitingAccess != 0 || waitingAttaches != 0; }
+    static inline bool hasApiWaiters() { return waitingApiAccess != 0; }
+
     static Activity *findActivity();
     static Activity *findActivity(thread_id_t);
     static Activity *getActivity();
@@ -71,8 +76,26 @@ public:
     static void checkShutdown();
     static void createInterpreter();
     static void terminateInterpreter();
-    static void lockKernel();
-    static void unlockKernel();
+
+    inline static void lockKernel()
+    {
+        kernelSemaphore.request();
+        // keep track of the last time this was granted.
+        lastLockTime = SysThread::getMillisecondTicks();
+    }
+
+    inline static void unlockKernel()
+    {
+        // the use of the sentinel variables will ensure that the assignment of
+        // current activity occurs BEFORE the kernel semaphore is released.
+        sentinel = false;
+        currentActivity = OREF_NULL;
+        sentinel = true;
+        // now release the semaphore
+        kernelSemaphore.release();
+    }
+
+    static void releaseAccess();
     static bool lockKernelImmediate();
     static void createLocks();
     static void closeLocks();
@@ -93,7 +116,40 @@ public:
     static bool haltActivity(thread_id_t thread_id, RexxString * description);
     static void yieldCurrentActivity();
     static void exit(int retcode);
-    static void relinquish(Activity *activity);
+    static inline void relinquish(Activity *activity)
+    {
+        // if we have waiting activities, then let one of them
+        // in next.
+        if (hasWaiters())
+        {
+            addWaitingActivity(activity, true);
+        }
+    }
+    // give up control, but only if the time slice requires it.
+    static inline void relinquishIfNeeded(Activity *activity)
+    {
+        // if we have waiting activities, then let one of them
+        // in next.
+        if (hasWaiters())
+        {
+            // if we have API calls trying to get in, then don't bother checking the time stamp.
+            if (hasApiWaiters())
+            {
+                addWaitingActivity(activity, true);
+            }
+            else
+            {
+                // check the time that we've have been holding the lock and release it
+                // if we've crossed the threshold,
+                uint64_t timeNow = SysThread::getMillisecondTicks();
+                if (timeNow - lastLockTime > timeSliceLength)
+                {
+                    addWaitingActivity(activity, true);
+                }
+            }
+        }
+    }
+
     static Activity *getRootActivity();
     static void returnRootActivity(Activity *activity);
     static Activity *attachThread();
@@ -102,6 +158,7 @@ public:
     static void suspendDispatch(Activity *activity);
     static void removeWaitingActivity(Activity *waitingAct);
     static void returnWaitingActivity(Activity *waitingAct);
+    static void handleNestedActivity(Activity *newActivity, Activity *oldActivity);
 
     // non-static method that is attached to the environment directory
     DirectoryClass *getLocalRexx()
@@ -125,6 +182,7 @@ protected:
 
     // maximum number of activities we'll pool
     static const size_t MAX_THREAD_POOL_SIZE = 5;
+    static const uint64_t timeSliceLength = 24;            // how long we'll run before checking for a control yield.
 
     static QueueClass       *availableActivities;     // table of available activities
     static QueueClass       *allActivities;           // table of all activities
@@ -135,6 +193,10 @@ protected:
     static SysSemaphore      terminationSem;          // used to signal that everything has shutdown
     static volatile bool sentinel;                    // used to ensure proper ordering of updates
     static std::deque<Activity *>waitingActivities;   // queue of waiting activities
+    static size_t waitingAttaches;                    // the count of attaches waiting for access
+    static size_t waitingAccess;                      // the count of activities waiting for access
+    static size_t waitingApiAccess;                   // the count of activities waiting for access for API callbacks.
+    static uint64_t          lastLockTime;            // the last time we granted the kernel lock.
 };
 
 

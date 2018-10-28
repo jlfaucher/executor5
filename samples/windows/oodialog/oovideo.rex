@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -47,7 +47,7 @@
  * variable holding this value has been callously abbreviated to 'sd' which
  * stands for source directory.
  *
-/****************************************************************************/
+ ****************************************************************************/
 
   srcDir = locate()
 
@@ -94,7 +94,7 @@
     if (a.IDC_RB_C180 = 1) then o~lineout("Tape    : C180")
     if (a.IDC_RB_C240 = 1) then o~lineout("Tape    : C240")
     o~close()
-    "type" logfile
+    'type "'logfile'"'
  end
 
  return

@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -2537,6 +2537,7 @@ BUILTIN(QUEUED)
     const size_t QUEUED_Max = 0;
 
     check_args(QUEUED);
+
     RexxInteger  *queuesize;
 
     // see if the exit handles this, otherwise send a message to the current queue

@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -82,8 +82,6 @@ public:
     // The unit of granularity for large allocation
     static const size_t LargeAllocationUnit = 128 * ObjectGrain;
 
-    // The unit of granularity for extremely large objects
-    static const size_t VeryLargeAllocationUnit = LargeAllocationUnit * 4;
     // this is the granularity for objects greater than 16Mb.
     static const size_t VeryLargeObjectGrain = 32 * ObjectGrain;
 
@@ -96,16 +94,20 @@ public:
     // possible size
     static const size_t MaximumObjectSize = SIZE_MAX - ObjectGrain;
 
-    // default size for the live stack (in entries)
-    static const size_t LiveStackSize = 32 * 1024;
+    // default size for the live stack (in entries). We make the initial one
+    // much larger if building for 64-bit mode because there is a much higher
+    // possibility of getting large complex collections
+#ifdef __REXX64__
+    static const size_t LiveStackSize = 256 * 1024;
+#else
+    static const size_t LiveStackSize = 64 * 1024;
+#endif
     // the number of newly created items to stack in the save stack
     static const size_t SaveStackSize = 10;
     // the maximum size for the startup image size
     static const size_t MaxImageSize = 3000000;
     // the size of a page
     static const size_t PageSize = 4096;
-    // the standard memory pool allocation size.
-    static const size_t MemoryAllocationSize = PageSize * 1024;
 };
 
 #endif

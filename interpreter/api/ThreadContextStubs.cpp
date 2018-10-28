@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -66,6 +66,7 @@
 #include "LanguageParser.hpp"
 #include "StemClass.hpp"
 #include "NumberStringClass.hpp"
+#include "VariableReference.hpp"
 
 BEGIN_EXTERN_C()
 
@@ -397,6 +398,8 @@ RexxClassObject RexxEntry FindClassFromPackage(RexxThreadContext *c, RexxPackage
         RexxString *name = new_upper_string(n);
         ProtectedObject p(name);
 
+        return (RexxClassObject)context.ret(((PackageClass *)m)->findClass(name));
+
         RexxObject *t = OREF_NULL;   // required for the findClass call
         return (RexxClassObject)context.ret(((PackageClass *)m)->findClass(name, t));
 
@@ -684,7 +687,8 @@ RexxObjectPtr RexxEntry ValueToObject(RexxThreadContext *c, ValueDescriptor *d)
     }
     catch (NativeActivation *)
     {
-        context.context->setConditionInfo(OREF_NULL);
+        // we want this to fail without raising an error
+        context.context->clearException();
     }
     return NULLOBJECT;
 }
@@ -699,7 +703,8 @@ RexxArrayObject RexxEntry ValuesToObject(RexxThreadContext *c, ValueDescriptor *
     }
     catch (NativeActivation *)
     {
-        context.context->setConditionInfo(OREF_NULL);
+        // we want this to fail without raising an error
+        context.context->clearException();
     }
     return NULLOBJECT;
 }
@@ -716,7 +721,7 @@ logical_t RexxEntry ObjectToValue(RexxThreadContext *c, RexxObjectPtr o, ValueDe
     {
         // some conversion failures result in an exception...cancel that, and
         // just return FALSE;
-        context.context->setConditionInfo(OREF_NULL);
+        context.context->clearException();
     }
     return false;
 }
@@ -1537,6 +1542,57 @@ logical_t RexxEntry IsPointer(RexxThreadContext *c, RexxObjectPtr o)
     return false;
 }
 
+logical_t RexxEntry IsVariableReference(RexxThreadContext *c, RexxObjectPtr o)
+{
+    ApiContext context(c);
+    try
+    {
+        return isOfClass(VariableReference, (RexxObject *)o);
+    }
+    catch (NativeActivation *)
+    {
+    }
+    return false;
+}
+
+RexxStringObject RexxEntry VariableReferenceName(RexxThreadContext *c, RexxVariableReferenceObject o)
+{
+    ApiContext context(c);
+    try
+    {
+        return (RexxStringObject)context.ret(((VariableReference *)o)->getName());
+    }
+    catch (NativeActivation *)
+    {
+    }
+    return NULLOBJECT;
+}
+
+RexxObjectPtr RexxEntry VariableReferenceValue(RexxThreadContext *c, RexxVariableReferenceObject o)
+{
+    ApiContext context(c);
+    try
+    {
+        return context.ret(((VariableReference *)o)->getValue());
+    }
+    catch (NativeActivation *)
+    {
+    }
+    return NULLOBJECT;
+}
+
+void RexxEntry SetVariableReferenceValue(RexxThreadContext *c, RexxVariableReferenceObject o, RexxObjectPtr v)
+{
+    ApiContext context(c);
+    try
+    {
+        ((VariableReference *)o)->setValue((RexxObject *)v);
+    }
+    catch (NativeActivation *)
+    {
+    }
+}
+
 RexxObjectPtr RexxEntry SupplierItem(RexxThreadContext *c, RexxSupplierObject o)
 {
     ApiContext context(c);
@@ -1857,7 +1913,7 @@ void RexxEntry ClearCondition(RexxThreadContext *c)
     ApiContext context(c);
     try
     {
-        context.context->setConditionInfo(OREF_NULL);
+        context.context->clearException();
     }
     catch (NativeActivation *)
     {
@@ -2110,4 +2166,8 @@ RexxThreadInterface Activity::threadContextFunctions =
     IsMutableBuffer,
     MutableBufferCapacity,
     SetMutableBufferCapacity,
+    VariableReferenceName,
+    VariableReferenceValue,
+    SetVariableReferenceValue,
+    IsVariableReference,
 };

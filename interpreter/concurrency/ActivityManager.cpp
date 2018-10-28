@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -61,6 +61,14 @@ QueueClass *ActivityManager::availableActivities = OREF_NULL;
 QueueClass *ActivityManager::allActivities = OREF_NULL;
 
 std::deque<Activity *>ActivityManager::waitingActivities;   // queue of waiting activities
+
+size_t ActivityManager::waitingAttaches = 0;                // count of waiting external attaches
+
+size_t ActivityManager::waitingAccess = 0;                  // count of activities currently awaiting access
+
+size_t ActivityManager::waitingApiAccess = 0;               // count of activities currently awaiting API access
+
+uint64_t ActivityManager::lastLockTime = 0;                 // the last time we granted the kernel lock.
 
 // process shutting down flag
 bool ActivityManager::processTerminating = false;
@@ -125,75 +133,202 @@ void ActivityManager::addWaitingActivity(Activity *waitingAct, bool release )
 {
     DispatchSection lock;                // need the dispatch queue lock
 
+    bool inWaitQueue = false;            // used to see if we're waiting for permission to request the kernel lock
+
     // nobody waiting yet?  If the release flag is true, we already have the
-    // kernel lock, but nobody is waiting.  In theory, this can't really
-    // happen, but we can return immediately if that is true.
-    if (waitingActivities.empty())
+    // kernel lock, but nobody is waiting.
+    if (!hasWaiters())
     {
         // we're done if we already have the lock and the queue is empty.
         if (release)
         {
             return;
         }
-        // this will ensure this happens before the lock is released
-        sentinel = false;
-        // we should end up getting the lock immediately, but you never know.
-        // since we are not going to be waiting from a dispatch, we do not
-        // add ourselves to the queue
-        lock.release();                  // release the lock now
+    }
+
+    // bump our counter so that others know something is waiting
+    waitingAccess++;
+
+    // if there is something in the queue, remove it and give it permission to run before
+    // we do our stuff.
+
+    // if we are the current kernel semaphore owner, time to release this
+    // so other waiters can get this while we're setting up
+    if (release)
+    {
+        // release the kernel semaphore and poke the next activity
+        releaseAccess();
+        // we are going to queue up unconditionally and wait in line
+        inWaitQueue = true;
+
+        // add to the end
+        waitingActivities.push_back(waitingAct);
+    }
+    // if there is a current activity, then wait until dispatched.
+    else if (currentActivity != OREF_NULL)
+    {
+        // we are going to queue up unconditionally and wait in line
+        inWaitQueue = true;
+
+        // add to the end
+        waitingActivities.push_back(waitingAct);
+    }
+
+    // we're going to wait until posted, so make sure the run semaphore is cleared
+    // while we still have the dispatch lock.
+    waitingAct->clearRunWait();
+
+    // if we have a recursive reentry while waiting on either semaphore, we'll need to
+    // know later that this activity is in the dispatch queue so it can be removed from the
+    // queue until the context is unwound.
+    waitingAct->setWaitingForDispatch();
+
+    lock.release();                    // release the lock now
+
+    // this is a time out indicator
+    bool timedOut = false;
+
+    // if we're in line behind another activity, then wait to get permission to
+    // request the kernel lock.
+    if (inWaitQueue)
+    {
+        // this willl wait until we are explicitly dispatched or we time out. In either
+        // case, the real work is done by obtaining the kernel lock. The wait is
+        // primarily so that the different threads operate in more of a round-robin fashion.
+        // The timeout ensures we don't get a stall condition as can happen sometimes on Windows
+        // because of how the semaphores are handled.
+        timedOut = waitingAct->waitForDispatch();   // wait for this thread to get dispatched again
     }
     else
     {
-        // add to the end
-        waitingActivities.push_back(waitingAct);
-        // this will ensure this happens before the lock is released
-        sentinel = false;
-        // we're going to wait until posted, so make sure the run semaphore is cleared
-        waitingAct->clearRunWait();
-        sentinel = true;
-        lock.release();                    // release the lock now
-        sentinel = false;
-        // if we are the current kernel semaphore owner, time to release this
-        // so other waiters can
-        if (release)
-        {
-            unlockKernel();
-        }
-        SysActivity::yield();            // yield the thread
-        waitingAct->waitForDispatch();   // wait for this thread to get dispatched again
+        // try to yield control so we don't get into a race condition on
+        // the kernel semaphore where the same thread keeps getting it over and over
+        // creating the appearance of a hang.
+        waitingAct->yield();
     }
 
     sentinel = true;
+    // depending on situation, it is now a race for the lock, but things have been mixed up
+    // enough that we should be sharing access
     waitingAct->waitForKernel();         // perform the kernel lock
-    // belt and braces.  it is possible the dispatcher was
-    // reentered on the same thread, in which case we have an
-    // earlier stack frame waiting on the same semaphore.  Clear it so it
-    // get get reposted later.
-    waitingAct->clearRunWait();
     sentinel = false;
     lock.reacquire();                    // get the resource lock back
     sentinel = false;                    // another memory barrier
 
-    sentinel = true;
-    // if there's something else in the queue, then post the run semaphore of
-    // the head element so that it wakes up next and starts waiting on the
-    // run semaphore
-    if (hasWaiters())
+    // we are no longer waiting to be dispatched.
+    waitingAct->clearWaitingForDispatch();
+
+    // and remove the waiting counter
+    waitingAccess--;
+
+    // ok, we have the kernel lock and the resource lock. If we did not have a timeout while
+    // waiting for dispatch, then we should still be in the queue and we need to remove our entry.
+    // if we were posted, then the posting thread already removed our entry.
+    if (timedOut && !waitingActivities.empty())
     {
-        waitingActivities.front()->postDispatch();
-        // Once we have nudged this thread to wake up,
-        // we remove the entry from the queue so it doesn't inadvertenly
-        // get reprocessed.
-        waitingActivities.pop_front();
+        // search for the activity position and remove it.
+        for (std::deque<Activity *>::iterator it = waitingActivities.begin(); it != waitingActivities.end(); ++it)
+        {
+            // if this is found, remove it from the queue
+            if (*it == waitingAct)
+            {
+                waitingActivities.erase(it);
+                break;
+            }
+        }
+        // ignore this if not found.
     }
+
     // the setting of the sentinel variables acts as a memory barrier to
     // ensure that the assignment of currentActivitiy occurs precisely at this point.
-    sentinel = false;
-    currentActivity = waitingAct;
     sentinel = true;
-    // set the new active numeric settings
-    Numerics::setCurrentSettings(waitingAct->getNumericSettings());
+    waitingAct->setupCurrentActivity();
 }
+
+
+/**
+ * Add a waiting activity to the waiting queue. This is done
+ * with priority access with no dispatch wait so that external
+ * callbacks can behave quickly in highly concurrent
+ * environments.
+ *
+ * @param waitingAct The activity to queue up.
+ */
+void ActivityManager::addWaitingApiActivity(Activity *waitingAct)
+{
+    DispatchSection lock;                // need the dispatch queue lock
+
+    waitingAccess++;                     // indicate that we are waiting for access
+    waitingApiAccess++;                  // indicate that we are waiting on behalf of an API call.
+
+    // if we have a recursive reentry while waiting on either semaphore, we'll need to
+    // know later that this activity is in the dispatch queue so it can be removed from the
+    // queue until the context is unwound.
+    waitingAct->setWaitingForDispatch();
+
+    // if we have a lock holder currently, ask the RexxActivation to yield immediately.
+    // make sure we call this AFTER incrementing waitingApiAccess so the activation knows
+    // to yield without checking the timestamp.
+    yieldCurrentActivity();
+
+    lock.release();                    // release the lock now
+
+    sentinel = true;
+    // in theory, we should now be the only activity waiting on the kernel lock
+    waitingAct->waitForKernel();         // perform the kernel lock
+    sentinel = false;
+    lock.reacquire();                    // get the resource lock back
+    sentinel = false;                    // another memory barrier
+
+    // we are no longer waiting to be dispatched.
+    waitingAct->clearWaitingForDispatch();
+
+    // and remove the waiting counters
+    waitingApiAccess--;
+    waitingAccess--;
+
+    // now that we have the kernel lock, dispatch another waiter
+    // to make sure the pipeline is always active.
+    dispatchNext();
+
+    // the setting of the sentinel variables acts as a memory barrier to
+    // ensure that the assignment of currentActivitiy occurs precisely at this point.
+    sentinel = true;
+    waitingAct->setupCurrentActivity();
+}
+
+
+/**
+ * Find an activity in the queue that is waiting for run permission
+ * and free it up for execution. Elements in the waitingActivities
+ * queue can be in different places in the dispatch process and we
+ * don't want to get things held up because an activity might not
+ * be able to obtain the lock immediately.
+ *
+ * @return true if an item was dispatched, false if nothing was dispatched.
+ */
+bool ActivityManager::dispatchNext()
+{
+    // run the dispatch queue looking for a non-posted activity and
+    // remove any that have already been posted.
+    while (!waitingActivities.empty())
+    {
+        // look for the first activity that has not had its semaphore posted yet and post it.
+        Activity *activity = waitingActivities.front();
+        // we're going to remove this in either case, so pop it off now.
+        waitingActivities.pop_front();
+
+        // if this has not been posted yet, post now and return
+        if (!activity->hasRunPermission())
+        {
+            activity->postDispatch();
+            return true;
+        }
+    }
+    // nothing dispatched
+    return false;
+}
+
 
 
 /**
@@ -205,23 +340,18 @@ void ActivityManager::returnWaitingActivity(Activity *waitingAct)
 {
     DispatchSection lock;                // need the dispatch queue lock
 
-    // nobody waiting yet?  Unusual, but we might be the only one waiting
-    // dispatch at this time. Push it back on the queue and post the semaphore
-    // so that this will wakup up when we rewind back to it.
-    if (waitingActivities.empty())
+    waitingAccess++;                     // this one is back
+    // this could be waiting because it is an API call back.
+    // we need to bump the counter for that as well.
+    if (waitingAct->isWaitingForApiAccess())
     {
-        // since this is at the front of the queue now, we want to ensure it
-        // wakes up once we get back to the semaphore wait call.
-        waitingAct->postDispatch();
+        waitingApiAccess++;
     }
-    else
-    {
-        // add to the end behind the others.
-        waitingActivities.push_back(waitingAct);
-        // others are in line ahead of us, so we need to clear our semaphore so that we
-        // won't get into a dispatch race.
-        waitingAct->clearRunWait();
-    }
+
+    // because this was suspended while waiting for a semaphore, we'll just post
+    // the run dispatch semaphore now and allow it to try to get the kernel lock
+    // when control unwinds to that point.
+    waitingAct->postDispatch();
 }
 
 
@@ -519,8 +649,6 @@ bool ActivityManager::setActivityTrace(thread_id_t thread_id, bool  on_or_off )
  */
 void ActivityManager::yieldCurrentActivity()
 {
-    ResourceSection lock;
-
     Activity *activity = ActivityManager::currentActivity;
     if (activity != OREF_NULL)
     {
@@ -580,26 +708,18 @@ void ActivityManager::exit(int retcode)
 
 
 /**
- * Request access to the kernel
+ * release the kernel access and make sure waiting activites are woken up.
  */
-void ActivityManager::lockKernel()
+void ActivityManager::releaseAccess()
 {
-    kernelSemaphore.request();
-}
+    DispatchSection lock;                // need the dispatch queue lock
 
+    // since we're releasing the semaphore, give any queued activities a nudge
+    // forward in the request process.
+    dispatchNext();
 
-/**
- * Release the kernel access
- */
-void ActivityManager::unlockKernel()
-{
-    // the use of the sentinel variables will ensure that the assignment of
-    // current activity occurs BEFORE the kernel semaphore is released.
-    sentinel = false;
-    currentActivity = OREF_NULL;
-    sentinel = true;
-    // now release the semaphore
-    kernelSemaphore.release();
+    // now release the kernel lock
+    unlockKernel();
 }
 
 
@@ -637,7 +757,7 @@ bool ActivityManager::lockKernelImmediate()
 {
     // don't give this up if we have activities in the
     // dispatch queue
-    if (waitingActivities.empty())
+    if (!hasWaiters())
     {
         return kernelSemaphore.requestImmediate();
     }
@@ -732,30 +852,21 @@ Activity *ActivityManager::getRootActivity()
 
     // get a new activity object
     Activity *activityObject = createCurrentActivity();
-    unlockKernel();
+
     // mark this as the root activity for an interpreter instance.  Some operations
     // are only permitted from the root threads.
     activityObject->setInterpreterRoot();
 
     // Do we have a nested interpreter call occurring on the same thread?  We need to
     // mark the old activity as suspended, and chain this to the new activity.
-    if (oldActivity != OREF_NULL)
-    {
-        oldActivity->setSuspended(true);
-        // this pushes this down the stack.
-        activityObject->setNestedActivity(oldActivity);
-    }
+    handleNestedActivity(activityObject, oldActivity);
 
-    // now we need to have this activity become the kernel owner.
-    activityObject->requestAccess();
     // this will help ensure that the code after the request access call
     // is only executed after access acquired.
     sentinel = true;
 
     activityObject->activate();        // let the activity know it's in use, potentially nested
-    // belt-and-braces.  Make sure the current activity is explicitly set to
-    // this activity before leaving.
-    currentActivity = activityObject;
+    activityObject->setupCurrentActivity();     // set this as the current activity
     return activityObject;
 }
 
@@ -776,6 +887,40 @@ void ActivityManager::returnRootActivity(Activity *activity)
     // remove this from the activity list so it will never get
     // picked up again.
     allActivities->removeItem(activity);
+}
+
+
+/**
+ * Handle nesting of activities caused by recursive reentry into the
+ * interpreter with a new attach or instance.
+ *
+ * @param newActivity
+ *               The newly created activity object.
+ * @param oldActivity
+ *               The (potential) old activity.
+ */
+void ActivityManager::handleNestedActivity(Activity *newActivity, Activity *oldActivity)
+{
+    // Do we have a nested interpreter call occurring on the same thread?  We need to
+    // mark the old activity as suspended, and chain this to the new activity.
+    if (oldActivity != OREF_NULL)
+    {
+        // if we have an activity on this thread that is waiting for dispatch,
+        // then we need to make sure the old activity is removed from the
+        // dispatch queue and disabled until this new activity is detached.
+        if (oldActivity->isWaitingForDispatch())
+        {
+            // make sure this is never dispatched.
+            suspendDispatch(oldActivity);
+        }
+        // this is a normal nested reentry, so just make it as suspended.
+        else
+        {
+            oldActivity->setSuspended(true);
+        }
+        // this pushes this down the stack.
+        newActivity->setNestedActivity(oldActivity);
+    }
 }
 
 
@@ -801,33 +946,31 @@ Activity *ActivityManager::attachThread()
     // we need to lock the kernel to have access to the memory manager to
     // create this activity. This is an "unowned" lock, since there will not be
     // an activity connected with it.
-    lockKernel();
+
+    // try the fast version first
+    if (!lockKernelImmediate())
+    {
+        DispatchSection lock;                // need the dispatch queue lock
+
+        waitingAttaches++;                   // make sure we indicate that someone is waiting for this
+        sentinel = true;
+        lock.release();                      // release the lock now
+        sentinel = false;
+
+        lockKernel();                        // now wait for the semaphore to come free
+
+        sentinel = true;
+        lock.reacquire();                    // get the resource lock back
+        sentinel = false;
+        waitingAttaches--;                   // remove our request to the lock
+    }
+
     // now that we have the lock, we can allocate an activity object
     // from the heap.
     Activity *activityObject = createCurrentActivity();
     // Do we have a nested interpreter call occurring on the same thread?  We need to
     // mark the old activity as suspended, and chain this to the new activity.
-    if (oldActivity != OREF_NULL)
-    {
-        // if we have an activity on this thread that is waiting for dispatch,
-        // then we need to make sure the old activity is removed from the
-        // dispatch queue and disabled until this new activity is detached.
-        if (oldActivity->isWaitingForDispatch())
-        {
-            // make sure this is never dispatched.
-            suspendDispatch(oldActivity);
-        }
-        // this is a normal nested reentry, so just make it as suspended.
-        else
-        {
-            oldActivity->setSuspended(true);
-        }
-        // The third state is an activity that's waiting on kernel access. We don't
-        // need to do anything special here.
-
-        // this pushes this down the stack.
-        activityObject->setNestedActivity(oldActivity);
-    }
+    handleNestedActivity(activityObject, oldActivity);
 
     // this will help ensure that the following code is only executed after
     // everything above is executed.
@@ -853,34 +996,37 @@ void ActivityManager::suspendDispatch(Activity *activity)
 {
     DispatchSection lock;                // need the dispatch queue lock
 
-    // if this activity is at the front of the queue, then we need to remove
-    // this and dispatch the new front element.
-    if (waitingActivities.front() == activity)
+    // decrement the waiting counter until this is returned to the queue
+    waitingAccess--;
+    // if this was an API entry wait, remove it also
+    if (activity->isWaitingForApiAccess())
     {
-        // belt and braces.  it is possible the dispatcher was
-        // reentered on the same thread, in which case we have an
-        // earlier stack frame waiting on the same semaphore.  Clear it so it
-        // get get reposted later.
-        activity->clearRunWait();
-
-        // We only get dispatched if we end up at the front of the queue again,
-        // so just pop the front element.
-        waitingActivities.pop_front();
-        // this will give some other thread a chance to run
-        if (hasWaiters())
-        {
-            waitingActivities.front()->postDispatch();
-            // because we posted the semaphore for that activity, we
-            // remove it from the queue, otherwise this could be processed
-            // again because of the orphan activity in the queue.
-            waitingActivities.pop_front();
-        }
+        waitingApiAccess--;
     }
-    // we're in line behind some other activity, so just remove this one
-    // from the queue. We don't need to repost anything at this point.
-    else
+
+    if (!waitingActivities.empty())
     {
-        removeWaitingActivity(activity);
+
+        // if this activity is at the front of the queue, then we need to remove
+        // this and dispatch the new front element.
+        if (waitingActivities.front() == activity)
+        {
+            // We can generally only get here if the activity is waiting on either the
+            // run semaphore or the kernel semaphore already. This will not wake up again
+            // until the current activity stack unwinds to the semaphore call, so
+            // we remove this from the queue so it doesn't keep getting dispatched and
+            // them poke the next activity in line if there is one. This will get
+            // returned to the queue once the re-entry is complete.
+            waitingActivities.pop_front();
+            // If we have another activity in the queue, dispatch it now.
+            dispatchNext();
+        }
+        // we're in line behind some other activity, so just remove this one
+        // from the queue. We don't need to repost anything at this point.
+        else
+        {
+            removeWaitingActivity(activity);
+        }
     }
 }
 
@@ -899,7 +1045,10 @@ void ActivityManager::suspendDispatch(Activity *activity)
  */
 void ActivityManager::removeWaitingActivity(Activity *waitingAct)
 {
+    // NOTE: The caller must be holding the dispatch lock
+
     // iterators don't work if the collection is empty, so
+    // this can occur if the run semaphore has already been posted.
     if (waitingActivities.empty())
     {
         return;
@@ -940,23 +1089,6 @@ Activity *ActivityManager::getActivity()
     // go acquire the kernel lock and take care of nesting
     activityObject->enterCurrentThread();
     return activityObject;             // Return the activity for thread
-}
-
-
-/**
- * Switch the active activity if there are other activities
- * waiting to run.
- *
- * @param activity The current active activity.
- */
-void ActivityManager::relinquish(Activity *activity)
-{
-    // if we have waiting activities, then let one of them
-    // in next.
-    if (hasWaiters())
-    {
-        addWaitingActivity(activity, true);
-    }
 }
 
 

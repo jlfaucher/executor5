@@ -117,7 +117,10 @@ void SysThread::shutdown()
 
 void SysThread::yield()
 {
-    sched_yield();
+// sched_yield doesn't really seem to do a yield unless this is a
+// real time scheduling priority, so force this thread to sleep for a
+// sort interval to give other threads a chance to run
+    usleep(1);
 }
 
 
@@ -140,6 +143,8 @@ void SysThread::createThread()
     pthread_attr_t  newThreadAttr;
     int schedpolicy, maxpri, minpri;
     struct sched_param schedparam;
+
+    attached = false;           // we own this thread
 
     // Create an attr block for Thread.
     pthread_attr_init(&newThreadAttr);
@@ -195,7 +200,18 @@ void SysThread::createThread()
         fprintf(stderr," *** ERROR: At SysThread(), createThread - RC = %d !\n", rc);
     }
     pthread_attr_destroy(&newThreadAttr);
-    attached = false;           // we own this thread
     return;
+}
+
+
+// wait for the thread to terminatre
+void SysThread::waitForTermination()
+{
+    if (!attached && _threadID != 0)
+    {
+        void *res;
+        pthread_join(_threadID, &res);
+        _threadID = 0;
+    }
 }
 

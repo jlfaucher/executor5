@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -290,12 +290,8 @@ void Activity::enterCurrentThread()
 {
     // the activity already existed for this thread, we're reentering,
     // so get the interpreter lock.
-    requestAccess();
+    requestApiAccess();
     activate();        // let the activity know it's in use, potentially nested
-
-    // belt-and-braces.  Make sure the current activity is explicitly set to
-    // this activity before leaving.
-    ActivityManager::currentActivity = this;
 }
 
 
@@ -1417,7 +1413,7 @@ void Activity::run()
     // give the other thread a chance to run.
     guardSem.post();
     runSem.post();
-    SysActivity::yield();
+    yield();
 }
 
 
@@ -1970,6 +1966,7 @@ void Activity::guardSet()
 void Activity::postDispatch()
 {
     runSem.post();
+    dispatchPosted = true;
 }
 
 
@@ -2076,7 +2073,7 @@ void Activity::releaseAccess()
     {
         // reset the numeric settings
         Numerics::setDefaultSettings();
-        ActivityManager::unlockKernel();
+        ActivityManager::releaseAccess();
     }
 }
 
@@ -2089,15 +2086,31 @@ void Activity::requestAccess()
     // try the fast version first
     if (ActivityManager::lockKernelImmediate())
     {
-        // update the current activity pointer and the global numeric settings.
-        ActivityManager::currentActivity = this;
-        Numerics::setCurrentSettings(numericSettings);
+        setupCurrentActivity();
         return;
     }
     // can't get it, go stand in line
     ActivityManager::addWaitingActivity(this, false);
-    // belt and braces to ensure this is done on this thread
-    ActivityManager::currentActivity = this;
+}
+
+
+/**
+ * Acquire priority API exclusive access to the kernel
+ */
+void Activity::requestApiAccess()
+{
+    // try the fast version first
+    if (ActivityManager::lockKernelImmediate())
+    {
+        setupCurrentActivity();
+        return;
+    }
+    // indicate we're waiting with priority
+    setWaitingForApiAccess();
+    // can't get it, go stand in line
+    ActivityManager::addWaitingApiActivity(this);
+    // and clear that waiting state
+    clearWaitingForApiAccess();
 }
 
 
@@ -2121,6 +2134,8 @@ void Activity::waitForKernel()
  */
 void Activity::setupCurrentActivity()
 {
+    DispatchSection lock;
+
     // update the current activity pointer and the global numeric settings.
     ActivityManager::currentActivity = this;
     Numerics::setCurrentSettings(numericSettings);
@@ -3362,6 +3377,24 @@ void Activity::createExitContext(ExitContext &context, NativeActivation *owner)
     // hook this up with the activity
     context.threadContext.threadContext = &threadContext.threadContext;
     context.threadContext.functions = &exitContextFunctions;
+    context.context = owner;
+}
+
+
+/**
+ * Set up an exit context for use with a I/O redirection command
+ *
+ * @param context The method context to initialize.
+ * @param owner   The native activation that owns this context.
+ */
+void Activity::createRedirectorContext(RedirectorContext &context, NativeActivation *owner)
+{
+    // This is handed out to the calling code rather than being
+    // a straight up context
+    context.redirectorContext.functions = &ioRedirectorContextFunctions;
+    // The redirectory does not have an exposed thread context, so we need to
+    // make a direct hookup.
+    context.activity = this;
     context.context = owner;
 }
 

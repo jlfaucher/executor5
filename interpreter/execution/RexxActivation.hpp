@@ -56,6 +56,7 @@
 #include "ActivationSettings.hpp"
 #include "BaseExecutable.hpp"
 #include "ProtectedObject.hpp"
+#include "SystemInterpreter.hpp"
 
 class RexxInstructionTrapBase;
 class ProtectedObject;
@@ -63,6 +64,8 @@ class SupplierClass;
 class PackageClass;
 class StackFrameClass;
 class RequiresDirective;
+class CommandIOConfiguration;
+class CommandIOContext;
 class RoutineClass;
 
 
@@ -104,6 +107,7 @@ class RexxActivation : public ActivationBase
         TRACE_PREFIX_INVOCATION,
         TRACE_PREFIX_NAMESPACE,
         TRACE_PREFIX_KEYWORD,
+        TRACE_PREFIX_ALIAS,
     } TracePrefix;
 
    void *operator new(size_t);
@@ -182,7 +186,7 @@ class RexxActivation : public ActivationBase
    void              toggleAddress();
    void              guardOn();
    void              raiseExit(RexxString *, RexxObject *, RexxString *, RexxObject *, RexxObject *, DirectoryClass *);
-   RexxActivation  * senderActivation();
+   ActivationBase  * senderActivation(RexxString *conditionName);
    RexxActivation  * external();
    void              interpret(RexxString *);
    void              signalTo(RexxInstruction *);
@@ -193,7 +197,7 @@ class RexxActivation : public ActivationBase
    void              leaveLoop(RexxString *);
    void              trapOn(RexxString *, RexxInstructionTrapBase *, bool);
    void              trapOff(RexxString *, bool);
-   void              setAddress(RexxString *);
+   void              setAddress(RexxString *, CommandIOConfiguration *config);
    void              signalValue(RexxString *);
    RexxString      * trapState(RexxString *);
    void              trapDelay(RexxString *);
@@ -208,7 +212,7 @@ class RexxActivation : public ActivationBase
    RexxString       *resolveProgramName(RexxString *name);
    RexxClass        *findClass(RexxString *name);
    RexxObject       *resolveDotVariable(RexxString *name, RexxObject *&);
-   void              command(RexxString *, RexxString *);
+   void              command(RexxString *, RexxString *, CommandIOConfiguration *config);
    int64_t           getElapsed();
    RexxDateTime      getTime();
    RexxInteger     * random(RexxInteger *, RexxInteger *, RexxInteger *);
@@ -259,6 +263,10 @@ class RexxActivation : public ActivationBase
    void              pushControl(RexxObject *);
    void              closeStreams();
    void              checkTrapTable();
+   void              checkIOConfigTable();
+   CommandIOConfiguration *getIOConfig(RexxString *environment);
+   void              addIOConfig(RexxString *environment, CommandIOConfiguration *config);
+   CommandIOContext *resolveAddressIOConfig(RexxString *address, CommandIOConfiguration *localConfig);
    RexxObject       *resolveStream(RexxString *name, bool input, Protected<RexxString> &fullName, bool *added);
    StringTable      *getStreams();
    RexxObject       *novalueHandler(RexxString *);
@@ -350,6 +358,7 @@ class RexxActivation : public ActivationBase
    inline bool              inDebug() { return settings.packageSettings.traceSettings.isDebug() && !debugPause;}
    inline void              traceResult(RexxObject * v) { if (tracingResults()) traceValue(v, TRACE_PREFIX_RESULT); };
    inline void              traceKeywordResult(RexxString *k, RexxObject *v) { if (tracingResults()) traceTaggedValue(TRACE_PREFIX_KEYWORD, NULL, true, k, VALUE_MARKER, v); }
+   inline void              traceVariableAlias(RexxString *k, RexxString *v) { if (tracingResults()) traceTaggedValue(TRACE_PREFIX_ALIAS, NULL, true, k, VALUE_MARKER, v); }
    inline void              traceResultValue(RexxObject * v) {  };
    inline bool              tracingInstructions() { return tracingAll(); }
    inline bool              tracingErrors() { return settings.packageSettings.traceSettings.tracingErrors(); }
@@ -511,6 +520,12 @@ class RexxActivation : public ActivationBase
        variable->drop();
    }
 
+   inline void aliasLocalVariable(RexxString *name, size_t index, RexxVariable *variable)
+   {
+       settings.localVariables.aliasVariable(name, index, variable);
+   }
+
+
    RexxObject *evaluateLocalCompoundVariable(RexxString *stemName, size_t index, RexxInternalObject **tail, size_t tailCount);
    RexxObject *getLocalCompoundVariableValue(RexxString *stemName, size_t index, RexxInternalObject **tail, size_t tailCount);
    RexxObject *getLocalCompoundVariableRealValue(RexxString *localstem, size_t index, RexxInternalObject **tail, size_t tailCount);
@@ -523,32 +538,11 @@ class RexxActivation : public ActivationBase
 
    inline bool novalueEnabled() { return settings.localVariables.getNovalue(); }
 
-   // The following methods be rights should be implemented by the
-   // RexxMemory class, but aren't because of the difficulties of
-   // making them inline methods that use the RexxVariable class.
-   // Therefore, we're going to break the encapsulation rules
-   // slightly and allow the activation class to manipulate that
-   // chain directly.
    inline RexxVariable *newLocalVariable(RexxString *name)
    {
-       RexxVariable *newVariable = memoryObject.variableCache;
-       if (newVariable != OREF_NULL)
-       {
-           memoryObject.variableCache = newVariable->getNext();
-           newVariable->reset(name);
-       }
-       else
-       {
-           newVariable = new_variable(name);
-       }
+       RexxVariable *newVariable = new_variable(name);
        newVariable->setCreator(this);
        return newVariable;
-   }
-
-   inline void cacheLocalVariable(RexxVariable *var)
-   {
-       var->cache(memoryObject.variableCache);
-       memoryObject.variableCache = var;
    }
 
    inline void cleanupLocalVariables()
@@ -560,24 +554,16 @@ class RexxActivation : public ActivationBase
        {
            parent->setLocalVariableDictionary(settings.localVariables.getNestedDictionary());
        }
-       else
-       {
-           // we need to cleanup the local variables and return them to the
-           // cache.
-           for (size_t i = 0; i < settings.localVariables.size; i++)
-           {
-               RexxVariable *var = settings.localVariables.get(i);
-               if (var != OREF_NULL && var->isLocal(this))
-               {
-                   cacheLocalVariable(var);
-               }
-           }
-       }
    }
 
    inline void setLocalVariableDictionary(VariableDictionary *dict) {settings.localVariables.setDictionary(dict); }
 
    void sayOutput(RexxString *line);
+   RexxString *pullInput();
+   RexxString *lineIn();
+   void queue(RexxString *, Activity::QueueOrder);
+
+   static const size_t yieldInstructions = 50;            // the number of instructions we'll execute before a yield check
 
    static const uint64_t RANDOM_FACTOR = 25214903917LL;   // random multiplication factor
    static const uint64_t RANDOM_ADDER = 11LL;
@@ -628,6 +614,6 @@ class RexxActivation : public ActivationBase
     uint64_t             randomSeed;    // random number seed
     bool                 randomSet;     // random seed has been set
     size_t               blockNest;     // block instruction nesting level
-
+    size_t               instructionCount;  // The number of instructions since we last yielded control
  };
  #endif

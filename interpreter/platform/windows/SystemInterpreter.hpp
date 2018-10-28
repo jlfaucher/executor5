@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -70,9 +70,6 @@ public:
     static void initializeInstance(InterpreterInstance *instance);
     static void terminateInstance(InterpreterInstance *instance);
 
-    static void startTimeSlice();
-    static void stopTimeSlice();
-    static inline void setTimeSliceTimerThread(HANDLE h) { timeSliceTimerThread = h; }
     static bool loadMessage(wholenumber_t code, char *buffer, size_t bufferLength);
 
     static RexxObject *popEnvironment(RexxActivation *context);
@@ -83,6 +80,8 @@ public:
     static const char *getPlatformName();
     static void releaseResultMemory(void *);
     static void *allocateResultMemory(size_t);
+    static void releaseSegmentMemory(void *);
+    static void *allocateSegmentMemory(size_t);
     static RexxString *getMessageHeader(wholenumber_t code);
     static RexxString *getMessageText(wholenumber_t code);
     static RexxString *getUserid();
@@ -103,7 +102,6 @@ public:
 protected:
 
     static HINSTANCE moduleHandle;      // handle to the interpeter DLL
-    static HANDLE timeSliceTimerThread; // handle of the time slice thread
 };
 
 #endif

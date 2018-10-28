@@ -112,7 +112,7 @@ public:
 
     inline void makeProxiedObject() { flags |= ProxiedObject; }
     inline bool requiresProxyObject() { return (flags & ProxiedObject) != 0; }
-    inline void makeProxy() { flags |= ProxyObject; }
+    inline void makeProxyObject() { flags |= ProxyObject; }
     inline bool isProxyObject() { return (flags & ProxyObject) != 0; }
     inline void clearObjectMark() { flags &= LiveMask; }
     inline void setObjectMark(size_t mark) { clearObjectMark(); flags |= mark; }
@@ -295,6 +295,8 @@ class RexxInternalObject : public RexxVirtualBase
     inline void   setNewSpace() { header.setNewSpace(); }
     inline void   setOldSpace() { header.setOldSpace(); }
     inline void   makeProxiedObject() { header.makeProxiedObject(); }
+    inline bool   requiresProxyObject() { return header.requiresProxyObject(); }
+    inline void   makeProxyObject() { header.makeProxyObject(); }
     inline bool   isProxyObject() { return header.isProxyObject(); }
            bool   isSubClassOrEnhanced();
            bool   isBaseClass();
@@ -474,7 +476,7 @@ class RexxObject : public RexxInternalObject
     RexxObject  *send(RexxObject **, size_t);
     RexxObject  *sendWith(RexxObject *, ArrayClass *);
     MessageClass *startCommon(RexxObject *message, RexxObject **arguments, size_t argCount);
-    static void decodeMessageName(RexxObject *target, RexxObject *message, RexxString *&messageName, RexxClass *&startScope);
+    static void decodeMessageName(RexxObject *target, RexxObject *message, ProtectedObject &messageName, ProtectedObject &startScope);
     RexxObject  *run(RexxObject **, size_t);
     void         checkUninit();
 

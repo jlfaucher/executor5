@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -73,7 +73,6 @@ class ActivationFrame;
 class ActivationBase;
 class NativeActivation;
 class RexxActivation;
-
 
 typedef enum
 {
@@ -177,6 +176,7 @@ class Activity : public RexxInternalObject
     inline void yieldControl() { releaseAccess(); requestAccess(); }
     void        yield();
     void        releaseAccess();
+    void        requestApiAccess();
     void        requestAccess();
     void        setupCurrentActivity();
     void        checkStackSpace();
@@ -230,7 +230,12 @@ class Activity : public RexxInternalObject
     inline size_t getActivationLevel() { return nestedCount; }
     inline void restoreActivationLevel(size_t l) { nestedCount = l; }
     inline bool isSuspended() { return suspended; }
+    inline void clearWaitingForDispatch() { waitingForDispatch = false; }
+    inline void setWaitingForDispatch() { waitingForDispatch = true; }
     inline bool isWaitingForDispatch() { return waitingForDispatch; }
+    inline void clearWaitingForApiAccess() { waitingForApiAccess = false; }
+    inline void setWaitingForApiAccess() { waitingForApiAccess = true; }
+    inline bool isWaitingForApiAccess() { return waitingForApiAccess; }
     inline bool isNestable() { return waitingOnSemaphore; }
     inline bool isWaiting() { return waitingForDispatch || waitingOnSemaphore; }
     inline void setSuspended(bool s) { suspended = s; }
@@ -252,8 +257,25 @@ class Activity : public RexxInternalObject
     void run(CallbackDispatcher &target);
     void run(TrappingDispatcher &target);
 
-    inline void        waitForDispatch() { waitingForDispatch = true; waitForRunPermission(); waitingForDispatch = false; }
+    inline bool  waitForDispatch()
+    {
+        waitingOnSemaphore = true;
+        bool timedOut = false;
+        // we wait for a small interval, then post the semaphore
+        // ourselves if we time out so the dispatcher knows we're no longer
+        // waiting.
+        if (!runSem.wait(MaxDispatchWait))
+        {
+            // our return indicates we timed out and are still in the wait queue
+            timedOut = true;
+            postDispatch();
+        }
+        waitingOnSemaphore = false;
+        return timedOut;
+    }
+
     inline void        waitForRunPermission() { waitingOnSemaphore = true; runSem.wait(); waitingOnSemaphore = false; }
+    inline bool        hasRunPermission() { return dispatchPosted; }
     inline void        waitForGuardPermission() { waitingOnSemaphore = true; guardSem.wait(); waitingOnSemaphore = false; }
            void        waitForKernel();
 
@@ -266,7 +288,7 @@ class Activity : public RexxInternalObject
     inline void        removeRunningRequires(RexxInternalObject *program) { requiresTable->remove(program);}
     inline void        resetRunningRequires() { requiresTable->empty();}
     inline bool        checkRequires(RexxString *n) { return runningRequires(n) != OREF_NULL; }
-    inline void        clearRunWait()  { runSem.reset(); }
+    inline void        clearRunWait()  { runSem.reset(); dispatchPosted = false; }
     inline void        clearGuardWait()  { guardSem.reset(); }
            uint64_t    getRandomSeed();
            RexxString *getLastMessageName();
@@ -303,6 +325,7 @@ class Activity : public RexxInternalObject
     void createMethodContext(MethodContext &context, NativeActivation *owner);
     void createCallContext(CallContext &context, NativeActivation *owner);
     void createExitContext(ExitContext &context, NativeActivation *owner);
+    void createRedirectorContext(RedirectorContext &context, NativeActivation *owner);
     RexxObject *getLocalEnvironment(RexxString *name);
     DirectoryClass *getLocal();
     CommandHandler *resolveCommandHandler(RexxString *);
@@ -310,6 +333,9 @@ class Activity : public RexxInternalObject
     static void initializeThreadContext();
 
  protected:
+
+    // the maximum time we'll wait while waiting for dispatch permission, in milliseconds.
+    static const uint32_t MaxDispatchWait = 50;
 
     ExitHandler &getExitHandler(int exitNum) {  return instance->getExitHandler(exitNum); }
     inline bool isExitEnabled(int exitNum) { return getExitHandler(exitNum).isEnabled(); }
@@ -354,8 +380,10 @@ class Activity : public RexxInternalObject
     bool     requestingString;          // in error handling currently
     bool     suspended;                 // the suspension flag
     bool     interpreterRoot;           // This is the root activity for an interpreter instance
+    bool     waitingForApiAccess;       // This activity is waiting for access for an API callback
     bool     waitingForDispatch;        // This activity is in the dispatch queue waiting to be dispatched.
     bool     waitingOnSemaphore;        // activity is blocked while waiting for any semaphore
+    bool     dispatchPosted;            // we have been given permission to run
     size_t   nestedCount;               // extent of the nesting
     size_t   attachCount;               // extent of nested attaches
     bool     newThreadAttached;         // Indicates this thread was a "side door" attach.
@@ -371,6 +399,7 @@ class Activity : public RexxInternalObject
     static MethodContextInterface methodContextFunctions;
     static CallContextInterface callContextFunctions;
     static ExitContextInterface exitContextFunctions;
+    static IORedirectorInterface ioRedirectorContextFunctions;
 };
 
 
@@ -431,6 +460,21 @@ inline NativeActivation *contextToActivation(RexxExitContext *c)
 inline NativeActivation *contextToActivation(RexxMethodContext *c)
 {
     return ((MethodContext *)c)->context;
+}
+
+
+/**
+ * Convert an API context to into the top native activation
+ * context associated with the thread.
+ *
+ * @param c      The source API context.
+ *
+ * @return A Native activation context that is the anchor point for the
+ *         API activity.
+ */
+inline NativeActivation *contextToActivation(RexxIORedirectorContext *c)
+{
+    return ((RedirectorContext *)c)->context;
 }
 
 #endif

@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -218,7 +218,20 @@ RexxInternalObject *RexxString::unflatten(Envelope *envelope)
     // if this has been proxied, then retrieve our target object from the environment
     if (isProxyObject())
     {
-        return TheEnvironment->entry(this);
+        // we have a couple of special cases, everything else should be a core class lookup.
+        if (strCompare("NIL"))
+        {
+            return TheNilObject;
+        }
+        else if (strCompare("ENVIRONMENT"))
+        {
+            return TheEnvironment;
+        }
+        else
+        {
+            // must be a reference to a core class
+            return TheRexxPackage->findClass(this);
+        }
     }
     else
     {
@@ -807,6 +820,52 @@ wholenumber_t RexxString::strictComp(RexxObject *otherObj)
 }
 
 
+/**
+ * Do a strict comparison of two strings when called by either
+ * the Interger or NumberString class. This returns:
+ *
+ *    a value < 0 when this is smaller than other
+ *    a value   0 when this is equal to other
+ *    a value > 0 when this is larger than other
+ *
+ * @param otherObj The other comparison object.
+ *
+ * @return The relative comparison result (<0, 0, >0)
+ */
+wholenumber_t RexxString::primitiveStrictComp(RexxObject *otherObj)
+{
+    wholenumber_t result;
+
+    // get the string argument and the data/length values
+    RexxString *other = otherObj->requestString();
+    size_t otherLen = other->getLength();
+    const char *otherData = other->getStringData();
+
+    // if we are the longer string string, compare using the other length.  the
+    // lengths are the tie breaker.
+    if (getLength() >= otherLen)
+    {
+        result = memcmp(getStringData(), otherData, (size_t) otherLen);
+        if ((result == 0) && (getLength() > otherLen))
+        {
+            result = 1;                      /* otherwise they are equal.         */
+        }
+    }
+    // compare using our length...
+    else
+    {
+        result = memcmp(getStringData(), otherData, (size_t) getLength());
+        // since the other length is longer, we cannot be equal.  The other string
+        // is longer, and is considered the greater of the two.
+        if (result == 0)
+        {
+            result = -1;
+        }
+    }
+    return result;
+}
+
+
 // simple macro for generating the arithmetic operator methods, which
 // are essentially identical except for the final method call.
 #define ArithmeticOperator(method)  \
@@ -1152,25 +1211,25 @@ RexxObject *RexxString::isLessOrEqual(RexxObject *other)
 
 RexxObject *RexxString::strictGreaterThan(RexxObject *other)
 {
-    CompareOperator(strictComp(other) > 0);
+    CompareOperator(primitiveStrictComp(other) > 0);
 }
 
 
 RexxObject *RexxString::strictLessThan(RexxObject *other)
 {
-    CompareOperator(strictComp(other) < 0);
+    CompareOperator(primitiveStrictComp(other) < 0);
 }
 
 
 RexxObject *RexxString::strictGreaterOrEqual(RexxObject *other)
 {
-    CompareOperator(strictComp(other) >= 0);
+    CompareOperator(primitiveStrictComp(other) >= 0);
 }
 
 
 RexxObject *RexxString::strictLessOrEqual(RexxObject *other)
 {
-    CompareOperator(strictComp(other) <= 0);
+    CompareOperator(primitiveStrictComp(other) <= 0);
 }
 
 
@@ -1999,6 +2058,42 @@ RexxString *RexxString::newString(const char *string, size_t length)
 
 
 /**
+ * Allocate and initialize a new string object from a
+ * pair of data buffer.
+ *
+ * @param s1     Pointer to the first data buffer
+ * @param l1     length of the first buffer
+ * @param s2     pointer to the second buffer
+ * @param l2     length of the second buffer
+ *
+ * @return A string object that is the concatenation of the two buffers.
+ */
+RexxString *RexxString::newString(const char *s1, size_t l1, const char *s2, size_t l2)
+{
+    // these are variable size objects.  We make sure we give some additional space
+    // for a terminating null character.
+
+    size_t size = l1 + l2;
+    size_t size2 = sizeof(RexxString) - (sizeof(char) * 3) + size;
+    RexxString *newObj = (RexxString *)new_object(size2, T_String);
+
+    // initialize the string fields
+    newObj->setLength(size);
+    newObj->hashValue = 0;               // make sure the hash value is zeroed
+
+    // add the terminating null
+    newObj->putChar(size, '\0');
+    // and copy the first string value
+    newObj->put(0, s1, l1);
+    // and the second
+    newObj->put(l1, s2, l2);
+    // by  default, we don't need live marking.
+    newObj->setHasNoReferences();
+    return newObj;
+}
+
+
+/**
  * Allocate (and initialize) an empty string object
  *
  * @param length The required lenth
@@ -2123,7 +2218,7 @@ RexxString *RexxString::newProxy(const char *string)
 {
     RexxString *sref = new_string(string);
     // mark as a proxy and return.
-    sref->makeProxiedObject();
+    sref->makeProxyObject();
 
     return sref;
 }

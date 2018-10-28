@@ -78,9 +78,19 @@ endif ()
 find_package(Subversion)
 if(SUBVERSION_FOUND)
   set(ORX_WC_REVISION 0)
-  Subversion_WC_INFO(${PROJECT_SOURCE_DIR} ORX)
-  set(ORX_BLD_LVL ${ORX_WC_REVISION})
+  # If the specified directory is not an SVN working copy then Subversion_WC_INFO will
+  # return an error and the generation of the makefile will be aborted.
+  # So call Subversion_WC_INFO only if svn info doesn't return an error.
+  # (the test AND IS_DIRECTORY ".svn" is too restrictive : .svn is not necessarily in trunk)
+  execute_process(COMMAND ${Subversion_SVN_EXECUTABLE} info ${PROJECT_SOURCE_DIR}
+    RESULT_VARIABLE Subversion_svn_info_result)
+  if(${Subversion_svn_info_result} EQUAL 0)
+    Subversion_WC_INFO(${PROJECT_SOURCE_DIR} ORX)
+    set(ORX_BLD_LVL ${ORX_WC_REVISION})
+  endif()
 endif()
+
+
 message(STATUS "SVN Revision Number is ${ORX_BLD_LVL}")
 
 if (WIN32)
@@ -204,6 +214,7 @@ if (WIN32)
        FORCE)
    endif()
    if (APPLE)
+     set (CMAKE_MACOSX_RPATH TRUE) # remove warning Policy CMP0042 is not set
      if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
        set (INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/bin)
        set (CMAKE_INSTALL_RPATH @executable_path)
@@ -212,7 +223,9 @@ if (WIN32)
        set (CMAKE_INSTALL_RPATH ${INSTALL_LIB_DIR})
      endif ()
    else ()
-     set (CMAKE_INSTALL_PREFIX /usr)
+     if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+         set (CMAKE_INSTALL_PREFIX /usr)
+     endif ()
      find_path(INSTALL_LIB_DIR libc.so PATHS ${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_INSTALL_PREFIX}/lib64)
      # at least on Ubuntu above doesn't seem to work; use fallback:
      if (${INSTALL_LIB_DIR} STREQUAL "INSTALL_LIB_DIR-NOTFOUND")

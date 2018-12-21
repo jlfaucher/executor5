@@ -23,6 +23,8 @@ interpreter/instructions/CommandIOConfiguration.cpp -text
 interpreter/instructions/CommandIOConfiguration.hpp -text
 interpreter/instructions/CommandIOContext.cpp -text
 interpreter/instructions/CommandIOContext.hpp -text
+interpreter/instructions/ConstantDirective.cpp -text
+interpreter/instructions/ConstantDirective.hpp -text
 interpreter/instructions/InputRedirector.cpp -text
 interpreter/instructions/InputRedirector.hpp -text
 interpreter/instructions/OutputRedirector.cpp -text

@@ -31,8 +31,16 @@ interpreter/instructions/OutputRedirector.cpp -text
 interpreter/instructions/OutputRedirector.hpp -text
 interpreter/instructions/UseArgVariableRef.cpp -text
 interpreter/instructions/UseArgVariableRef.hpp -text
+interpreter/memory/ExternalFileBuffer.hpp -text
+interpreter/memory/FileNameBuffer.cpp -text
+interpreter/memory/FileNameBuffer.hpp -text
 interpreter/messages/RexxErrorMessages.h -text
 interpreter/messages/RexxErrorMessages.xsl -text
+interpreter/platform/unix/SysRexxUtilFunctions.h -text
+interpreter/platform/windows/SysRexxUtil.cpp -text
+interpreter/platform/windows/SysRexxUtilFunctions.h -text
+interpreter/runtime/RexxUtilCommon.cpp -text
+interpreter/runtime/RexxUtilCommon.hpp -text
 platform/unix/50-rxapid.preset -text
 platform/unix/debian/changelog.in -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/cmake/postinst.in -text

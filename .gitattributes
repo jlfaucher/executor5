@@ -9,6 +9,10 @@ extensions/platform/windows/oodialog/_downArrowBlue.ico -text
 extensions/platform/windows/oodialog/_upArrowBlue.ico -text
 extensions/platform/windows/oodialog/oodialog.ico -text svneol=unset#applicatiion/octet-stream
 extensions/platform/windows/oodialog/rexx.ico -text
+interpreter/classes/EventSemaphore.cpp -text
+interpreter/classes/EventSemaphore.hpp -text
+interpreter/classes/MutexSemaphore.cpp -text
+interpreter/classes/MutexSemaphore.hpp -text
 interpreter/classes/VariableReference.cpp -text
 interpreter/classes/VariableReference.hpp -text
 interpreter/concurrency/ConditionTrappingDispatcher.cpp -text

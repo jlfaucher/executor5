@@ -50,6 +50,7 @@ platform/unix/50-rxapid.preset -text
 platform/unix/debian/changelog.in -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/cmake/postinst.in -text
 platform/unix/debian/cmake/prerm -text
+platform/unix/debian/cmake/prerm.in -text
 platform/unix/debian/compat -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/control -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/copyright -text svnc_snv_003aeol_002dstyle=native

@@ -61,8 +61,10 @@ platform/unix/debian/prerm -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/rules -text svnc_snv_003aeol_002dstyle=native
 platform/unix/macosx/MakeRexxPackage.in -text
 platform/unix/menu/rexxtry.xml svneol=native#text
+platform/unix/oorexx-config.in -text
 platform/unix/oorexx.appdata.xml svneol=native#text
 platform/unix/oorexx.png -text svneol=unset#image/png
+platform/unix/oorexx.spec.in -text
 platform/windows/install/orange-uninstall.bmp -text svneol=unset#image/bmp
 platform/windows/install/orange.bmp -text svneol=unset#image/bmp
 platform/windows/install/uninstall.ico -text svneol=unset#applicatiion/octet-stream

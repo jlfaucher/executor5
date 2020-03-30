@@ -19,6 +19,7 @@ interpreter/classes/VariableReference.cpp -text
 interpreter/classes/VariableReference.hpp -text
 interpreter/concurrency/ConditionTrappingDispatcher.cpp -text
 interpreter/concurrency/ConditionTrappingDispatcher.hpp -text
+interpreter/execution/ActivationSettings.cpp -text
 interpreter/expression/SpecialDotVariable.cpp -text
 interpreter/expression/SpecialDotVariable.hpp -text
 interpreter/expression/VariableReferenceOp.cpp -text

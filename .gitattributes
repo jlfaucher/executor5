@@ -52,7 +52,6 @@ platform/unix/50-rxapid.preset -text
 platform/unix/debian/changelog.in -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/cmake/postinst.in -text
 platform/unix/debian/cmake/prerm -text
-platform/unix/debian/cmake/prerm.in -text
 platform/unix/debian/compat -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/control -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/copyright -text svnc_snv_003aeol_002dstyle=native
@@ -64,7 +63,6 @@ platform/unix/debian/prerm -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/rules -text svnc_snv_003aeol_002dstyle=native
 platform/unix/macosx/MakeRexxPackage.in -text
 platform/unix/menu/rexxtry.xml svneol=native#text
-platform/unix/oorexx-config.in -text
 platform/unix/oorexx.appdata.xml svneol=native#text
 platform/unix/oorexx.png -text svneol=unset#image/png
 platform/windows/install/orange-uninstall.bmp -text svneol=unset#image/bmp

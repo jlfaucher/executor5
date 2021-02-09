@@ -61,8 +61,8 @@ platform/unix/debian/postinst.in -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/postrm -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/prerm -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/rules -text svnc_snv_003aeol_002dstyle=native
-platform/unix/macos/install/Readme_ooRexx5.txt -text
-platform/unix/macos/install/Readme_ooRexx5_USB.txt -text
+platform/unix/macos/install/Readme_ooRexx.txt -text
+platform/unix/macos/install/Readme_ooRexx_USB.txt -text
 platform/unix/menu/rexxtry.xml svneol=native#text
 platform/unix/oorexx.appdata.xml svneol=native#text
 platform/unix/oorexx.png -text svneol=unset#image/png

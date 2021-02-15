@@ -65,8 +65,8 @@ platform/unix/macos/install/Readme_ooRexx.txt -text
 platform/unix/macos/install/Readme_ooRexx_USB.txt -text
 platform/unix/macos/install/build_macOS_dmg.sh.in -text
 platform/unix/macos/install/oorexx.png -text
-platform/unix/menu/rexxtry.xml svneol=native#text
-platform/unix/oorexx.appdata.xml svneol=native#text
+platform/unix/menu/rexxtry.xml -text svneol=native#text
+platform/unix/oorexx.appdata.xml -text svneol=native#text
 platform/unix/oorexx.png -text svneol=unset#image/png
 platform/windows/install/orange-uninstall.bmp -text svneol=unset#image/bmp
 platform/windows/install/orange.bmp -text svneol=unset#image/bmp

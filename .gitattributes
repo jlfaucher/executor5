@@ -47,19 +47,8 @@ interpreter/platform/unix/SysRexxUtilFunctions.h -text
 interpreter/platform/windows/SysRexxUtilFunctions.h -text
 interpreter/runtime/RexxUtilCommon.cpp -text
 interpreter/runtime/RexxUtilCommon.hpp -text
-platform/unix/50-rxapid.preset -text
-platform/unix/debian/changelog.in -text svnc_snv_003aeol_002dstyle=native
 platform/unix/debian/cmake/postinst.in -text
 platform/unix/debian/cmake/prerm -text
-platform/unix/debian/compat -text svnc_snv_003aeol_002dstyle=native
-platform/unix/debian/control -text svnc_snv_003aeol_002dstyle=native
-platform/unix/debian/copyright -text svnc_snv_003aeol_002dstyle=native
-platform/unix/debian/dirs -text svnc_snv_003aeol_002dstyle=native
-platform/unix/debian/docs -text svnc_snv_003aeol_002dstyle=native
-platform/unix/debian/postinst.in -text svnc_snv_003aeol_002dstyle=native
-platform/unix/debian/postrm -text svnc_snv_003aeol_002dstyle=native
-platform/unix/debian/prerm -text svnc_snv_003aeol_002dstyle=native
-platform/unix/debian/rules -text svnc_snv_003aeol_002dstyle=native
 platform/unix/macos/install/Readme_ooRexx.txt -text
 platform/unix/macos/install/Readme_ooRexx_USB.txt -text
 platform/unix/macos/install/build_macOS_dmg.sh.in -text

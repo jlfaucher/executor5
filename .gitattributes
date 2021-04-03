@@ -47,8 +47,6 @@ interpreter/platform/unix/SysRexxUtilFunctions.h -text
 interpreter/platform/windows/SysRexxUtilFunctions.h -text
 interpreter/runtime/RexxUtilCommon.cpp -text
 interpreter/runtime/RexxUtilCommon.hpp -text
-platform/unix/debian/cmake/postinst.in -text
-platform/unix/debian/cmake/prerm -text
 platform/unix/macos/install/Readme_ooRexx.txt -text
 platform/unix/macos/install/Readme_ooRexx_USB.txt -text
 platform/unix/macos/install/build_macOS_dmg.sh.in -text

@@ -41,8 +41,6 @@ interpreter/instructions/UseArgVariableRef.hpp -text
 interpreter/memory/ExternalFileBuffer.hpp -text
 interpreter/memory/FileNameBuffer.cpp -text
 interpreter/memory/FileNameBuffer.hpp -text
-interpreter/messages/RexxErrorMessages.h -text
-interpreter/messages/RexxErrorMessages.xsl -text
 interpreter/platform/unix/SysRexxUtilFunctions.h -text
 interpreter/platform/windows/SysRexxUtilFunctions.h -text
 interpreter/runtime/RexxUtilCommon.cpp -text

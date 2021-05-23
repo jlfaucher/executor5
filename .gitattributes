@@ -1,6 +1,5 @@
 * text=auto !eol
 common/BitSet.hpp -text
-extensions/json/json.cls -text
 extensions/platform/windows/oodialog/AppIcon.ico -text
 extensions/platform/windows/oodialog/AppIcon2.ico -text
 extensions/platform/windows/oodialog/AppIconBlueBeaker.ico -text

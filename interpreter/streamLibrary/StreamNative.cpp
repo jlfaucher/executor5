@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2021 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -52,6 +52,7 @@
 #include <errno.h>
 #include <new>
 #include <stdio.h>
+#include "FileNameBuffer.hpp"
 
 /********************************************************************************/
 /*                                                                              */
@@ -127,15 +128,15 @@ StreamInfo *checkStreamInfo(RexxMethodContext *context, void *streamPtr, RexxObj
  */
 int reclength_token(TokenDefinition* ttsp, StreamToken &tokenizer, void *userparms)
 {
-                                        /* get the next token in TokenString */
-    if (tokenizer.nextToken())
+   // record length can only be specified once
+   if (tokenizer.nextToken() && *((size_t *)userparms) == 0)
     {
-        int offset = 0;
+        size_t offset = 0;
 
-        // must be convertable
-        if (!tokenizer.toNumber(offset))
+        // record length must be convertible and > 0
+        if (!tokenizer.toNumber(offset) || offset == 0)
         {
-            return 1;   // non numeric token, error
+            return 1;   // non-numeric token or zero, error
         }
 
         *((size_t *)userparms) = offset;
@@ -158,8 +159,8 @@ int reclength_token(TokenDefinition* ttsp, StreamToken &tokenizer, void *userpar
  */
 int position_offset(TokenDefinition* ttsp, StreamToken &tokenizer, void *userparms)
 {
-                                       /* get the next token in TokenString */
-   if (tokenizer.nextToken())
+   // offset can only be specified once
+   if (tokenizer.nextToken() && *((int64_t *)userparms) == -1)
    {
        int64_t offset = 0;
 
@@ -447,8 +448,9 @@ void StreamInfo::checkStreamType()
             // not given as a binary record length?
             if (!binaryRecordLength)
             {
+                int64_t size64 = size();
                 // one stream, one record, up to the record size restriction
-                binaryRecordLength = (size_t)size();
+                binaryRecordLength = size64 <= SIZE_MAX ? (size_t)size64 : 0;
                 if (binaryRecordLength == 0)
                 {
                     // raise an exception for this
@@ -566,7 +568,7 @@ const char *StreamInfo::openStd(const char *options)
    }
 
    // the resolved name is the same as the input name.
-   strcpy(qualified_name, stream_name);
+   qualified_name = stream_name;
    // we're open, and ready
    isopen = true;
 
@@ -607,13 +609,14 @@ const char *StreamInfo::handleOpen(const char *options)
     resetFields();
 
     /* copy into the full name from the name */
-    strcpy(qualified_name,stream_name);
+    qualified_name = stream_name;
 
     // do we have options?
     if (options != NULL)
     {
     /* Action table for open parameters */
         ParseAction  OpenActionread[] = {
+            ParseAction(MEB, read_only),
             ParseAction(MEB, write_only),
             ParseAction(MEB, read_write),
             ParseAction(BitOr, oflag, RX_O_RDONLY),
@@ -622,6 +625,7 @@ const char *StreamInfo::handleOpen(const char *options)
         };
         ParseAction OpenActionwrite[] = {
             ParseAction(MEB, read_only),
+            ParseAction(MEB, write_only),
             ParseAction(MEB, read_write),
             ParseAction(BitOr, oflag, WR_CREAT),
             ParseAction(SetBool, write_only, true),
@@ -630,11 +634,13 @@ const char *StreamInfo::handleOpen(const char *options)
         ParseAction OpenActionboth[] = {
             ParseAction(MEB, read_only),
             ParseAction(MEB, write_only),
+            ParseAction(MEB, read_write),
             ParseAction(BitOr, oflag, RDWR_CREAT),
             ParseAction(SetBool, read_write, true),
             ParseAction()
         };
         ParseAction OpenActionnobuffer[] = {
+            ParseAction(MEB, nobuffer),
             ParseAction(SetBool, nobuffer, true),
             ParseAction()
         };
@@ -644,7 +650,7 @@ const char *StreamInfo::handleOpen(const char *options)
             ParseAction()
         };
         ParseAction OpenActionreclength[] = {
-            ParseAction(MIB, record_based, true),
+            ParseAction(MIB, record_based),
             ParseAction(CallItem, reclength_token, &binaryRecordLength),
             ParseAction()
         };
@@ -724,7 +730,7 @@ void StreamInfo::resetFields()
     // initialize the stream info
     //  in case this is not the first
     // open for this stream
-    strcpy(qualified_name, "\0");
+    qualified_name = "";
     fileInfo.reset();
     stream_line_size = 0;
     binaryRecordLength = 0;
@@ -991,9 +997,9 @@ RexxStringObject StreamInfo::readLine(char *buffer, size_t length, bool update_p
  */
 void StreamInfo::resolveStreamName()
 {
-    if (strlen(qualified_name) == 0)
+    if (qualified_name.length() == 0)
     {
-        SysFileSystem::qualifyStreamName(stream_name, qualified_name, sizeof(qualified_name));
+        SysFileSystem::qualifyStreamName(stream_name, qualified_name);
     }
 }
 
@@ -1104,8 +1110,8 @@ void StreamInfo::completeLine(size_t writeLength)
  */
 void StreamInfo::writeFixedLine(const char *data, size_t length)
 {
-    /* calculate the length needed       */
-    size_t write_length = binaryRecordLength - (size_t)((charWritePosition % binaryRecordLength) - 1);
+    // calculate the length needed
+    size_t write_length = binaryRecordLength - (charWritePosition - 1) % binaryRecordLength;
     // make sure we don't go over the length of the record.
     if (length > write_length)
     {
@@ -1321,6 +1327,14 @@ RexxStringObject StreamInfo::readVariableLine()
         size_t bytesRead = 0;
         if (!fileInfo.gets(readPosition, bufferSize - currentLength, bytesRead))
         {
+            // we could have hit the eof after the last read because we were right on
+            // boundary. If we have data already read, then return that line as a result.
+            if (currentLength > 0)
+            {
+                lineReadIncrement();
+                return context->NewString(buffer, currentLength);
+            }
+
             checkEof();
         }
         // update the size of the line now
@@ -1339,13 +1353,7 @@ RexxStringObject StreamInfo::readVariableLine()
             return context->NewString(buffer, currentLength - 1);
         }
 
-        // No new line but we hit end of file reading this?  This will be the
-        // entire line then.
-        if (fileInfo.atEof())
-        {
-            lineReadIncrement();
-            return context->NewString(buffer, currentLength);
-        }
+        // extend the buffer and try reading again
         buffer = extendBuffer(bufferSize);
     }
 }
@@ -1372,6 +1380,15 @@ void StreamInfo::appendVariableLine(RexxArrayObject result)
         size_t bytesRead = 0;
         if (!fileInfo.gets(readPosition, bufferSize - currentLength, bytesRead))
         {
+            // this could be a read that is at an EOF boundary. If we have any data, then
+            // we need to process that line and return it.
+            if (currentLength > 0)
+            {
+                lineReadIncrement();
+                context->ArrayAppendString(result, buffer, currentLength - 1);
+                return;
+            }
+
             // this will raise a NOTREADY condition and throw an exception,
             // so it will not return.
             checkEof();
@@ -1402,6 +1419,7 @@ void StreamInfo::appendVariableLine(RexxArrayObject result)
             context->ArrayAppendString(result, buffer, currentLength);
             return;
         }
+
         buffer = extendBuffer(bufferSize);
     }
 }
@@ -1534,9 +1552,15 @@ RexxMethod3(RexxStringObject, stream_charin, CSELF, streamPtr, OPTIONAL_int64_t,
  */
 size_t StreamInfo::charout(RexxStringObject data, bool _setPosition, int64_t position)
 {
-    // no data given?  This is really a close operation.
+    // no data given?  This is a close request or a position request
     if (data == NULLOBJECT)
     {
+        // if this is a (perfectly valid!) request to close a read-only
+        // stream, we don't do any writeSetup to avoid raising NOTREADY
+        if (read_only && !_setPosition)
+        {
+            close();
+        }
         // do the setup operations
         writeSetup();
         // if no position was specified, close this out
@@ -1640,7 +1664,7 @@ RexxStringObject StreamInfo::linein(bool _setPosition, int64_t position, size_t 
     {
         // we need to adjust for any charin operations that might have
         // occurred within this record
-        size_t read_length = binaryRecordLength - (size_t)((charReadPosition % (int64_t)binaryRecordLength) - 1);
+        size_t read_length = binaryRecordLength - (charReadPosition - 1) % binaryRecordLength;
         // a buffer string allows us to read the data into an actual string object
         // without having to first read it into a separate buffer.  Since charin()
         // is frequently used to read in entire files at one shot, this can be a
@@ -1707,9 +1731,7 @@ int StreamInfo::arrayin(RexxArrayObject result)
         {
             // we need to adjust for any charin operations that might have
             // occurred within this record
-            size_t read_length = binaryRecordLength -
-             ((charReadPosition % (int64_t)binaryRecordLength) == 0 ? 0 :
-             (size_t)(charReadPosition % (int64_t)binaryRecordLength) - 1);
+            size_t read_length = binaryRecordLength - (charReadPosition - 1) % binaryRecordLength;
             // a buffer string allows us to read the data into an actual string object
             // without having to first read it into a separate buffer.  Since charin()
             // is frequently used to read in entire files at one shot, this can be a
@@ -1953,15 +1975,22 @@ RexxMethod1(int64_t, stream_chars, CSELF, streamPtr)
  */
 int StreamInfo::lineout(RexxStringObject data, bool _setPosition, int64_t position)
 {
-    // nothing to process?
+    // no data given?  This is a close request or a position request
     if (data == NULLOBJECT)
     {
+        // if this is a (perfectly valid!) request to close a read-only
+        // stream, we don't do any writeSetup to avoid raising NOTREADY
+        if (read_only && !_setPosition)
+        {
+            close();
+        }
+        // do the setup operations
         writeSetup();
         // if this is a binary stream, we may have a line to complete
         if (record_based)
         {
             // calculate length to write out
-            size_t padding = binaryRecordLength - (size_t)((charWritePosition % binaryRecordLength) - 1);
+            size_t padding = binaryRecordLength - (charWritePosition - 1) % binaryRecordLength;
             completeLine(padding);
         }
         // not a line repositioning?  we need to close
@@ -1973,8 +2002,8 @@ int StreamInfo::lineout(RexxStringObject data, bool _setPosition, int64_t positi
         {
             setLineWritePosition(position);
         }
-        /* set the proper position           */
-        return 0;                       /* no residual                       */
+        // no data, no residual!
+        return 0;
     }
 
     // get the specifics
@@ -1992,11 +2021,9 @@ int StreamInfo::lineout(RexxStringObject data, bool _setPosition, int64_t positi
     // binary mode write?
     if (record_based)
     {
-        /* if the line_out is longer than    */
-        /* reclength plus any char out data  */
-        /*  raise a syntax error - invalid   */
-        /* call to routine                   */
-        if (binaryRecordLength < length + ((charWritePosition % binaryRecordLength) - 1))
+        // raise syntax if the line plus any (if any) charOut data is
+        // longer than our RECLENGTH
+        if (binaryRecordLength < length + (charWritePosition - 1) % binaryRecordLength)
         {
             raiseException(Rexx_Error_Incorrect_method);
         }
@@ -2123,8 +2150,9 @@ RexxMethod1(CSTRING, stream_uninit, CSELF, streamPtr)
     {
         stream_info->streamClose();
         // The stream information is held in a Buffer object that will be
-        // automatically garbage collected with the stream object.  We don't
-        // need to explicitly delete this
+        // automatically garbage collected with the stream object.
+        // however, we do need to drive the destructors for this object
+        stream_info->~StreamInfo();
         stream_info = NULL;
         // clear the backing buffer for the stream info
         context->DropObjectVariable("CSELF");
@@ -2194,8 +2222,9 @@ RexxMethod1(CSTRING, stream_flush, CSELF, streamPtr)
 const char *StreamInfo::streamOpen(const char *options)
 {
     int oflag = 0;                      // no default open options
-    int pmode = 0;                      /* and the protection mode           */
-    int shared = RX_SH_DENYRW;             /* def. open is non shared           */
+    int pmode = 0;                      // and the protection mode
+    int shared = RX_SH_DENYRW;          // default open is non-shared
+    bool shared_set = false;            // was a SHARExxx option already specified?
 
     // if already open, make sure we close this
     if (isopen)
@@ -2224,6 +2253,7 @@ const char *StreamInfo::streamOpen(const char *options)
     {
     /* Action table for open parameters */
         ParseAction  OpenActionread[] = {
+            ParseAction(MEB, read_only),
             ParseAction(MEB, read_write),
             ParseAction(MEB, write_only),
             ParseAction(MEB, append),
@@ -2235,16 +2265,18 @@ const char *StreamInfo::streamOpen(const char *options)
         };
 
         ParseAction OpenActionwrite[] = {
-            ParseAction(MEB, read_write),
             ParseAction(MEB, read_only),
+            ParseAction(MEB, read_write),
+            ParseAction(MEB, write_only),
             ParseAction(SetBool, write_only, true),
             ParseAction(BitOr, oflag, WR_CREAT),
             ParseAction(BitOr, pmode, RX_S_IWRITE),
             ParseAction()
         };
         ParseAction OpenActionboth[] = {
-            ParseAction(MEB, write_only),
             ParseAction(MEB, read_only),
+            ParseAction(MEB, read_write),
+            ParseAction(MEB, write_only),
             ParseAction(SetBool, read_write, true),
             ParseAction(BitOr, oflag, RDWR_CREAT),
             ParseAction(BitOr, pmode, IREAD_IWRITE),
@@ -2252,6 +2284,7 @@ const char *StreamInfo::streamOpen(const char *options)
         };
         ParseAction OpenActionappend[] = {
             ParseAction(MEB, read_only),
+            ParseAction(MEB, append),
             ParseAction(ME, oflag, RX_O_TRUNC),
             ParseAction(SetBool, append, true),
             ParseAction(BitOr, oflag, RX_O_APPEND),
@@ -2259,16 +2292,18 @@ const char *StreamInfo::streamOpen(const char *options)
         };
         ParseAction OpenActionreplace[] = {
             ParseAction(MEB, read_only),
-            ParseAction(ME, oflag, RX_O_APPEND),
+            ParseAction(MEB, append),
+            ParseAction(ME, oflag, RX_O_TRUNC),
             ParseAction(BitOr, oflag, RX_O_TRUNC),
             ParseAction()
         };
         ParseAction OpenActionnobuffer[] = {
+            ParseAction(MEB, nobuffer),
             ParseAction(SetBool, nobuffer, true),
             ParseAction()
         };
         ParseAction OpenActionbinary[] = {
-            ParseAction(MEB, record_based, true),
+            ParseAction(MEB, record_based),
             ParseAction(SetBool, record_based, true),
             ParseAction()
         };
@@ -2279,16 +2314,22 @@ const char *StreamInfo::streamOpen(const char *options)
         };
 
         ParseAction OpenActionshared[] = {
+            ParseAction(MEB, shared_set),
+            ParseAction(SetBool, shared_set, true),
             ParseAction(SetItem, shared, RX_SH_DENYNO),
             ParseAction()
         };
 
         ParseAction OpenActionsharedread[] = {
+            ParseAction(MEB, shared_set),
+            ParseAction(SetBool, shared_set, true),
             ParseAction(SetItem, shared, RX_SH_DENYWR),
             ParseAction()
         };
 
         ParseAction OpenActionsharedwrite[] = {
+            ParseAction(MEB, shared_set),
+            ParseAction(SetBool, shared_set, true),
             ParseAction(SetItem, shared, RX_SH_DENYRD),
             ParseAction()
         };
@@ -2357,12 +2398,7 @@ const char *StreamInfo::streamOpen(const char *options)
         append = false;
         oflag |= RDWR_CREAT;
         pmode |= IREAD_IWRITE;
-
-        // TODO: note that the docs say the default shared mode is SHARED.  But,
-        // the code on entry sets the default to not shared.  Need to either fix
-        // the docs or the code.
     }
-
 
     resolveStreamName();                /* get the fully qualified name      */
 
@@ -2398,7 +2434,7 @@ const char *StreamInfo::streamOpen(const char *options)
             char work[32];
 
             /* format the error return           */
-            sprintf(work, "ERROR:%d", ENOENT);
+            snprintf(work, sizeof(work), "ERROR:%d", ENOENT);
             /* go raise a notready condition     */
             notreadyError(ENOENT, context->NewStringFromAsciiz(work));
         }
@@ -2612,21 +2648,25 @@ int64_t StreamInfo::streamPosition(const char *options)
             ParseAction()
         };
         ParseAction Operation_Read[] = {
+            ParseAction(ME, position_flags, operation_read),
             ParseAction(ME, position_flags, operation_write),
             ParseAction(BitOr, position_flags, operation_read),
             ParseAction()
         };
         ParseAction Operation_Write[] = {
             ParseAction(ME, position_flags, operation_read),
+            ParseAction(ME, position_flags, operation_write),
             ParseAction(BitOr, position_flags, operation_write),
             ParseAction()
         };
         ParseAction Position_By_Char[] = {
             ParseAction(ME, position_flags, position_by_line),
+            ParseAction(ME, position_flags, position_by_char),
             ParseAction(BitOr, position_flags, position_by_char),
             ParseAction()
         };
         ParseAction Position_By_Line[] = {
+            ParseAction(ME, position_flags, position_by_line),
             ParseAction(ME, position_flags, position_by_char),
             ParseAction(BitOr, position_flags, position_by_line),
             ParseAction()
@@ -2716,7 +2756,6 @@ int64_t StreamInfo::streamPosition(const char *options)
     {
         if (append)    /* opened append?                    */
         {
-
             notreadyError(0);             // cause a notready condition
             return 0;
         }
@@ -3007,30 +3046,39 @@ RexxObjectPtr StreamInfo::queryStreamPosition(const char *options)
     /* Action table for query position parameters */
 
         ParseAction Query_System_Position[] = {
-            ParseAction(ME, position_flags, query_write_position),
+            ParseAction(ME, position_flags, query_system_position),
             ParseAction(ME, position_flags, query_read_position),
+            ParseAction(ME, position_flags, query_write_position),
+            ParseAction(ME, position_flags, query_char_position),
+            ParseAction(ME, position_flags, query_line_position),
             ParseAction(BitOr, position_flags, query_system_position),
             ParseAction()
         };
         ParseAction Query_Read_Position[] = {
-            ParseAction(ME, position_flags, query_write_position),
             ParseAction(ME, position_flags, query_system_position),
+            ParseAction(ME, position_flags, query_read_position),
+            ParseAction(ME, position_flags, query_write_position),
             ParseAction(BitOr, position_flags, query_read_position),
             ParseAction()
         };
         ParseAction Query_Write_Position[] = {
-            ParseAction(ME, position_flags, query_read_position),
             ParseAction(ME, position_flags, query_system_position),
+            ParseAction(ME, position_flags, query_read_position),
+            ParseAction(ME, position_flags, query_write_position),
             ParseAction(BitOr, position_flags, query_write_position),
             ParseAction()
         };
         ParseAction Query_Char_Position[] = {
+            ParseAction(ME, position_flags, query_system_position),
+            ParseAction(ME, position_flags, query_char_position),
             ParseAction(ME, position_flags, query_line_position),
             ParseAction(BitOr, position_flags, query_char_position),
             ParseAction()
         };
         ParseAction Query_Line_Position[] = {
+            ParseAction(ME, position_flags, query_system_position),
             ParseAction(ME, position_flags, query_char_position),
+            ParseAction(ME, position_flags, query_line_position),
             ParseAction(BitOr, position_flags, query_line_position),
             ParseAction()
         };
@@ -3127,7 +3175,7 @@ int64_t StreamInfo::getLineReadPosition()
     if (record_based)
     {
         // calculate this using the record length
-        return (charReadPosition / binaryRecordLength) + (charReadPosition % binaryRecordLength ? 1 : 0);
+        return (charReadPosition - 1) / binaryRecordLength + 1;
     }
     else
     {
@@ -3667,7 +3715,7 @@ StreamInfo::StreamInfo(RexxObjectPtr s, const char *inputName)
 
     // initialize the default values
     resetFields();
-    strncpy(stream_name, inputName, SysFileSystem::MaximumPathLength);
+    stream_name = inputName;
     // this stream is in an unknown state now.
     state = StreamUnknown;
 }

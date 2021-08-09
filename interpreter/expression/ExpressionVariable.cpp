@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -345,6 +345,30 @@ void RexxSimpleVariable::clearGuard(RexxActivation *context)
 {
                                        /* look up the name                  */
     RexxVariable *variable = context->getLocalVariable(variableName, index);
+    variable->uninform(ActivityManager::currentActivity); /* remove the notification           */
+}
+
+
+/**
+ * Set a guard notification on a simple variable.
+ *
+ * @param dictionary The target dictionary
+ */
+void RexxSimpleVariable::setGuard(VariableDictionary *dictionary)
+{
+    RexxVariable *variable = dictionary->getVariable(variableName);
+    variable->inform(ActivityManager::currentActivity);
+}
+
+
+/**
+ * Remove a GUARD WHEN watch from a simple variable.
+ *
+ * @param dictionary The target dictionary
+ */
+void RexxSimpleVariable::clearGuard(VariableDictionary *dictionary)
+{
+    RexxVariable *variable = dictionary->getVariable(variableName);
     variable->uninform(ActivityManager::currentActivity); /* remove the notification           */
 }
 

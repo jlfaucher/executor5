@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -61,10 +61,15 @@ LocalQueueManager::LocalQueueManager() : LocalAPISubsystem()
 /**
  * Validate a queue name
  *
- * @param username The name to validate.
+ * @param username  The name to validate.
+ * @param isSession A bool to return to indicate the queue name is the session queue.
+ *
+ * @return True if the name is valid, false if invalid or "SESSION"
  */
-bool LocalQueueManager::validateQueueName(const char *username)
+bool LocalQueueManager::validateQueueName(const char *username, bool &isSession)
 {
+    isSession = false;
+
     if (username == NULL)               /* NULL is OK.                */
     {
         return true;
@@ -72,11 +77,13 @@ bool LocalQueueManager::validateQueueName(const char *username)
     // "SESSION" is a reserved name, reject this in this context
     if (Utilities::strCaselessCompare(username, "SESSION") == 0)
     {
+        // indicate to the caller this is the session queue
+        isSession = true;
         return false;
     }
 
     size_t namelen = strlen(username);
-    if (namelen > 0 && namelen < MAX_QUEUE_NAME_LENGTH)
+    if (namelen > 0 && namelen <= MAX_QUEUE_NAME_LENGTH)
     {
         const char *valptr = username;      /* point to name              */
         char ch;
@@ -124,9 +131,10 @@ void LocalQueueManager::terminateProcess()
         {
             deleteSessionQueue();    // try to delete this
         }
-        catch (ServiceException *)
+        catch (ServiceException *e)
         {
             // just ignore any errors here.
+            delete e;
         }
         // clear this out.
         sessionQueue = 0;
@@ -200,7 +208,9 @@ RexxReturnCode LocalQueueManager::createNamedQueue(const char *name, size_t size
     // validation and copying of the request name only is necessary if given.
     if (name != NULL)
     {
-        if (!validateQueueName(name))            // make sure this is a valid name
+        bool isSession = false;
+        // make sure this is a valid name (session is not valid here)
+        if (!validateQueueName(name, isSession))
         {
             return RXQUEUE_BADQNAME;
         }
@@ -243,8 +253,18 @@ RexxReturnCode LocalQueueManager::createNamedQueue(const char *name, size_t size
  */
 RexxReturnCode LocalQueueManager::openNamedQueue(const char *name, size_t *dup)
 {
-    if (!validateQueueName(name))            // make sure this is a valid name
+    bool isSession = false;
+
+    if (!validateQueueName(name, isSession))            // make sure this is a valid name
     {
+        // this might have been rejected because the name was "SESSION". The session
+        // queue always exists
+        if (isSession)
+        {
+            // this is considered a duplicate
+            *dup = true;
+            return RXQUEUE_OK;
+        }
         return RXQUEUE_BADQNAME;
     }
 
@@ -275,8 +295,10 @@ RexxReturnCode LocalQueueManager::deleteSessionQueue()
  */
 RexxReturnCode LocalQueueManager::deleteNamedQueue(const char *name)
 {
-    if (!validateQueueName(name))            // make sure this is a valid name
+    bool isSession = false;
+    if (!validateQueueName(name, isSession))            // make sure this is a valid name
     {
+        // "SESSION" is considered a bad queue name in this context.
         return RXQUEUE_BADQNAME;
     }
 
@@ -293,8 +315,16 @@ RexxReturnCode LocalQueueManager::deleteNamedQueue(const char *name)
  */
 RexxReturnCode LocalQueueManager::queryNamedQueue(const char *name)
 {
-    if (!validateQueueName(name))            // make sure this is a valid name
+    bool isSession = false;
+    if (!validateQueueName(name, isSession))   // make sure this is a valid name
     {
+        // if the name was rejected, but is "SESSION", then we say this
+        // exists.
+        if (isSession)
+        {
+            return RXQUEUE_OK;
+        }
+
         return RXQUEUE_BADQNAME;
     }
 
@@ -329,8 +359,10 @@ RexxReturnCode LocalQueueManager::getSessionQueueCount(size_t &result)
  */
 RexxReturnCode LocalQueueManager::getQueueCount(const char *name, size_t &result)
 {
-    if (!validateQueueName(name))            // make sure this is a valid name
+    bool isSession = false;
+    if (!validateQueueName(name, isSession))            // make sure this is a valid name
     {
+        // this should never be called using the name "SESSION", so no special checks here.
         return RXQUEUE_BADQNAME;
     }
 
@@ -361,7 +393,8 @@ RexxReturnCode LocalQueueManager::clearSessionQueue()
  */
 RexxReturnCode LocalQueueManager::clearNamedQueue(const char *name)
 {
-    if (!validateQueueName(name))            // make sure this is a valid name
+    bool isSession = false;
+    if (!validateQueueName(name, isSession))     // make sure this is a valid name
     {
         return RXQUEUE_BADQNAME;
     }
@@ -383,6 +416,12 @@ RexxReturnCode LocalQueueManager::clearNamedQueue(const char *name)
  */
 RexxReturnCode LocalQueueManager::addToNamedQueue(const char *name, CONSTRXSTRING &data, size_t lifoFifo)
 {
+    bool isSession = false;
+    if (!validateQueueName(name, isSession))            // make sure this is a valid name
+    {
+        return RXQUEUE_BADQNAME;
+    }
+
     ClientMessage message(QueueManager, ADD_TO_NAMED_QUEUE, name);
                                            // set the additional arguments
     message.parameter1 = data.strlength;
@@ -421,6 +460,12 @@ RexxReturnCode LocalQueueManager::addToSessionQueue(CONSTRXSTRING &data, size_t 
 
 RexxReturnCode LocalQueueManager::pullFromQueue(const char *name, RXSTRING &data, size_t waitFlag, RexxQueueTime *timeStamp)
 {
+    bool isSession = false;
+    if (!validateQueueName(name, isSession))            // make sure this is a valid name
+    {
+        return RXQUEUE_BADQNAME;
+    }
+
     ClientMessage message(QueueManager, PULL_FROM_NAMED_QUEUE);
     // set up for either name or session queue read
     if (name != NULL)
@@ -487,6 +532,9 @@ RexxReturnCode LocalQueueManager::processServiceException(ServiceException *e)
 {
     switch (e->getErrorCode())
     {
+        case CONNECTION_FAILURE:
+            return RXAPI_NORXAPI;
+
         case INVALID_QUEUE_NAME:
             return RXQUEUE_BADQNAME;
 
@@ -514,15 +562,6 @@ RexxReturnCode LocalQueueManager::mapReturnResult(ServiceMessage &m)
 {
     switch (m.result)
     {
-        case INVALID_QUEUE_NAME:
-            return RXQUEUE_BADQNAME;
-
-        case BAD_FIFO_LIFO:
-            return RXQUEUE_PRIORITY;
-
-        case BAD_WAIT_FLAG:
-            return RXQUEUE_BADWAITFLAG;
-
         case QUEUE_DOES_NOT_EXIST:
             return RXQUEUE_NOTREG;
 

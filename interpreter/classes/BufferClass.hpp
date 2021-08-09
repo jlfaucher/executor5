@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -56,6 +56,7 @@ public:
     inline size_t getBufferSize() { return this->bufferSize; }
     inline void   setDataLength(size_t l) { this->dataLength = l; }
     virtual char *getData() = 0;
+
     inline void copyData(size_t offset, const char *string, size_t l) { memmove(this->getData() + offset, string, l); }
     inline void copyData(CONSTRXSTRING &r) { copyData(0, r.strptr, r.strlength); }
     inline void copyData(RXSTRING &r) { copyData(0, r.strptr, r.strlength); }
@@ -109,7 +110,7 @@ public:
 
     BufferClass *expand(size_t);
     RexxObject *newRexx(RexxObject **args, size_t argc);
-    virtual char *getData() { return data; }
+    char *getData() override { return data; }
 
     static void createInstance();
 

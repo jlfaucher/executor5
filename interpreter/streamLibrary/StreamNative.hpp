@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -46,16 +46,9 @@
 
 #include "SysFileSystem.hpp"
 #include "SysFile.hpp"
-
-#define nbt_line_end "\n"
-#define nbt_line_end_size 1
-
-#define std_line_end "\n"
-#define std_line_end_size 1
+#include "FileNameBuffer.hpp"
 
 #define ctrl_z 0x1a                    /* end-of-file marker                */
-#define nl     '\n'                    /* new line character                */
-#define cr     '\r'                    /* carriage return character         */
 
 
 /*****************************************************************************/
@@ -165,20 +158,18 @@ protected:
    RexxMethodContext *context;         // our current execution context
    RexxObjectPtr self;                 // our real Rexx object instance
    RexxObjectPtr defaultResult;        // default result used for notready conditions.
-                                       // specified stream name
-   char stream_name[SysFileSystem::MaximumFileNameBuffer];
-                                       // fully resolved stream name
-   char qualified_name[SysFileSystem::MaximumFileNameLength];
-   int64_t charReadPosition;          // current character position
-   int64_t charWritePosition;         // current write position
-   int64_t lineReadPosition;          // current read line number
-   int64_t lineWritePosition;         // current write line number
-   int64_t lineReadCharPosition;      // current line read position
-   int64_t lineWriteCharPosition;     // current line write position
-   int64_t stream_line_size;          // emulated stream size (lines)
-   StreamState state;                 // current stream state
-   int errorInfo;                     // error information about the last notready condition
-   size_t  binaryRecordLength;        // binary file record length
+   FileNameBuffer stream_name;         // specified stream name
+   FileNameBuffer qualified_name;      // fully resolved stream name
+   int64_t charReadPosition;           // current character position
+   int64_t charWritePosition;          // current write position
+   int64_t lineReadPosition;           // current read line number
+   int64_t lineWritePosition;          // current write line number
+   int64_t lineReadCharPosition;       // current line read position
+   int64_t lineWriteCharPosition;      // current line write position
+   int64_t stream_line_size;           // emulated stream size (lines)
+   StreamState state;                  // current stream state
+   int errorInfo;                      // error information about the last notready condition
+   size_t  binaryRecordLength;         // binary file record length
 
    char *bufferAddress;                // current read buffer
    size_t bufferLength;                // current read buffer size

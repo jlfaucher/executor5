@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -774,14 +774,14 @@ logical_t handleCommandInternally(RexxExitContext *context, char *cmd, RexxObjec
 
 
 /**
- * Raises syntax error 98.896 Address command redirection failed.
+ * Raises syntax error 98.923 Address command redirection failed.
  *
  * @param context    The Exit context.
  * @param errCode    The operating system error code.
  */
 RexxObjectPtr ErrorRedirection(RexxExitContext *context, int errCode)
 {
-    // raise 98.896 Address command redirection failed
+    // raise 98.923 Address command redirection failed
     context->RaiseException1(Error_Execution_address_redirection_failed,
       context->CString(strerror(errno)));
     return NULLOBJECT;
@@ -811,7 +811,7 @@ RexxObjectPtr ErrorFailure(RexxExitContext *context, CSTRING commandString)
  */
 RexxObjectPtr RexxEntry ioCommandHandler(RexxExitContext *context, RexxStringObject address, RexxStringObject command, RexxIORedirectorContext *ioContext)
 {
-    int pid;
+    pid_t pid;
     int status;
     char* argv[MAX_COMMAND_ARGS + 1];
     // If SYSSHELLPATH could ever grow longer than 128 chars
@@ -843,8 +843,10 @@ RexxObjectPtr RexxEntry ioCommandHandler(RexxExitContext *context, RexxStringObj
         {   // append slash if we don't have one yet
             strcat(shell, "/");
         }
-        if (strlen(environment) == 0 || Utilities::strCaselessCompare("command", environment) == 0)
-        {   // for environments "" and "command" we use "sh" as shell
+        if (strlen(environment) == 0 ||
+         Utilities::strCaselessCompare("command", environment) == 0 ||
+         Utilities::strCaselessCompare("system", environment) == 0)
+        {   // for environments "", "command" and "system" we use "sh" as shell
             strcat(shell, "sh");
         }
         else
@@ -870,13 +872,6 @@ RexxObjectPtr RexxEntry ioCommandHandler(RexxExitContext *context, RexxStringObj
 
         posix_spawn_file_actions_t action;
         posix_spawn_file_actions_init(&action);
-
-        // ignore SIGPIPE so that we receive EPIPE for a write() operation on a
-        // pipe which has closed its read end.
-        if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
-        {
-            return ErrorRedirection(context, errno);
-        }
 
         // Create stdin, stdout, and stderr pipes as requested.  pipe() returns
         // two file descriptors: [0] is the pipe read end, [1] is the pipe
@@ -1071,10 +1066,16 @@ RexxObjectPtr RexxEntry ioCommandHandler(RexxExitContext *context, RexxStringObj
  */
 void SysInterpreterInstance::registerCommandHandlers(InterpreterInstance *_instance)
 {
-    // Unix has a whole collection of similar environments, services by a single handler
+    // The default command handler on Unix is "SH"
+    // It comes with three aliases named "", "COMMAND", and "SYSTEM"
+    // "SYSTEM" is compatible with Regina
+    _instance->addCommandHandler("SH",      (REXXPFN)ioCommandHandler, HandlerType::REDIRECTING);
+    _instance->addCommandHandler("",        (REXXPFN)ioCommandHandler, HandlerType::REDIRECTING);
     _instance->addCommandHandler("COMMAND", (REXXPFN)ioCommandHandler, HandlerType::REDIRECTING);
-    _instance->addCommandHandler("", (REXXPFN)ioCommandHandler, HandlerType::REDIRECTING);
-    _instance->addCommandHandler("SH", (REXXPFN)ioCommandHandler, HandlerType::REDIRECTING);
+    _instance->addCommandHandler("SYSTEM",  (REXXPFN)ioCommandHandler, HandlerType::REDIRECTING);
+
+    // The command handlers for shells other than "sh" will only work
+    // if a shell with this named is installed on the system
     _instance->addCommandHandler("KSH", (REXXPFN)ioCommandHandler, HandlerType::REDIRECTING);
     _instance->addCommandHandler("CSH", (REXXPFN)ioCommandHandler, HandlerType::REDIRECTING);
     _instance->addCommandHandler("BSH", (REXXPFN)ioCommandHandler, HandlerType::REDIRECTING);

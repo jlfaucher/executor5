@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                          */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -46,6 +46,7 @@
 #include <time.h>
 #include <shlobj.h>
 #include <shlwapi.h>
+#include <algorithm>
 
 #define STR_BUFFER    256
 #define MAX_TIME_DATE 128
@@ -255,17 +256,6 @@ void pointer2string(PRXSTRING result, void *pointer)
         sprintf(result->strptr, "0x%p", pointer);
         result->strlength = strlen(result->strptr);
     }
-}
-
-
-BOOL IsRunningNT()
-{
-    OSVERSIONINFO version_info={0};
-
-    version_info.dwOSVersionInfoSize = sizeof(version_info);
-    GetVersionEx(&version_info);
-    if (version_info.dwPlatformId == VER_PLATFORM_WIN32_NT) return TRUE; // Windows NT
-    else return FALSE;                                              // Windows 95
 }
 
 
@@ -1481,24 +1471,12 @@ BOOL GetAllUserDesktopLocation ( LPBYTE szDesktopDir, LPDWORD  lpcbData )
    szDesktopDir[0] ='\0';         //initialize return
 
    // Test, if 95/98/Millenium or NT/Win2000
-   if ( IsRunningNT() )
-   {
-     rc = RegOpenKeyEx(HKEY_LOCAL_MACHINE,
-                       IDS_REGISTRY_KEY_ALL_NT_SHELLFOLDER,
-                       0,
-                       KEY_QUERY_VALUE,
-                       &hKey) ;
-     lpValueName = IDS_ALL_NT_DESKTOP ;
-   }
-   else
-   {
-     rc = RegOpenKeyEx(HKEY_USERS,
-                       IDS_REGISTRY_KEY_ALL_9x_SHELLFOLDER,
-                       0,
-                       KEY_QUERY_VALUE,
-                       &hKey) ;
-     lpValueName = IDS_ALL_9x_DESKTOP ;
-   }
+   rc = RegOpenKeyEx(HKEY_LOCAL_MACHINE,
+                   IDS_REGISTRY_KEY_ALL_NT_SHELLFOLDER,
+                   0,
+                   KEY_QUERY_VALUE,
+                   &hKey) ;
+   lpValueName = IDS_ALL_NT_DESKTOP ;
    if ( rc == ERROR_SUCCESS )
    {
       if ( (rc = RegQueryValueEx(hKey,                      // handle of key to query
@@ -2119,7 +2097,7 @@ char * getEventUserName(PEVENTLOGRECORD pEvLogRecord)
         // Get the size required for the return buffers
         LookupAccountSid(NULL, psid, pUserID, &sizeID, pDomain, &sizeDomain, &strDummy);
 
-        pUserID = (char *)LocalAlloc(LPTR, max(sizeID, (DWORD)strlen(defUserID) + 1));
+        pUserID = (char *)LocalAlloc(LPTR, std::max(sizeID, (DWORD)strlen(defUserID) + 1));
         pDomain = (char *)LocalAlloc(LPTR, sizeDomain);
 
         if ( LookupAccountSid(NULL, psid, pUserID, &sizeID, pDomain, &sizeDomain, &strDummy) == 0 )

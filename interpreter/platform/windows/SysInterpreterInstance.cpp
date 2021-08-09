@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2021 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -110,6 +110,39 @@ void SysInterpreterInstance::initialize(InterpreterInstance *i, RexxOption *opti
         }
     }
 
+    // Allow Rexx console output to use virtual terminal (VT) sequences.
+    // This is based on the examples Microsoft gives in
+    // https://docs.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences
+    // The Microsoft example shows
+    // a) SetConsoleMode STD_OUTPUT_HANDLE or'ing in ENABLE_VIRTUAL_TERMINAL_PROCESSING and DISABLE_NEWLINE_AUTO_RETURN
+    // b) SetConsoleMode STD_INPUT_HANDLE or'ing in ENABLE_VIRTUAL_TERMINAL_INPUT
+    // In addition to a) we also run SetConsoleMode for STD_ERROR_HANDLE
+    // but we don't do b) because this breaks PULL line editing (cursor
+    // keys emit ANSI characters instead of moving around).
+
+    // VT support was added around 10.0.10586, so we might or might not
+    // have some of these defines.  If missing, make them nop's.
+#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+#   define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0
+#endif
+#ifndef DISABLE_NEWLINE_AUTO_RETURN
+#   define DISABLE_NEWLINE_AUTO_RETURN 0
+#endif
+
+    DWORD mode;
+    HANDLE h;
+
+    h = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (h != NULL && h != INVALID_HANDLE_VALUE && GetConsoleMode(h, &mode) != 0)
+    {
+        SetConsoleMode(h, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN);
+    }
+    h = GetStdHandle(STD_ERROR_HANDLE);
+    if (h != NULL && h != INVALID_HANDLE_VALUE && GetConsoleMode(h, &mode) != 0)
+    {
+        SetConsoleMode(h, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN);
+    }
+
     // Because of using the stand-alone runtime library or when using different compilers,
     // the std-streams of the calling program and the REXX.DLL might be located at different
     // addresses and therefore _file might be -1. If so, std-streams are reassigned to the
@@ -129,6 +162,12 @@ void SysInterpreterInstance::initialize(InterpreterInstance *i, RexxOption *opti
     // enable trapping for CTRL_C exceptions
     SetConsoleCtrlHandler(&WinConsoleCtrlHandler, true);
     instance = i;
+
+    // we never want to see a critical-error-handler message box.
+    // according to MS docs: "Best practice is that all applications call
+    // the process-wide SetErrorMode function with a parameter of
+    // SEM_FAILCRITICALERRORS at startup
+    SetErrorMode(SEM_FAILCRITICALERRORS);
 
     // add our default search extension
     addSearchExtension(".REX");
@@ -186,52 +225,35 @@ SysSearchPath::SysSearchPath(const char *parentDir, const char *extensionPath)
 {
     char temp[4];             // this is just a temp buffer to check component sizes
 
+    // this is a little bit of a pain because this gets returned in a buffer. We need to
+    // find the size so we can ensure our buffer is large enough before we start to
+    // assemble it
     size_t pathSize = GetEnvironmentVariable("PATH", temp, sizeof(temp));
     size_t rexxPathSize = GetEnvironmentVariable("REXX_PATH", temp, sizeof(temp));
     size_t parentSize = parentDir == NULL ? 0 : strlen(parentDir);
     size_t extensionSize = extensionPath == NULL ? 0 : strlen(extensionPath);
 
-
     // enough room for separators and a terminating null
-    path = (char *)SystemInterpreter::allocateResultMemory(pathSize + rexxPathSize + parentSize + extensionSize + 16);
-    *path = '\0';     // add a null character so strcat can work
-    if (parentDir != NULL)
-    {
-        strcpy(path, parentDir);
-        strcat(path, ";");
-    }
+    path.ensureCapacity(pathSize + rexxPathSize + parentSize + extensionSize + 16);
 
+    // parent directory
+    addPath(parentDir);
     // add on the current directory
-    strcat(path, ".;");
+    addPath(".");
+    // next comes the extension path defined on the instance
+    addPath(extensionPath);
 
-    if (extensionPath != NULL)
+    // followed by the REXX_PATH
+    if (!path.endsWith(';'))
     {
-        strcat(path, extensionPath);
-        if (path[strlen(path) - 1] != ';')
-        {
-            strcat(path, ";");
-        }
+        path += ";";
     }
+    GetEnvironmentVariable("REXX_PATH", (char *)path + path.length(), (DWORD)rexxPathSize + 1);
 
-    // add on the Rexx path, then the normal path
-    GetEnvironmentVariable("REXX_PATH", path + strlen(path), (DWORD)pathSize + 1);
-    if (path[strlen(path) - 1] != ';')
+    // and finally the PATH
+    if (!path.endsWith(';'))
     {
-        strcat(path, ";");
+        path += ";";
     }
-
-    GetEnvironmentVariable("PATH", path + strlen(path), (DWORD)pathSize + 1);
-    if (path[strlen(path) - 1] != ';')
-    {
-        strcat(path, ";");
-    }
-}
-
-
-/**
- * Deconstructor for releasing storage used by the constructed path.
- */
-SysSearchPath::~SysSearchPath()
-{
-    SystemInterpreter::releaseResultMemory((void *)path);
+    GetEnvironmentVariable("PATH", (char *)path + path.length(), (DWORD)pathSize + 1);
 }

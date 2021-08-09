@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -213,11 +213,25 @@ PackageClass *BaseCode::getPackage()
 /**
  * Detach the source from a code object.
  */
-void BaseCode::detachSource()
+ProgramSource *BaseCode::detachSource()
 {
     if (package != OREF_NULL)
     {
-        package->detachSource();
+        return package->detachSource();
     }
+    return OREF_NULL;
 }
 
+
+/**
+ * Attach the code to a program source object.
+ *
+ * @param s      The source program source object.
+ */
+void BaseCode::attachSource(ProgramSource *s)
+{
+    if (package != OREF_NULL)
+    {
+        package->attachSource(s);
+    }
+}

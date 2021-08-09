@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2020 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -75,6 +75,8 @@
 #include "MethodArguments.hpp"
 #include "MutableBufferClass.hpp"
 #include "SysProcess.hpp"
+#include "MutexSemaphore.hpp"
+#include "IdentityTableClass.hpp"
 
 #include <stdio.h>
 #include <time.h>
@@ -105,6 +107,10 @@ void *Activity::operator new(size_t size)
  */
 void Activity::live(size_t liveMark)
 {
+    memory_mark(instance);
+    memory_mark(oldActivity);
+    memory_mark(currentExit);
+    memory_mark(nestedActivity);
     memory_mark(activations);
     memory_mark(topStackFrame);
     memory_mark(currentRexxFrame);
@@ -112,6 +118,7 @@ void Activity::live(size_t liveMark)
     memory_mark(requiresTable);
     memory_mark(waitingObject);
     memory_mark(dispatchMessage);
+    memory_mark(heldMutexes);
 
     // have the frame stack do its own marking.
     frameStack.live(liveMark);
@@ -133,6 +140,10 @@ void Activity::live(size_t liveMark)
  */
 void Activity::liveGeneral(MarkReason reason)
 {
+    memory_mark_general(instance);
+    memory_mark_general(oldActivity);
+    memory_mark_general(currentExit);
+    memory_mark_general(nestedActivity);
     memory_mark_general(activations);
     memory_mark_general(topStackFrame);
     memory_mark_general(currentRexxFrame);
@@ -140,6 +151,7 @@ void Activity::liveGeneral(MarkReason reason)
     memory_mark_general(requiresTable);
     memory_mark_general(waitingObject);
     memory_mark_general(dispatchMessage);
+    memory_mark_general(heldMutexes);
 
     /* have the frame stack do its own marking. */
     frameStack.liveGeneral(reason);
@@ -159,8 +171,10 @@ void Activity::runThread()
 {
     // some things only occur on subsequent requests
     bool firstDispatch = true;
+
+    int32_t base;
     // establish the stack base pointer for control stack full detection.
-    stackBase = currentThread.getStackBase(TOTAL_STACK_SIZE);
+    stackBase = currentThread.getStackBase(&base, TOTAL_STACK_SIZE);
 
     for (;;)
     {
@@ -232,6 +246,9 @@ void Activity::runThread()
         // no longer an active activity
         deactivate();
 
+        // make sure we clean up any mutexes we hold
+        cleanupMutexes();
+
         // reset our semaphores
         runSem.reset();
         guardSem.reset();
@@ -261,6 +278,8 @@ void Activity::cleanupActivityResources()
     runSem.close();
     guardSem.close();
     currentThread.close();
+    // make sure any mutexes we are holding get released
+    cleanupMutexes();
 }
 
 
@@ -302,12 +321,14 @@ void Activity::enterCurrentThread()
  *               Indicates whether we're going to be running on the
  *               current thread, or creating a new thread.
  */
-Activity::Activity(bool createThread)
+Activity::Activity(GlobalProtectedObject &p, bool createThread)
 {
     // we need to protect this from garbage collection while constructing.
     // unfortunately, we can't use ProtectedObject because that requires an
     // active activity, which we can't guarantee at this point.
-    GlobalProtectedObject p(this);
+    p = this;
+
+    int32_t base;         // used for determining the stack base
 
     // globally clear the object because we could be reusing the
     // object storage
@@ -355,7 +376,7 @@ Activity::Activity(bool createThread)
         // run on the current thread
         currentThread.useCurrentThread();
         // reset the stack base for this thread.
-        stackBase = currentThread.getStackBase(TOTAL_STACK_SIZE);
+        stackBase = currentThread.getStackBase(&base, TOTAL_STACK_SIZE);
     }
 }
 
@@ -530,6 +551,7 @@ wholenumber_t Activity::errorNumber(DirectoryClass *conditionObject)
 
 /**
  * Raise a condition, with potential trapping.
+ * Also checks for potential ::OPTIONS condition overrides.
  *
  * @param condition  The condition name.
  * @param rc         The rc value
@@ -543,6 +565,33 @@ wholenumber_t Activity::errorNumber(DirectoryClass *conditionObject)
  */
 bool Activity::raiseCondition(RexxString *condition, RexxObject *rc, RexxObject *description, RexxObject *additional, RexxObject *result)
 {
+    // if we have ::OPTIONS condition SYNTAX set on the package, we
+    // raise a SYNTAX error instead of raising the condition
+    RexxActivation *activation = getCurrentRexxFrame();
+    if (activation != OREF_NULL)
+    {
+        if (activation->isErrorSyntaxEnabled() && condition->strCompare(ERRORNAME))
+        {
+           reportException(Error_Execution_error_syntax, description, result);
+        }
+        else if (activation->isFailureSyntaxEnabled() && condition->strCompare(FAILURE))
+        {
+           reportException(Error_Execution_failure_syntax, description, result);
+        }
+        else if (activation->isLostdigitsSyntaxEnabled() && condition->strCompare(LOSTDIGITS))
+        {
+           reportException(Error_Execution_lostdigits_syntax, description);
+        }
+        else if (activation->isNostringSyntaxEnabled() && condition->strCompare(NOSTRING))
+        {
+           reportException(Error_Execution_nostring_syntax, description);
+        }
+        else if (activation->isNotreadySyntaxEnabled() && condition->strCompare(NOTREADY))
+        {
+           reportException(Error_Execution_notready_syntax, description);
+        }
+    }
+
     // check the context first to see if this will be trapped.  Creating
     // the condition object is pretty expensive, so we want to avoid
     // creating this if we'll just end up throwing it away.
@@ -927,7 +976,7 @@ DirectoryClass *Activity::createExceptionObject(RexxErrorCodes errcode,
     exobj->put(rc, RC);
 
     // get the text for the primary error message
-    RexxString *errortext = SystemInterpreter::getMessageText(primary);
+    RexxString *errortext = Interpreter::getMessageText(primary);
     // we can have an error for the error!
     if (errortext == OREF_NULL)
     {
@@ -1094,7 +1143,7 @@ ArrayClass *Activity::generateStackFrames(bool skipFirst)
 RexxString *Activity::buildMessage(wholenumber_t messageCode, ArrayClass *substitutions)
 {
     // retrieve the secondary message
-    RexxString *message = SystemInterpreter::getMessageText(messageCode);
+    RexxString *message = Interpreter::getMessageText(messageCode);
     // bad message if we can't find this
     if (message == OREF_NULL)
     {
@@ -1231,7 +1280,7 @@ void Activity::reraiseException(DirectoryClass *exobj)
         sprintf(work,"%1zd%3.3zd", errornumber/1000, errornumber - primary);
         errornumber = atol(work);
 
-        RexxString *message = SystemInterpreter::getMessageText(errornumber);
+        RexxString *message = Interpreter::getMessageText(errornumber);
         ArrayClass *additional = (ArrayClass *)exobj->get(ADDITIONAL);
         message = messageSubstitution(message, additional);
         // replace the original message text
@@ -1298,7 +1347,7 @@ void Activity::display(DirectoryClass *exobj)
         for (size_t i = 1; i <= tracebackSize; i++)
         {
             RexxString *text = (RexxString *)trace_back->get(i);
-            // if we have a real like, write it out
+            // if we have a real line, write it out
             if (text != OREF_NULL && text != TheNilObject)
             {
                 traceOutput(currentRexxFrame, text);
@@ -1309,18 +1358,7 @@ void Activity::display(DirectoryClass *exobj)
     // get the error code, and format a message header
     RexxString *rc = (RexxString *)exobj->get(RC);
     wholenumber_t errorCode = Interpreter::messageNumber(rc);
-
-    RexxString *text = SystemInterpreter::getMessageHeader(errorCode);
-
-    // compose the longer message
-    if (text == OREF_NULL)
-    {
-        text = SystemInterpreter::getMessageText(Message_Translations_error);
-    }
-    else
-    {
-        text = text->concat(SystemInterpreter::getMessageText(Message_Translations_error));
-    }
+    Protected<RexxString> text = Interpreter::getMessageText(Message_Translations_error);
 
     // get the program name
     RexxString *programname = (RexxString *)exobj->get(PROGRAM);
@@ -1330,14 +1368,14 @@ void Activity::display(DirectoryClass *exobj)
     // add on the program name if we have one.
     if (programname != OREF_NULL && programname != GlobalNames::NULLSTRING)
     {
-        text = text->concatWith(SystemInterpreter::getMessageText(Message_Translations_running), ' ');
+        text = text->concatWith(Interpreter::getMessageText(Message_Translations_running), ' ');
         text = text->concatWith(programname, ' ');
 
         // if we have a line position, add that on also
         RexxInternalObject *position = exobj->get(POSITION);
         if (position != OREF_NULL)
         {
-            text = text->concatWith(SystemInterpreter::getMessageText(Message_Translations_line), ' ');
+            text = text->concatWith(Interpreter::getMessageText(Message_Translations_line), ' ');
             text = text->concatWith(position->requestString(), ' ');
         }
     }
@@ -1353,15 +1391,7 @@ void Activity::display(DirectoryClass *exobj)
     {
         rc = (RexxString *)exobj->get(CODE);
         errorCode = Interpreter::messageNumber(rc);
-        text = SystemInterpreter::getMessageHeader(errorCode);
-        if (text == OREF_NULL)
-        {
-            text = SystemInterpreter::getMessageText(Message_Translations_error);
-        }
-        else
-        {
-            text = text->concat(SystemInterpreter::getMessageText(Message_Translations_error));
-        }
+        text = Interpreter::getMessageText(Message_Translations_error);
 
         text = text->concatWith((RexxString *)rc, ' ');
         text = text->concatWithCstring(":  ");
@@ -1384,7 +1414,7 @@ void Activity::displayDebug(DirectoryClass *exobj)
 {
     // get the leading part to indicate this is a debug error, then compose the full
     // message
-    RexxString *text = SystemInterpreter::getMessageText(Message_Translations_debug_error);
+    RexxString *text = Interpreter::getMessageText(Message_Translations_debug_error);
     text = text->concatWith((exobj->get(RC))->requestString(), ' ');
     text = text->concatWithCstring(":  ");
     text = text->concatWith((RexxString *)exobj->get(ERRORTEXT), ' ');
@@ -1394,7 +1424,7 @@ void Activity::displayDebug(DirectoryClass *exobj)
     // now any secondary message
     RexxString *secondary = (RexxString *)exobj->get(MESSAGE);
     if (secondary != OREF_NULL && secondary != (RexxString *)TheNilObject) {
-        text = SystemInterpreter::getMessageText(Message_Translations_debug_error);
+        text = Interpreter::getMessageText(Message_Translations_debug_error);
         text = text->concatWith((RexxString *)exobj->get(CODE), ' ');
         text = text->concatWithCstring(":  ");
         text = text->concat(secondary);
@@ -2417,7 +2447,7 @@ bool Activity::callFunctionExit(RexxActivation *activation, RexxString *rname, b
         // At least one item needs to be allocated in order to avoid an error
         // in the sysexithandler!
         PCONSTRXSTRING argrxarray = (PCONSTRXSTRING) SystemInterpreter::allocateResultMemory(
-             sizeof(CONSTRXSTRING) * Numerics::maxVal((size_t)exit_parm.rxfnc_argc, (size_t)1));
+             sizeof(CONSTRXSTRING) * std::max((size_t)exit_parm.rxfnc_argc, (size_t)1));
         if (argrxarray == OREF_NULL)
         {
             reportException(Error_System_resources);
@@ -2950,7 +2980,7 @@ bool Activity::callNovalueExit(RexxActivation *activation, RexxString *variableN
  * @return The handled flag.
  */
 bool Activity::callValueExit(RexxActivation *activation, RexxString *selector, RexxString *variableName,
-    RexxObject *newValue, RexxObject *&value)
+    RexxObject *newValue, ProtectedObject &value)
 {
     if (isExitEnabled(RXVALUE))         // is the exit enabled?
     {
@@ -3229,9 +3259,10 @@ void Activity::run(ActivityDispatcher &target)
 {
     // we unwind to the current activation depth on termination.
     size_t  startDepth;
+    int32_t base;         // used for determining the stack base
 
     // update the stack base
-    stackBase = currentThread.getStackBase(TOTAL_STACK_SIZE);
+    stackBase = currentThread.getStackBase(&base, TOTAL_STACK_SIZE);
     // get a new random seed
     generateRandomNumberSeed();
     startDepth = stackFrameDepth;
@@ -3405,13 +3436,14 @@ void Activity::createRedirectorContext(RedirectorContext &context, NativeActivat
  * @param name   The name we're interested in.
  * @param dir    A parent directory to use as part of the search.
  * @param ext    Any parent extension name.
+ * @param type   The resolve type, RESOLVE_DEFAULT or RESOLVE_REQUIRES.
  *
  * @return The fully resolved file name, if it exists.  Returns OREF_NULL for
  *         non-located files.
  */
-RexxString *Activity::resolveProgramName(RexxString *name, RexxString *dir, RexxString *ext)
+RexxString *Activity::resolveProgramName(RexxString *name, RexxString *dir, RexxString *ext, ResolveType type)
 {
-    return instance->resolveProgramName(name, dir, ext);
+    return instance->resolveProgramName(name, dir, ext, type);
 }
 
 
@@ -3460,7 +3492,66 @@ void Activity::validateThread()
  *
  * @return The last message name.
  */
-RexxString *Activity::getLastMessageName()
+RexxString* Activity::getLastMessageName()
 {
     return activationFrames->messageName();
 }
+
+
+/**
+ * Register this mutex with the activity as being held.
+ *
+ * @param sem    the semaphore to add
+ */
+void Activity::addMutex(MutexSemaphoreClass *sem)
+{
+    if (heldMutexes == OREF_NULL)
+    {
+        heldMutexes = new_identity_table();
+    }
+    heldMutexes->put(sem, sem);
+}
+
+
+/**
+ * Remove a mutex from the activity held list
+ *
+ * @param sem    the semaphore to remove
+ */
+void Activity::removeMutex(MutexSemaphoreClass *sem)
+{
+    // if we don't have a mutex table or this semaphore does not appear
+    // in our table, then it is probably owned by a a nested activity. Pass
+    // this request along to the pushed down activity
+    if (heldMutexes != OREF_NULL && heldMutexes->hasIndex(sem))
+    {
+        heldMutexes->remove(sem);
+    }
+    else if (nestedActivity != OREF_NULL)
+    {
+        nestedActivity->removeMutex(sem);
+    }
+}
+
+
+/**
+ * Cleanup any held mutexes on activity termination.
+ */
+void Activity::cleanupMutexes()
+{
+    if (heldMutexes != OREF_NULL)
+    {
+        Protected<ArrayClass> semaphores = heldMutexes->allIndexes();
+        for (size_t i = 1; i <= semaphores->items(); i++)
+        {
+            MutexSemaphoreClass *mutex = (MutexSemaphoreClass *)semaphores->get(i);
+            // release the semaphore until we get a failure so the nesting is unwound.
+            mutex->forceLockRelease();
+        }
+
+        // clear out the mutex list.
+        heldMutexes->empty();
+        heldMutexes = OREF_NULL;
+    }
+}
+

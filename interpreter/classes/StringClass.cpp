@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2021 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -53,16 +53,19 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <ctype.h>
 #include <limits>
+#include <cmath>
+#include <cfloat>
 
 // singleton class instance
 RexxClass *RexxString::classInstance = OREF_NULL;
 
 
 // character validation sets for the datatype function
-const char *RexxString::HEX_CHAR_STR = "0123456789ABCDEFabcdef";
+const char *RexxString::DIGITS_HEX   = "0123456789ABCDEFabcdef";
 const char *RexxString::ALPHANUM     = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-const char *RexxString::BINARY       = "01";
+const char *RexxString::DIGITS_BIN   = "01";
 const char *RexxString::LOWER_ALPHA  = "abcdefghijklmnopqrstuvwxyz";
 const char *RexxString::MIXED_ALPHA  = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const char *RexxString::UPPER_ALPHA  = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -105,6 +108,88 @@ const char RexxString::ch_ZERO='0';
 const char RexxString::ch_ONE='1';
 const char RexxString::ch_FIVE='5';
 const char RexxString::ch_NINE='9';
+
+// Mapped character validation sets allow direct lookup.
+// We dynamically create mapped sets from their unmapped
+// string counterparts here as a one-time setup only.
+RexxString::lookupInit RexxString::lookupInitializer;
+
+char RexxString::DIGITS_HEX_LOOKUP[256];
+char RexxString::DIGITS_BASE64_LOOKUP[256];
+char RexxString::DIGITS_BIN_LOOKUP[256];
+char RexxString::ALPHANUM_LOOKUP[256];
+char RexxString::LOWER_ALPHA_LOOKUP[256];
+char RexxString::MIXED_ALPHA_LOOKUP[256];
+char RexxString::UPPER_ALPHA_LOOKUP[256];
+
+/**
+ * Convert a validation set string to its mapped form.
+ * The mapped form is a 256-byte lookup table with the character as its
+ * index (offset) and a value of 0xff signalling an invalid character.
+ * All other values are valid characters.
+ * The map uses increasing values starting with 0, as this is required
+ * for DIGITS_BASE64_LOOKUP and it doesn't matter for others.
+ * DIGITS_HEX_LOOKUP has special requirements due to the dual use of
+ * lower- and uppercase letters.  See mappedHex() function.
+ *
+ * @param charSet   The validation string.
+ * @param charMap   The returned mapped set.
+ *
+ * @return void.
+ */
+void mapped(const char* charSet, char charMap[256])
+{
+    memset(charMap, '\xff', 256);
+    int i = 0;
+    unsigned char c;
+    while ((c = *charSet++) != '\0')
+    {
+        charMap[c] = i++;
+    }
+}
+
+/**
+ * Convert the DIGITS_HEX validation set string to its mapped form.
+ * This is a special version due to the dual use of lower- and
+ * uppercase hexadecimal letters.  See mapped() function for details.
+ *
+ * @param charSet   The validation string.
+ * @param charMap   The returned mapped set.
+ *
+ * @return void.
+ */
+void mappedHex(const char* charSet, char charMap[256])
+{
+    memset(charMap, '\xff', 256);
+    char c;
+    while ((c = *charSet++) != '\0')
+    {
+        if (c >= '0' && c <= '9')
+        {
+            charMap[c] = c - '0';
+        }
+        else if (c >= 'A' && c <= 'F')
+        {
+            charMap[c] = c - 'A' + 10;
+        }
+        else if (c >= 'a' && c <= 'f')
+        {
+            charMap[c] = c - 'a' + 10;
+        }
+    }
+}
+
+RexxString::lookupInit::lookupInit()
+{
+    // create mapped character validation sets
+    mappedHex(RexxString::DIGITS_HEX, RexxString::DIGITS_HEX_LOOKUP);
+    mapped(RexxString::DIGITS_BASE64, RexxString::DIGITS_BASE64_LOOKUP);
+    mapped(RexxString::DIGITS_BIN,    RexxString::DIGITS_BIN_LOOKUP);
+    mapped(RexxString::ALPHANUM,      RexxString::ALPHANUM_LOOKUP);
+    mapped(RexxString::LOWER_ALPHA,   RexxString::LOWER_ALPHA_LOOKUP);
+    mapped(RexxString::MIXED_ALPHA,   RexxString::MIXED_ALPHA_LOOKUP);
+    mapped(RexxString::UPPER_ALPHA,   RexxString::UPPER_ALPHA_LOOKUP);
+}
 
 /**
  * Create initial class object at bootstrap time.
@@ -248,7 +333,7 @@ RexxInternalObject *RexxString::unflatten(Envelope *envelope)
  */
 RexxString *RexxString::stringValue()
 {
-    if (!isBaseClass())
+    if (isBaseClass())
     {
         return this;
     }
@@ -435,7 +520,7 @@ bool RexxString::doubleValue(double &result)
         result = std::numeric_limits<double>::signaling_NaN();
         // this will be false if this is really a NaN value. If true,
         // then fall back and use the quiet version.
-        if (!isnan(result))
+        if (!std::isnan(result))
         {
           result = std::numeric_limits<double>::quiet_NaN();
         }
@@ -1637,7 +1722,7 @@ RexxString *RexxString::lowerRexx(RexxInteger *_start, RexxInteger *_length)
         return this;
     }
 
-    rangeLength = Numerics::minVal(rangeLength, getLength() - startPos);
+    rangeLength = std::min(rangeLength, getLength() - startPos);
 
     // a zero length value is also a non-change.
     if (rangeLength == 0)
@@ -1670,7 +1755,7 @@ RexxString *RexxString::upperRexx(RexxInteger *_start, RexxInteger *_length)
         return this;
     }
 
-    rangeLength = Numerics::minVal(rangeLength, getLength() - startPos);
+    rangeLength = std::min(rangeLength, getLength() - startPos);
 
     // a zero length value is also a non-change.
     if (rangeLength == 0)
@@ -2187,23 +2272,7 @@ RexxString *RexxString::newString(double number)
  */
 RexxString *RexxString::newString(double number, size_t precision)
 {
-    if (number == 0.0)
-    {
-        return new_string("0");
-    }
-    else
-    {
-        char buffer[64];
-        // format as a string
-        sprintf(buffer, "%.*g", (int)precision, number);
-        size_t len = strlen(buffer);
-        // if the last character is a decimal, we remove that
-        if (buffer[len - 1] == '.')
-        {
-            len--;
-        }
-        return new_string(buffer, len);
-    }
+    return new_numberstringFromDouble(number, precision)->stringValue();
 }
 
 

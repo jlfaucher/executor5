@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2020 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -49,6 +49,7 @@
 #include "ClassDirective.hpp"
 #include "RequiresDirective.hpp"
 #include "LibraryDirective.hpp"
+#include "ConstantDirective.hpp"
 #include "MethodClass.hpp"
 #include "RoutineClass.hpp"
 #include "CPPCode.hpp"
@@ -205,27 +206,6 @@ bool LanguageParser::hasBody()
     return result;
 }
 
-typedef enum
-{
-    DEFAULT_GUARD,                 // default guard
-    GUARDED_METHOD,                // guard specified
-    UNGUARDED_METHOD,              // unguarded specified
-} GuardFlag;
-
-typedef enum
-{
-    DEFAULT_PROTECTION,            // using defualt protection
-    PROTECTED_METHOD,              // security manager permission needed
-    UNPROTECTED_METHOD,            // no protection.
-} ProtectedFlag;
-
-typedef enum
-{
-    DEFAULT_ACCESS_SCOPE,          // using defualt scope
-    PUBLIC_SCOPE,                  // publicly accessible
-    PRIVATE_SCOPE,                 // private scope
-} AccessFlag;
-
 
 /**
  * Test if a class directive is defining a duplicate class.
@@ -373,6 +353,18 @@ void LanguageParser::classDirective()
 
     // create a class directive and add this to the dependency list
     activeClass = new ClassDirective(name, public_name, clause);
+
+    // if we have any computed constants associated with this class, we need to
+    // keep some special information about the constant expressions.
+
+    // a table of variables...starting with the special variables we allocated space for.
+    // we use the initial "clean" version, then save it after each parse constant associated
+    // with the class.
+    constantVariables = OREF_NULL;
+    // also start with the default index counter
+    constantVariableIndex = RexxLocalVariables::FIRST_VARIABLE_INDEX;
+    // and also the largest stack needed to evaluate these.
+    constantMaxStack = 0;
     // add this to our directives list.
     addClassDirective(public_name, activeClass);
 
@@ -715,6 +707,16 @@ void LanguageParser::methodDirective()
                     accessFlag = PRIVATE_SCOPE;
                     break;
 
+                // ::METHOD name PACKAGE
+                case SUBDIRECTIVE_PACKAGE:
+                    // has an access flag already been specified?
+                    if (accessFlag != DEFAULT_ACCESS_SCOPE)
+                    {
+                        syntaxError(Error_Invalid_subkeyword_method, token);
+                    }
+                    accessFlag = PACKAGE_SCOPE;
+                    break;
+
                 // ::METHOD name PUBLIC
                 case SUBDIRECTIVE_PUBLIC:
                     // has an access flag already been specified?
@@ -776,20 +778,13 @@ void LanguageParser::methodDirective()
                         syntaxError(Error_Invalid_subkeyword_method, token);
                     }
 
-                    // cannot have an abstract attribute here...this can
-                    // be defined with ::ATTRIBUTE.
-                    if (isAbstract)
-                    {
-                        // ABSTRACT and ATTRIBUTE are mutually exclusive
-                        syntaxError(Error_Invalid_subkeyword_method, token);
-                    }
                     isAttribute = true;
                     break;
 
                 // ::METHOD name ABSTRACT
                 case SUBDIRECTIVE_ABSTRACT:
-                    // can't have dups or external name or be an attributed
-                    if (isAbstract || externalname != OREF_NULL || delegateName != OREF_NULL || isAttribute)
+                    // can't have dups or external name or be a delegate
+                    if (isAbstract || externalname != OREF_NULL || delegateName != OREF_NULL)
                     {
                         syntaxError(Error_Invalid_subkeyword_method, token);
                     }
@@ -826,7 +821,7 @@ void LanguageParser::methodDirective()
     // go check for a duplicate and validate the use of the CLASS modifier
     checkDuplicateMethod(internalname, isClass, Error_Translation_duplicate_method);
 
-    MethodClass *_method = OREF_NULL;
+    Protected<MethodClass> _method;
 
     // handle delegates first.  A delegate method can also be an attribute, which really
     // just means we produce two delegate methods
@@ -835,7 +830,7 @@ void LanguageParser::methodDirective()
         // now get a variable retriever to get the property
         RexxVariableBase *retriever = getRetriever(delegateName);
 
-        // cannot have code following an method with the delegateb keyword
+        // cannot have code following an method with the delegate keyword
         checkDirective(Error_Translation_delegate_method);
 
         if (isAttribute)
@@ -845,12 +840,10 @@ void LanguageParser::methodDirective()
             // need to check for duplicates on that too
             checkDuplicateMethod(setterName, isClass, Error_Translation_duplicate_method);
             // create the method pair and quit.
-            createDelegateMethod(setterName, retriever, isClass, accessFlag == PRIVATE_SCOPE,
-                protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, true);
+            createDelegateMethod(setterName, retriever, isClass, accessFlag, protectedFlag, guardFlag, true);
         }
         // create the method pair and quit.
-        createDelegateMethod(internalname, retriever, isClass, accessFlag == PRIVATE_SCOPE,
-            protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, isAttribute);
+        createDelegateMethod(internalname, retriever, isClass, accessFlag, protectedFlag, guardFlag, isAttribute);
         return;
     }
     // is this an attribute method?
@@ -866,21 +859,32 @@ void LanguageParser::methodDirective()
         // this might be externally defined setters and getters.
         if (externalname != OREF_NULL)
         {
-            RexxString *library = OREF_NULL;
-            RexxString *procedure = OREF_NULL;
-            decodeExternalMethod(internalname, externalname, library, procedure);
+            RexxString *l = OREF_NULL;
+            RexxString *p = OREF_NULL;
+            decodeExternalMethod(internalname, externalname, l, p);
+            Protected<RexxString> library = l;
+            Protected<RexxString> procedure = p;
+            Protected<RexxString> getName = procedure->concatToCstring("GET");
+            Protected<RexxString> setName = procedure->concatToCstring("SET");
             // now create both getter and setting methods from the information.
-            _method = createNativeMethod(internalname, library, procedure->concatToCstring("GET"));
-            _method->setAttributes(accessFlag == PRIVATE_SCOPE, protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD);
+            _method = createNativeMethod(internalname, library, getName);
+            _method->setAttributes(accessFlag, protectedFlag, guardFlag);
             // mark this as an attribute method
             _method->setAttribute();
             // add to the compilation
             addMethod(internalname, _method, isClass);
 
-            _method = createNativeMethod(setterName, library, procedure->concatToCstring("SET"));
-            _method->setAttributes(accessFlag == PRIVATE_SCOPE, protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD);
+            _method = createNativeMethod(setterName, library, setName);
+            _method->setAttributes(accessFlag, protectedFlag, guardFlag);
             // add to the compilation
             addMethod(setterName, _method, isClass);
+        }
+        // an abstract method as an attribute
+        else if (isAbstract)
+        {
+            // create the method pair and quit.
+            createAbstractMethod(internalname, isClass, accessFlag, protectedFlag, guardFlag, true);
+            createAbstractMethod(setterName, isClass, accessFlag, protectedFlag, guardFlag, true);
         }
         else
         {
@@ -888,10 +892,8 @@ void LanguageParser::methodDirective()
             RexxVariableBase *retriever = getRetriever(name);
 
             // create the method pair and quit.
-            createAttributeGetterMethod(internalname, retriever, isClass, accessFlag == PRIVATE_SCOPE,
-                protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD);
-            createAttributeSetterMethod(setterName, retriever, isClass, accessFlag == PRIVATE_SCOPE,
-                protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD);
+            createAttributeGetterMethod(internalname, retriever, isClass, accessFlag, protectedFlag, guardFlag);
+            createAttributeSetterMethod(setterName, retriever, isClass, accessFlag, protectedFlag, guardFlag);
         }
         return;
     }
@@ -901,7 +903,7 @@ void LanguageParser::methodDirective()
         // check that there is no code following this method.
         checkDirective(Error_Translation_abstract_method);
         // this uses a special code block
-        BaseCode *code = new AbstractCode();
+        Protected<BaseCode> code = new AbstractCode();
         _method = new MethodClass(name, code);
         // make sure the method is marked abstract
         _method->setAbstract();
@@ -917,22 +919,39 @@ void LanguageParser::methodDirective()
         // there is any opportunity to protect the object.
         Protected<RexxCode> code = translateBlock();
 
+        // While the general default for methods is GUARDED, for plain methods
+        // (no ATTRIBUTE, ABSTRACT, DELEGATE, or EXTERNAL) we choose a more
+        // convenient default based on whether the method really requires the
+        // variable pool: GUARDED only if the method's first instruction is
+        // EXPOSE or USE LOCAL, else it is UNGUARDED.
+        if (guardFlag == DEFAULT_GUARD)
+        {
+            RexxInstruction *first = code->getFirstInstruction();
+            if (first == NULL ||
+               (!first->isType(KEYWORD_EXPOSE) && !first->isType(KEYWORD_USE_LOCAL)))
+            {
+                guardFlag = UNGUARDED_METHOD;
+            }
+        }
+
         // go do the next block of code
         _method = new MethodClass(name, code);
     }
     // external method
     else
     {
-        RexxString *library = OREF_NULL;
-        RexxString *procedure = OREF_NULL;
-        decodeExternalMethod(internalname, externalname, library, procedure);
+        RexxString *l = OREF_NULL;
+        RexxString *p = OREF_NULL;
+        decodeExternalMethod(internalname, externalname, l, p);
+        Protected<RexxString> library = l;
+        Protected<RexxString> procedure = p;
 
         // check that there this is only followed by other directives.
         checkDirective(Error_Translation_external_method);
         // and make this into a method object.
         _method = createNativeMethod(name, library, procedure);
     }
-    _method->setAttributes(accessFlag == PRIVATE_SCOPE, protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD);
+    _method->setAttributes(accessFlag, protectedFlag, guardFlag);
     // add to the compilation
     addMethod(internalname, _method, isClass);
 }
@@ -943,7 +962,7 @@ void LanguageParser::methodDirective()
  */
 void LanguageParser::optionsDirective()
 {
-    // all options are of a keyword/value pattern
+    // except for (NO)PROLOG all options are of a keyword/value pattern
     for (;;)
     {
 
@@ -1074,25 +1093,215 @@ void LanguageParser::optionsDirective()
                     token = nextReal();
                     if (!token->isSymbol())
                     {
-                        syntaxError(Error_Symbol_or_string_keyword, new_string("NOVALUE"));
+                        syntaxError(Error_Symbol_or_string_keyword, GlobalNames::NOVALUE);
                     }
 
                     switch (token->subDirective())
                     {
-                        case SUBDIRECTIVE_ERROR:
+                        case SUBDIRECTIVE_ERROR: // backwards compatibility for NOVALUE
+                        case SUBDIRECTIVE_SYNTAX:
                         {
-                            package->enableNovalueError();
+                            package->enableNovalueSyntax();
                             break;
                         }
 
                         case SUBDIRECTIVE_CONDITION:
                         {
-                            package->disableNovalueError();
+                            package->disableNovalueSyntax();
                             break;
                         }
 
                         default:
-                            syntaxError(Error_Invalid_subkeyword_following, new_string("NOVALUE"), token->value());
+                            syntaxError(Error_Invalid_subkeyword_following, GlobalNames::NOVALUE, token->value());
+                    }
+                    break;
+                }
+
+                // ::OPTIONS ERROR
+                case SUBDIRECTIVE_ERROR:
+                {
+                    token = nextReal();
+                    if (!token->isSymbol())
+                    {
+                        syntaxError(Error_Symbol_or_string_keyword, GlobalNames::ERRORNAME);
+                    }
+
+                    switch (token->subDirective())
+                    {
+                        case SUBDIRECTIVE_SYNTAX:
+                        {
+                            package->enableErrorSyntax();
+                            break;
+                        }
+
+                        case SUBDIRECTIVE_CONDITION:
+                        {
+                            package->disableErrorSyntax();
+                            break;
+                        }
+
+                        default:
+                            syntaxError(Error_Invalid_subkeyword_following, GlobalNames::ERRORNAME, token->value());
+                    }
+                    break;
+                }
+
+                // ::OPTIONS FAILURE
+                case SUBDIRECTIVE_FAILURE:
+                {
+                    token = nextReal();
+                    if (!token->isSymbol())
+                    {
+                        syntaxError(Error_Symbol_or_string_keyword, GlobalNames::FAILURE);
+                    }
+
+                    switch (token->subDirective())
+                    {
+                        case SUBDIRECTIVE_SYNTAX:
+                        {
+
+                            package->enableFailureSyntax();
+                            break;
+                        }
+
+                        case SUBDIRECTIVE_CONDITION:
+                        {
+                            package->disableFailureSyntax();
+                            break;
+                        }
+
+                        default:
+                            syntaxError(Error_Invalid_subkeyword_following, GlobalNames::FAILURE, token->value());
+                    }
+                    break;
+                }
+
+                // ::OPTIONS LOSTDIGITS
+                case SUBDIRECTIVE_LOSTDIGITS:
+                {
+                    token = nextReal();
+                    if (!token->isSymbol())
+                    {
+                        syntaxError(Error_Symbol_or_string_keyword, GlobalNames::LOSTDIGITS);
+                    }
+
+                    switch (token->subDirective())
+                    {
+                        case SUBDIRECTIVE_SYNTAX:
+                        {
+
+                            package->enableLostdigitsSyntax();
+                            break;
+                        }
+
+                        case SUBDIRECTIVE_CONDITION:
+                        {
+                            package->disableLostdigitsSyntax();
+                            break;
+                        }
+
+                        default:
+                            syntaxError(Error_Invalid_subkeyword_following, GlobalNames::LOSTDIGITS, token->value());
+                    }
+                    break;
+                }
+
+                // ::OPTIONS NOSTRING
+                case SUBDIRECTIVE_NOSTRING:
+                {
+                    token = nextReal();
+                    if (!token->isSymbol())
+                    {
+                        syntaxError(Error_Symbol_or_string_keyword, GlobalNames::NOSTRING);
+                    }
+
+                    switch (token->subDirective())
+                    {
+                        case SUBDIRECTIVE_SYNTAX:
+                        {
+
+                            package->enableNostringSyntax();
+                            break;
+                        }
+
+                        case SUBDIRECTIVE_CONDITION:
+                        {
+                            package->disableNostringSyntax();
+                            break;
+                        }
+
+                        default:
+                            syntaxError(Error_Invalid_subkeyword_following, GlobalNames::NOSTRING, token->value());
+                    }
+                    break;
+                }
+
+                // ::OPTIONS NOTREADY
+                case SUBDIRECTIVE_NOTREADY:
+                {
+                    token = nextReal();
+                    if (!token->isSymbol())
+                    {
+                        syntaxError(Error_Symbol_or_string_keyword, GlobalNames::NOTREADY);
+                    }
+
+                    switch (token->subDirective())
+                    {
+                        case SUBDIRECTIVE_SYNTAX:
+                        {
+
+                            package->enableNotreadySyntax();
+                            break;
+                        }
+
+                        case SUBDIRECTIVE_CONDITION:
+                        {
+                            package->disableNotreadySyntax();
+                            break;
+                        }
+
+                        default:
+                            syntaxError(Error_Invalid_subkeyword_following, GlobalNames::NOTREADY, token->value());
+                    }
+                    break;
+                }
+
+                // ::OPTIONS ALL
+                case SUBDIRECTIVE_ALL:
+                {
+                    token = nextReal();
+                    if (!token->isSymbol())
+                    {
+                        syntaxError(Error_Symbol_or_string_keyword, GlobalNames::ALL);
+                    }
+
+                    switch (token->subDirective())
+                    {
+                        case SUBDIRECTIVE_SYNTAX:
+                        {
+
+                            package->enableErrorSyntax();
+                            package->enableFailureSyntax();
+                            package->enableLostdigitsSyntax();
+                            package->enableNostringSyntax();
+                            package->enableNotreadySyntax();
+                            package->enableNovalueSyntax();
+                            break;
+                        }
+
+                        case SUBDIRECTIVE_CONDITION:
+                        {
+                            package->disableErrorSyntax();
+                            package->disableFailureSyntax();
+                            package->disableLostdigitsSyntax();
+                            package->disableNostringSyntax();
+                            package->disableNotreadySyntax();
+                            package->disableNovalueSyntax();
+                            break;
+                        }
+
+                        default:
+                            syntaxError(Error_Invalid_subkeyword_following, GlobalNames::ALL, token->value());
                     }
                     break;
                 }
@@ -1134,7 +1343,7 @@ void LanguageParser::optionsDirective()
  */
 MethodClass *LanguageParser::createNativeMethod(RexxString *name, RexxString *library, RexxString *procedure)
 {
-    NativeCode *nmethod = PackageManager::resolveMethod(library, procedure);
+    Protected<NativeCode> nmethod = PackageManager::resolveMethod(library, procedure);
     // raise an exception if this entry point is not found.
     if (nmethod == OREF_NULL)
     {
@@ -1162,10 +1371,9 @@ void LanguageParser::decodeExternalMethod(RexxString *methodName, RexxString *ex
     procedure = methodName;
     library = OREF_NULL;
 
-    // convert into an array of words
-    // NOTE:  This method makes all of the words part of the
-    // common string pool
-    ArrayClass *_words = words(externalSpec);
+    // convert external into array of words (this also adds all words
+    // to the common string pool and uppercases the first word)
+    Protected<ArrayClass> _words = words(externalSpec);
     // not 'LIBRARY library [entry]' form?
     if (((RexxString *)(_words->get(1)))->strCompare("LIBRARY"))
     {
@@ -1299,6 +1507,16 @@ void LanguageParser::attributeDirective()
                     accessFlag = PUBLIC_SCOPE;
                     break;
 
+                // define with package access
+                case SUBDIRECTIVE_PACKAGE:
+                    // must be first access specifier
+                    if (accessFlag != DEFAULT_ACCESS_SCOPE)
+                    {
+                        syntaxError(Error_Invalid_subkeyword_attribute, token);
+                    }
+                    accessFlag = PACKAGE_SCOPE;
+                    break;
+
                 // ::METHOD name PROTECTED
                 case SUBDIRECTIVE_PROTECTED:
                     // only one of PROTECTED UNPROTECTED
@@ -1412,19 +1630,24 @@ void LanguageParser::attributeDirective()
             checkDirective(Error_Translation_body_error);
             if (externalname != OREF_NULL)
             {
-                RexxString *library = OREF_NULL;
-                RexxString *procedure = OREF_NULL;
-                decodeExternalMethod(internalname, externalname, library, procedure);
+                RexxString *l = OREF_NULL;
+                RexxString *p = OREF_NULL;
+                decodeExternalMethod(internalname, externalname, l, p);
+                Protected<RexxString> library = l;
+                Protected<RexxString> procedure = p;
+                Protected<RexxString> getName = procedure->concatToCstring("GET");
+                Protected<RexxString> setName = procedure->concatToCstring("SET");
+
                 // now create both getter and setting methods from the information.
-                MethodClass *_method = createNativeMethod(internalname, library, procedure->concatToCstring("GET"));
-                _method->setAttributes(accessFlag == PRIVATE_SCOPE, protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD);
+                Protected<MethodClass> _method = createNativeMethod(internalname, library, getName);
+                _method->setAttributes(accessFlag, protectedFlag, guardFlag);
                 // mark this as an attribute method
                 _method->setAttribute();
                 // add to the compilation
                 addMethod(internalname, _method, isClass);
 
-                _method = createNativeMethod(setterName, library, procedure->concatToCstring("SET"));
-                _method->setAttributes(accessFlag == PRIVATE_SCOPE, protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD);
+                _method = createNativeMethod(setterName, library, setName);
+                _method->setAttributes(accessFlag, protectedFlag, guardFlag);
                 // mark this as an attribute method
                 _method->setAttribute();
                 // add to the compilation
@@ -1434,10 +1657,8 @@ void LanguageParser::attributeDirective()
             else if (isAbstract)
             {
                 // create the method pair and quit.
-                createAbstractMethod(internalname, isClass, accessFlag == PRIVATE_SCOPE,
-                    protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, true);
-                createAbstractMethod(setterName, isClass, accessFlag == PRIVATE_SCOPE,
-                    protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, true);
+                createAbstractMethod(internalname, isClass, accessFlag, protectedFlag, guardFlag, true);
+                createAbstractMethod(setterName, isClass, accessFlag, protectedFlag, guardFlag, true);
             }
             // delegating these to another object
             else if (delegateName != OREF_NULL)
@@ -1445,19 +1666,15 @@ void LanguageParser::attributeDirective()
                 // the retriever is the delegate name, not the attribute name
                 retriever = getRetriever(delegateName);
                 // create the method pair and quit.
-                createDelegateMethod(internalname, retriever, isClass, accessFlag == PRIVATE_SCOPE,
-                    protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, true);
+                createDelegateMethod(internalname, retriever, isClass, accessFlag, protectedFlag, guardFlag, true);
                 // create the method pair and quit.
-                createDelegateMethod(setterName, retriever, isClass, accessFlag == PRIVATE_SCOPE,
-                    protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, true);
+                createDelegateMethod(setterName, retriever, isClass, accessFlag, protectedFlag, guardFlag, true);
             }
             else
             {
                 // create the method pair and quit.
-                createAttributeGetterMethod(internalname, retriever, isClass, accessFlag == PRIVATE_SCOPE,
-                    protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD);
-                createAttributeSetterMethod(setterName, retriever, isClass, accessFlag == PRIVATE_SCOPE,
-                    protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD);
+                createAttributeGetterMethod(internalname, retriever, isClass, accessFlag, protectedFlag, guardFlag);
+                createAttributeSetterMethod(setterName, retriever, isClass, accessFlag, protectedFlag, guardFlag);
             }
             break;
 
@@ -1471,17 +1688,19 @@ void LanguageParser::attributeDirective()
             {
                 // no code can follow external methods
                 checkDirective(Error_Translation_external_attribute);
-                RexxString *library = OREF_NULL;
-                RexxString *procedure = OREF_NULL;
-                decodeExternalMethod(internalname, externalname, library, procedure);
+                RexxString *l = OREF_NULL;
+                RexxString *p = OREF_NULL;
+                decodeExternalMethod(internalname, externalname, l, p);
+                Protected<RexxString> library = l;
+                Protected<RexxString> procedure = p;
                 // if there was no procedure explicitly given, create one using the GET/SET convention
                 if (internalname == procedure)
                 {
                     procedure = procedure->concatToCstring("GET");
                 }
                 // now create both getter and setting methods from the information.
-                MethodClass *_method = createNativeMethod(internalname, library, procedure);
-                _method->setAttributes(accessFlag == PRIVATE_SCOPE, protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD);
+                Protected<MethodClass> _method = createNativeMethod(internalname, library, procedure);
+                _method->setAttributes(accessFlag, protectedFlag, guardFlag);
                 // mark this as an attribute method
                 _method->setAttribute();
                 // add to the compilation
@@ -1493,8 +1712,7 @@ void LanguageParser::attributeDirective()
                 // no code can follow abstract methods
                 checkDirective(Error_Translation_abstract_attribute);
                 // create the method pair and quit.
-                createAbstractMethod(internalname, isClass, accessFlag == PRIVATE_SCOPE,
-                    protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, true);
+                createAbstractMethod(internalname, isClass, accessFlag, protectedFlag, guardFlag, true);
             }
             // delegating these to another object
             else if (delegateName != OREF_NULL)
@@ -1506,8 +1724,7 @@ void LanguageParser::attributeDirective()
                 checkDirective(Error_Translation_delegate_attribute);
 
                 // create the method pair and quit.
-                createDelegateMethod(internalname, retriever, isClass, accessFlag == PRIVATE_SCOPE,
-                    protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, true);
+                createDelegateMethod(internalname, retriever, isClass, accessFlag, protectedFlag, guardFlag, true);
             }
             // either written in ooRexx or is automatically generated.
             else
@@ -1515,13 +1732,11 @@ void LanguageParser::attributeDirective()
                 // written in Rexx?  go create
                 if (hasBody())
                 {
-                    createMethod(internalname, isClass, accessFlag == PRIVATE_SCOPE,
-                        protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, true);
+                    createMethod(internalname, isClass, accessFlag, protectedFlag, guardFlag, true);
                 }
                 else
                 {
-                    createAttributeGetterMethod(internalname, retriever, isClass, accessFlag == PRIVATE_SCOPE,
-                        protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD);
+                    createAttributeGetterMethod(internalname, retriever, isClass, accessFlag, protectedFlag, guardFlag);
                 }
             }
             break;
@@ -1538,17 +1753,19 @@ void LanguageParser::attributeDirective()
             {
                 // no code can follow external methods
                 checkDirective(Error_Translation_external_attribute);
-                RexxString *library = OREF_NULL;
-                RexxString *procedure = OREF_NULL;
-                decodeExternalMethod(internalname, externalname, library, procedure);
+                RexxString *l = OREF_NULL;
+                RexxString *p = OREF_NULL;
+                decodeExternalMethod(internalname, externalname, l, p);
+                Protected<RexxString> library = l;
+                Protected<RexxString> procedure = p;
                 // if there was no procedure explicitly given, create one using the GET/SET convention
                 if (internalname == procedure)
                 {
                     procedure = procedure->concatToCstring("SET");
                 }
                 // now create both getter and setting methods from the information.
-                MethodClass *_method = createNativeMethod(setterName, library, procedure);
-                _method->setAttributes(accessFlag == PRIVATE_SCOPE, protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD);
+                Protected<MethodClass> _method = createNativeMethod(setterName, library, procedure);
+                _method->setAttributes(accessFlag, protectedFlag, guardFlag);
                 // mark this as an attribute method
                 _method->setAttribute();
                 // add to the compilation
@@ -1560,8 +1777,7 @@ void LanguageParser::attributeDirective()
                 // no code can follow abstract methods
                 checkDirective(Error_Translation_abstract_attribute);
                 // create the method pair and quit.
-                createAbstractMethod(setterName, isClass, accessFlag == PRIVATE_SCOPE,
-                    protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, true);
+                createAbstractMethod(setterName, isClass, accessFlag, protectedFlag, guardFlag, true);
             }
             // delegating these to another object
             else if (delegateName != OREF_NULL)
@@ -1573,20 +1789,17 @@ void LanguageParser::attributeDirective()
                 checkDirective(Error_Translation_delegate_attribute);
 
                 // create the method pair and quit.
-                createDelegateMethod(setterName, retriever, isClass, accessFlag == PRIVATE_SCOPE,
-                    protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, true);
+                createDelegateMethod(setterName, retriever, isClass, accessFlag, protectedFlag, guardFlag, true);
             }
             else
             {
                 if (hasBody())        // just the getter method
                 {
-                    createMethod(setterName, isClass, accessFlag == PRIVATE_SCOPE,
-                        protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD, true);
+                    createMethod(setterName, isClass, accessFlag, protectedFlag, guardFlag, true);
                 }
                 else
                 {
-                    createAttributeSetterMethod(setterName, retriever, isClass, accessFlag == PRIVATE_SCOPE,
-                        protectedFlag == PROTECTED_METHOD, guardFlag != UNGUARDED_METHOD);
+                    createAttributeSetterMethod(setterName, retriever, isClass, accessFlag, protectedFlag, guardFlag);
                 }
             }
             break;
@@ -1613,7 +1826,8 @@ void LanguageParser::constantDirective()
 
     // we only expect just a single value token here
     token = nextReal();
-    RexxObject *value;
+    RexxObject *value = OREF_NULL;
+    RexxInternalObject *expression = OREF_NULL;
 
     // the value omitted?  Just use the literal name of the constant.
     if (token->isEndOfClause())
@@ -1621,6 +1835,12 @@ void LanguageParser::constantDirective()
         value = name;
         // push the EOC token back
         previousToken();
+    }
+    // this could be an expression that needs to
+    else if (token->isLeftParen())
+    {
+        // we have an expression in parens, parse it as a subexpression.
+        expression = translateConstantExpression(token, Error_Invalid_expression_missing_constant);
     }
     // no a symbol or literal...we have special checks for signed numbers
     else if (!token->isSymbolOrLiteral())
@@ -1654,6 +1874,10 @@ void LanguageParser::constantDirective()
     // nothing more permitted after this
     requiredEndOfClause(Error_Invalid_data_constant_dir);
 
+    // save the current location before checking for a body, since that
+    // gets the next clause, which will update the location.
+    SourceLocation directiveLocation = clause->getLocation();
+
     // this directive does not allow a body
     checkDirective(Error_Translation_constant_body);
 
@@ -1666,7 +1890,7 @@ void LanguageParser::constantDirective()
     }
 
     // create the method pair and quit.
-    createConstantGetterMethod(internalname, value);
+    createConstantGetterMethod(internalname, value, expression, directiveLocation);
 }
 
 
@@ -1955,7 +2179,7 @@ void LanguageParser::processAnnotation(RexxToken *token, StringTable *table)
 
     // we only expect just a single value token here
     token = nextReal();
-    RexxObject *value;
+    Protected<RexxObject> value;
 
     // the value omitted?  This is an error
     if (token->isEndOfClause())
@@ -2107,7 +2331,7 @@ void LanguageParser::resourceDirective()
  * @param isAttribute Indicates if this is an attribute method.
  */
 void LanguageParser::createMethod(RexxString *name, bool classMethod,
-    bool privateMethod, bool protectedMethod, bool guardedMethod, bool isAttribute)
+    AccessFlag privateMethod, ProtectedFlag protectedMethod, GuardFlag guardedMethod, bool isAttribute)
 {
     // NOTE:  It is necessary to translate the block and protect the code
     // before allocating the MethodClass object.  The new operator allocates the
@@ -2115,11 +2339,10 @@ void LanguageParser::createMethod(RexxString *name, bool classMethod,
     // Since the translateBlock() call will allocate a lot of new objects before returning,
     // there's a high probability that the method object can get garbage collected before
     // there is any opportunity to protect the object.
-    RexxCode *code = translateBlock();
-    ProtectedObject p(code);
+    Protected<RexxCode> code = translateBlock();
 
     // convert into a method object
-    MethodClass *_method = new MethodClass(name, code);
+    Protected<MethodClass> _method = new MethodClass(name, code);
     _method->setAttributes(privateMethod, protectedMethod, guardedMethod);
     // mark with the attribute state
     _method->setAttribute(isAttribute);
@@ -2143,11 +2366,11 @@ void LanguageParser::createMethod(RexxString *name, bool classMethod,
  *                  The method's guarded attribute.
  */
 void LanguageParser::createAttributeGetterMethod(RexxString *name, RexxVariableBase *retriever,
-    bool classMethod, bool privateMethod, bool protectedMethod, bool guardedMethod)
+    bool classMethod, AccessFlag privateMethod, ProtectedFlag protectedMethod, GuardFlag guardedMethod)
 {
     // create the kernel method for the accessor
-    BaseCode *code = new AttributeGetterCode(retriever);
-    MethodClass *_method = new MethodClass(name, code);
+    Protected<BaseCode> code = new AttributeGetterCode(retriever);
+    Protected<MethodClass> _method = new MethodClass(name, code);
     _method->setAttributes(privateMethod, protectedMethod, guardedMethod);
     // mark as an attribute method
     _method->setAttribute();
@@ -2173,11 +2396,11 @@ void LanguageParser::createAttributeGetterMethod(RexxString *name, RexxVariableB
  *                  Indicates whether this is an attribute method.
  */
 void LanguageParser::createDelegateMethod(RexxString *name, RexxVariableBase *retriever,
-    bool classMethod, bool privateMethod, bool protectedMethod, bool guardedMethod, bool isAttribute)
+    bool classMethod, AccessFlag privateMethod, ProtectedFlag protectedMethod, GuardFlag guardedMethod, bool isAttribute)
 {
     // create the kernel method for the accessor
-    BaseCode *code = new DelegateCode(retriever);
-    MethodClass *_method = new MethodClass(name, code);
+    Protected<BaseCode> code = new DelegateCode(retriever);
+    Protected<MethodClass> _method = new MethodClass(name, code);
     _method->setAttributes(privateMethod, protectedMethod, guardedMethod);
     // mark with the attribute state
     _method->setAttribute(isAttribute);
@@ -2199,11 +2422,11 @@ void LanguageParser::createDelegateMethod(RexxString *name, RexxVariableBase *re
  *               The method's guarded attribute.
  */
 void LanguageParser::createAttributeSetterMethod(RexxString *name, RexxVariableBase *retriever,
-    bool classMethod, bool privateMethod, bool protectedMethod, bool guardedMethod)
+    bool classMethod, AccessFlag privateMethod, ProtectedFlag protectedMethod, GuardFlag guardedMethod)
 {
     // create the kernel method for the accessor
-    BaseCode *code = new AttributeSetterCode(retriever);
-    MethodClass *_method = new MethodClass(name, code);
+    Protected<BaseCode> code = new AttributeSetterCode(retriever);
+    Protected<MethodClass> _method = new MethodClass(name, code);
     _method->setAttributes(privateMethod, protectedMethod, guardedMethod);
     // mark as an attribute method
     _method->setAttribute();
@@ -2228,12 +2451,12 @@ void LanguageParser::createAttributeSetterMethod(RexxString *name, RexxVariableB
  *               The method attribute status.
  */
 void LanguageParser::createAbstractMethod(RexxString *name,
-    bool classMethod, bool privateMethod, bool protectedMethod, bool guardedMethod, bool isAttribute)
+    bool classMethod, AccessFlag privateMethod, ProtectedFlag protectedMethod, GuardFlag guardedMethod, bool isAttribute)
 {
     // create the kernel method for the accessor
     // this uses a special code block
-    BaseCode *code = new AbstractCode();
-    MethodClass * _method = new MethodClass(name, code);
+    Protected<BaseCode> code = new AbstractCode();
+    Protected<MethodClass> _method = new MethodClass(name, code);
     _method->setAttributes(privateMethod, protectedMethod, guardedMethod);
     // mark with the attribute state
     _method->setAttribute(isAttribute);
@@ -2247,26 +2470,51 @@ void LanguageParser::createAbstractMethod(RexxString *name,
 /**
  * Create a CONSTANT "get" method.
  *
- * @param target The target method directory.
- * @param name   The name of the attribute.
+ * @param name       The name of the attribute.
+ * @param value      A potential expression that needs to be evaluated at run time.
+ * @param expression An expression to evaluate if this is the dynamic form.
+ * @param location   The clause location information.
  */
-void LanguageParser::createConstantGetterMethod(RexxString *name, RexxObject *value)
+void LanguageParser::createConstantGetterMethod(RexxString *name, RexxObject *value, RexxInternalObject *expression, SourceLocation &location)
 {
-    ConstantGetterCode *code = new ConstantGetterCode(value);
+    Protected<ConstantGetterCode> code = new ConstantGetterCode(name, value);
     // add this as an unguarded method
-    MethodClass *method = new MethodClass(name, code);
+    Protected<MethodClass> method = new MethodClass(name, code);
     method->setUnguarded();
     // mark as a constant method
     method->setConstant();
+
+    // if we do not have an active class, only real constants are allowed.
     if (activeClass == OREF_NULL)
     {
+        // if this is the evaluated form, we can't process this outside of the
+        // context of a class object.
+        if (expression != OREF_NULL)
+        {
+            syntaxError(Error_Translation_constant_no_class, name);
+        }
         addMethod(name, method, false);
     }
     else
     {
         // connect this to the source package before adding to the class.
         method->setPackageObject(package);
-        activeClass->addConstantMethod(name, method);
+        // if we have an expression, then value was null and the method completed
+        // above is incomplete. We need to create a new ConstantDirective instruction
+        // that will evaluate this expression when the package is installed.
+        if (expression != OREF_NULL)
+        {
+            // this gets added to the active class for evaluation later
+            Protected<ConstantDirective> directive = new ConstantDirective(code, expression, clause);
+            // the clause we provided is the wrong location, so set the correct position.
+            directive->setLocation(location);
+            activeClass->addConstantMethod(name, method, directive, constantMaxStack, constantVariableIndex);
+        }
+        else
+        {
+            // just a normal "constant" constant
+            activeClass->addConstantMethod(name, method);
+        }
     }
 }
 
@@ -2356,9 +2604,9 @@ void LanguageParser::routineDirective()
         // is this mapped to an external library?
         if (externalname != OREF_NULL)
         {
-            // convert external into words (this also adds the strings
-            // to the common string pool)
-            ArrayClass *_words = words(externalname);
+            // convert external into array of words (this also adds all words
+            // to the common string pool and uppercases the first word)
+            Protected<ArrayClass> _words = words(externalname);
             // ::ROUTINE foo EXTERNAL "LIBRARY libbar [foo]"
             // NOTE:  decodeMethodLibrary doesn't really work for routines
             // because we have a second form.  Not really worth writing
@@ -2463,9 +2711,8 @@ void LanguageParser::routineDirective()
             // Since the translateBlock() call will allocate a lot of new objects before returning,
             // there's a high probability that the method object can get garbage collected before
             // there is any opportunity to protect the object.
-            RexxCode *code = translateBlock();
-            ProtectedObject p(code);
-            RoutineClass *routine = new RoutineClass(name, code);
+            Protected<RexxCode> code = translateBlock();
+            Protected<RoutineClass> routine = new RoutineClass(name, code);
             // make sure this is attached to the source object for context information
             routine->setPackageObject(package);
             // add to the routine directory

@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -58,27 +58,27 @@ class DirectoryClass : public StringHashCollection
 
     RexxObject *newRexx(RexxObject **, size_t);
 
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
-    virtual void flatten(Envelope *);
+    void live(size_t) override;
+    void liveGeneral(MarkReason reason) override;
+    void flatten(Envelope *) override;
 
-    virtual RexxObject *makeProxy(Envelope*);
+    RexxObject *makeProxy(Envelope*) override;
 
-    virtual RexxInternalObject *copy();
+    RexxInternalObject *copy() override;
 
     // virtual method overrides of the base collection class.
-    virtual size_t items();
-    virtual SupplierClass *supplier();
-    virtual ArrayClass *allIndexes();
-    virtual ArrayClass *allItems();
-    virtual bool hasIndex(RexxInternalObject *indexName);
-    virtual RexxInternalObject *remove(RexxInternalObject *entryname);
-    virtual RexxInternalObject *get(RexxInternalObject *index);
-    virtual void put(RexxInternalObject *value, RexxInternalObject *index);
-    virtual void empty();
-    virtual RexxInternalObject *getIndex(RexxInternalObject *target);
-    virtual bool hasItem(RexxInternalObject *target);
-    virtual RexxInternalObject *removeItem(RexxInternalObject *target);
+    size_t items() override;
+    SupplierClass *supplier() override;
+    ArrayClass *allIndexes() override;
+    ArrayClass *allItems() override;
+    bool hasIndex(RexxInternalObject *indexName) override;
+    RexxInternalObject *remove(RexxInternalObject *entryname) override;
+    RexxInternalObject *get(RexxInternalObject *index) override;
+    void put(RexxInternalObject *value, RexxInternalObject *index) override;
+    void empty() override;
+    RexxInternalObject *getIndex(RexxInternalObject *target) override;
+    bool hasItem(RexxInternalObject *target) override;
+    RexxInternalObject *removeItem(RexxInternalObject *target) override;
 
     // stubs for additional exported directory methods.
     RexxInternalObject *setMethodRexx(RexxString *entryname, MethodClass *methodobj);

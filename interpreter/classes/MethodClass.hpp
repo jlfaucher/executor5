@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -56,6 +56,28 @@ class RexxClass;
 class PackageClass;
 
 
+typedef enum
+{
+    DEFAULT_GUARD,                 // default guard
+    GUARDED_METHOD,                // guard specified
+    UNGUARDED_METHOD,              // unguarded specified
+} GuardFlag;
+
+typedef enum
+{
+    DEFAULT_PROTECTION,            // using defualt protection
+    PROTECTED_METHOD,              // security manager permission needed
+    UNPROTECTED_METHOD,            // no protection.
+} ProtectedFlag;
+
+typedef enum
+{
+    DEFAULT_ACCESS_SCOPE,          // using defualt scope
+    PUBLIC_SCOPE,                  // publicly accessible
+    PRIVATE_SCOPE,                 // private scope
+    PACKAGE_SCOPE,                 // package scope
+} AccessFlag;
+
 /**
  * Base class for method object.  This is the frontend for
  * The different types of executable code objects.
@@ -68,14 +90,13 @@ class MethodClass : public BaseExecutable
     MethodClass(RexxString *name, BaseCode *_code);
     inline MethodClass(RESTORETYPE restoreType) { ; }
 
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
-    virtual void flatten(Envelope*);
+    void live(size_t) override;
+    void liveGeneral(MarkReason reason) override;
+    void flatten(Envelope*) override;
 
     void         run(Activity *,  RexxObject *, RexxString *,  RexxObject **, size_t, ProtectedObject &);
     MethodClass *newScope(RexxClass  *);
     void         setScope(RexxClass  *);
-    SmartBuffer  *saveMethod();
     RexxObject  *setUnguardedRexx();
     RexxObject  *setGuardedRexx();
     RexxObject  *setPrivateRexx();
@@ -84,6 +105,7 @@ class MethodClass : public BaseExecutable
 
     RexxObject  *isGuardedRexx();
     RexxObject  *isPrivateRexx();
+    RexxObject  *isPackageRexx();
     RexxObject  *isProtectedRexx();
     RexxObject  *isAbstractRexx();
     RexxObject  *isConstantRexx();
@@ -92,7 +114,8 @@ class MethodClass : public BaseExecutable
     inline bool  isGuarded()      { return !methodFlags[UNGUARDED_FLAG]; }
     inline bool  isPrivate()      { return methodFlags[PRIVATE_FLAG]; }
     inline bool  isProtected()    { return methodFlags[PROTECTED_FLAG]; }
-    inline bool  isSpecial()      { return methodFlags.any(PROTECTED_FLAG, PRIVATE_FLAG); }
+    inline bool  isPackageScope() { return methodFlags[PACKAGE_FLAG]; }
+    inline bool  isSpecial()      { return methodFlags.any(PROTECTED_FLAG, PRIVATE_FLAG, PACKAGE_FLAG); }
     inline bool  isConstant()     { return methodFlags[CONSTANT_METHOD]; }
     inline bool  isAttribute()    { return methodFlags[ATTRIBUTE_METHOD]; }
     inline bool  isAbstract()     { return methodFlags[ABSTRACT_METHOD]; }
@@ -100,6 +123,7 @@ class MethodClass : public BaseExecutable
     inline void  setUnguarded()    { methodFlags.set(UNGUARDED_FLAG); }
     inline void  setGuarded()      { methodFlags.reset(UNGUARDED_FLAG); }
     inline void  setPrivate()      { methodFlags.set(PRIVATE_FLAG); }
+    inline void  setPackageScope() { methodFlags.set(PACKAGE_FLAG); }
     inline void  setProtected()    { methodFlags.set(PROTECTED_FLAG); }
     inline void  setUnprotected()  { methodFlags.reset(PROTECTED_FLAG); }
     inline void  setPublic()       { methodFlags.reset(PRIVATE_FLAG); }
@@ -107,15 +131,20 @@ class MethodClass : public BaseExecutable
     inline void  setAttribute()    { methodFlags.set(ATTRIBUTE_METHOD); }
     inline void  setAbstract()     { methodFlags.set(ABSTRACT_METHOD); }
     inline void  setAttribute(bool v)    { methodFlags[ATTRIBUTE_METHOD] = v; }
-           void  setAttributes(bool _private, bool _protected, bool _guarded);
+           void  setAttributes(AccessFlag access, ProtectedFlag _protected, GuardFlag _guarded);
     inline RexxClass *getScope() { return scope; }
+           RexxString *getScopeName();
            RexxObject *getScopeRexx();
     inline bool  isScope(RexxClass *s) {return scope == s;}
 
     inline BaseCode  *getCode()     { return code; }
+
+    static MethodClass* restore(RexxString *fileName, BufferClass *buffer);
+
     MethodClass  *newRexx(RexxObject **, size_t);
     MethodClass  *newFileRexx(RexxString *, PackageClass *);
     MethodClass  *loadExternalMethod(RexxString *methodName, RexxString *descriptor);
+    inline bool   isSamePackage(PackageClass *p) { return code->isSamePackage(p); }
 
     static MethodClass *newMethodObject(RexxString *, RexxObject *, RexxClass *, const char *);
 
@@ -132,6 +161,7 @@ class MethodClass : public BaseExecutable
         ATTRIBUTE_METHOD,                // defined as an attribute method
         CONSTANT_METHOD,                 // defined as a constant method
         ABSTRACT_METHOD,                 // defined as an abstract method
+        PACKAGE_FLAG,                    // defined as a package scope method
     } MethodFlags;
 
     FlagSet<MethodFlags, 32>  methodFlags;  // method status flags

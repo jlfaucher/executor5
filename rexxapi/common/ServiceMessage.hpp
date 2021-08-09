@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -41,7 +41,7 @@
 
 #include "rexx.h"
 #include "ServiceException.hpp"
-#include "SysCSStream.hpp"
+#include "CSStream.hpp"
 #include "SysProcess.hpp"
 
 typedef enum
@@ -49,6 +49,7 @@ typedef enum
     QueueWait                 // deferred because of queue wait issues.
 
 } ExecutionDeferral;
+
 
 /**
  * Duplicate a C string using C++ new char[] to allocate the storage.
@@ -402,10 +403,10 @@ public:
         }
     }
 
-    void readMessage(SysServerConnection *server);
-    void writeResult(SysServerConnection *server);
-    void writeMessage(SysClientStream &server);
-    void readResult(SysClientStream &server);
+    void readMessage(ApiConnection *server);
+    void writeResult(ApiConnection *server);
+    void writeMessage(ApiConnection &server);
+    void readResult(ApiConnection &server);
 
     static void *allocateResultMemory(size_t length);
     static void  releaseResultMemory(void *mem);

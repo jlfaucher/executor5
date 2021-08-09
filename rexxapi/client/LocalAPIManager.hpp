@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -42,9 +42,9 @@
 #include "LocalRegistrationManager.hpp"
 #include "LocalQueueManager.hpp"
 #include "LocalMacroSpaceManager.hpp"
+#include "CSStream.hpp"
 #include "SysProcess.hpp"
 #include "SysSemaphore.hpp"
-#include "SysCSStream.hpp"
 
 #include <list>
 
@@ -80,9 +80,9 @@ public:
     void establishServerConnection();
     RexxReturnCode processServiceException(ServerManager t, ServiceException *e);
     void shutdown();
-    SysClientStream *getConnection();
-    void returnConnection(SysClientStream *);
-    void closeConnection(SysClientStream *connection);
+    ApiConnection *getConnection();
+    void returnConnection(ApiConnection *);
+    void closeConnection(ApiConnection *connection);
 
 protected:
 
@@ -92,7 +92,7 @@ protected:
     bool           connectionEstablished;    // local initialization state
     SessionID      session;                  // the session identifier
     char           userid[MAX_USERID_LENGTH]; // name of the user
-    std::list<SysClientStream *> connections; // connection pool
+    std::list<ApiConnection *> connections; // connection pool
 
 public:                                  // let's make these public
     LocalQueueManager queueManager;      // our managers for the different API sets

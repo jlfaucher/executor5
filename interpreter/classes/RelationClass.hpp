@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -56,7 +56,7 @@ class RelationClass : public EqualityHashCollection
            RelationClass(size_t capacity = HashCollection::DefaultTableSize);
            RelationClass(bool fromRexx) { }
 
-    virtual HashContents *allocateContents(size_t bucketSize, size_t capacity);
+    HashContents *allocateContents(size_t bucketSize, size_t capacity) override;
 
     RexxObject *newRexx(RexxObject **, size_t);
 

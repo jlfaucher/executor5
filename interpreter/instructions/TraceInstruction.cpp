@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -169,7 +169,7 @@ void RexxInstructionTrace::execute(RexxActivation *context, ExpressionStack *sta
         RexxObject *result = expression->evaluate(context, stack);
         // Even trace gets traced :-)
         context->traceKeywordResult(GlobalNames::VALUE, result);
-        RexxString *value = result->requestString();
+        Protected<RexxString> value = result->requestString();
         // again, we don't change anything if we're already in debug mode.
         if (!context->inDebug())
         {

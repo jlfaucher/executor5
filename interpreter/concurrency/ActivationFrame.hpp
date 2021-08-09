@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -104,10 +104,10 @@ class RexxActivationFrame : public ActivationFrame
  public:
     inline RexxActivationFrame(Activity *a, RexxActivation *context) : ActivationFrame(a), activation(context) { }
 
-    virtual RexxString *messageName();
-    virtual BaseExecutable *executable();
-    virtual StackFrameClass *createStackFrame();
-    virtual PackageClass *getPackage();
+    RexxString *messageName() override;
+    BaseExecutable *executable() override;
+    StackFrameClass *createStackFrame() override;
+    PackageClass *getPackage() override;
 
  protected:
 
@@ -123,10 +123,10 @@ class NativeActivationFrame : public ActivationFrame
  public:
     inline NativeActivationFrame(Activity *a, NativeActivation *context) : ActivationFrame(a), activation(context) { }
 
-    virtual RexxString *messageName();
-    virtual BaseExecutable *executable();
-    virtual StackFrameClass *createStackFrame();
-    virtual PackageClass *getPackage();
+    RexxString *messageName() override;
+    BaseExecutable *executable() override;
+    StackFrameClass *createStackFrame() override;
+    PackageClass *getPackage() override;
 
  protected:
 
@@ -143,10 +143,10 @@ class InternalActivationFrame : public ActivationFrame
     inline InternalActivationFrame(Activity *a, RexxString *n, RexxObject *t, MethodClass *m, RexxObject **args, size_t c)
         : ActivationFrame(a), name(n), target(t), frameMethod(m), argPtr(args), count(c) { }
 
-    virtual RexxString *messageName();
-    virtual BaseExecutable *executable();
-    virtual StackFrameClass *createStackFrame();
-    virtual PackageClass *getPackage();
+    RexxString *messageName() override;
+    BaseExecutable *executable() override;
+    StackFrameClass *createStackFrame() override;
+    PackageClass *getPackage() override;
 
  protected:
 
@@ -168,10 +168,10 @@ class CompileActivationFrame : public ActivationFrame
  public:
     inline CompileActivationFrame(Activity *a, LanguageParser *p) : ActivationFrame(a), parser(p) { }
 
-    virtual RexxString *messageName();
-    virtual BaseExecutable *executable();
-    virtual StackFrameClass *createStackFrame();
-    virtual PackageClass *getPackage();
+    RexxString *messageName() override;
+    BaseExecutable *executable() override;
+    StackFrameClass *createStackFrame() override;
+    PackageClass *getPackage() override;
 
 protected:
 

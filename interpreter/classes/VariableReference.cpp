@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -238,7 +238,7 @@ RexxObject *VariableReference::unknownRexx(RexxString *message, ArrayClass *argu
  * @param count     The count of arguments.
  * @param result    The return result protected object.
  */
-void VariableReference::processUnknown(RexxString *messageName, RexxObject **arguments, size_t count, ProtectedObject &result)
+void VariableReference::processUnknown(RexxErrorCodes error, RexxString *messageName, RexxObject **arguments, size_t count, ProtectedObject &result)
 {
     // just send this as a message indirect variable value
     variable->getResolvedValue()->messageSend(messageName, arguments, count, result);

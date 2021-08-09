@@ -5,7 +5,7 @@
 #/* This program and the accompanying materials are made available under       */
 #/* the terms of the Common Public License v1.0 which accompanies this         */
 #/* distribution. A copy is also available at the following address:           */
-#/* http://www.oorexx.org/license.html                                         */
+#/* https://www.oorexx.org/license.html                                        */
 #/*                                                                            */
 #/* Redistribution and use in source and binary forms, with or                 */
 #/* without modification, are permitted provided that the following            */
@@ -68,13 +68,13 @@ WARNINGFLAGS = /W3 /Wp64 /D_CRT_SECURE_NO_DEPRECATE /D_CRT_NONSTDC_NO_DEPRECATE
 
 !IF DEFINED(RELEASE)
 
-OOREXX_CFLAGS = /nologo /EHsc /O2 /Gr /Gs /FAcs /MT $(WARNINGFLAGS) /c
+OOREXX_CFLAGS = /nologo /EHsc /O2 /Gs /FAcs /MT $(WARNINGFLAGS) /c
 EXE_LFLAGS = /nologo /SUBSYSTEM:Console $(REXX_LIBS) user32.lib comdlg32.lib gdi32.lib kernel32.lib
 DLL_LFLAGS = /nologo /SUBSYSTEM:Windows $(REXX_LIBS) /DLL
 
 !ELSE
 
-OOREXX_CFLAGS =  /nologo /EHsc /Zi /Od /Gr /MTd $(WARNINGFLAGS) /c
+OOREXX_CFLAGS =  /nologo /EHsc /Zi /Od /MTd $(WARNINGFLAGS) /c
 EXE_LFLAGS = /nologo /DEBUG -debugtype:cv /SUBSYSTEM:Console $(REXX_LIBS) user32.lib comdlg32.lib gdi32.lib kernel32.lib
 DLL_LFLAGS = /nologo /DEBUG -debugtype:cv /SUBSYSTEM:Windows $(REXX_LIBS) /DLL
 

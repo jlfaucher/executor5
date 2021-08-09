@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2020 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -48,6 +48,7 @@
 #include <string.h>
 #include <errno.h>
 #include "SysFileSystem.hpp"
+#include "ExternalFileBuffer.hpp"
 
 /**
  * Return the file name separator used by the file system.
@@ -67,7 +68,7 @@ RexxMethod0(CSTRING, file_path_separator)
 
 
 /**
- * Return the file system case sensitivity section
+ * Return the file system case sensitivity
  */
 RexxMethod0(logical_t, file_case_sensitive)
 {
@@ -76,7 +77,7 @@ RexxMethod0(logical_t, file_case_sensitive)
 
 
 /**
- * Return the file system case sensitivity section
+ * Return the case sensitivity of a file
  */
 RexxMethod1(logical_t, this_file_case_sensitive, CSTRING, fileName)
 {
@@ -86,20 +87,20 @@ RexxMethod1(logical_t, this_file_case_sensitive, CSTRING, fileName)
 
 
 /**
- * Return the file system case sensitivity section
+ * Return whether file can be opened for reading
  */
 RexxMethod1(logical_t, file_can_read, CSTRING, name)
 {
-    return SysFileSystem::exists(name) && !SysFileSystem::isWriteOnly(name);
+    return SysFileSystem::exists(name) && SysFileSystem::canRead(name);
 }
 
 
 /**
- * Return the file system case sensitivity section
+ * Return whether file can be opened for writing
  */
 RexxMethod1(logical_t, file_can_write, CSTRING, name)
 {
-    return SysFileSystem::exists(name) && !SysFileSystem::isReadOnly(name);
+    return SysFileSystem::exists(name) && SysFileSystem::canWrite(name);
 }
 
 
@@ -108,7 +109,8 @@ RexxMethod1(logical_t, file_can_write, CSTRING, name)
  */
 RexxMethod0(RexxArrayObject, file_list_roots)
 {
-    char rootBuffer[SysFileSystem::MaximumPathLength];
+    MethodFileNameBuffer rootBuffer(context);
+
     int count = SysFileSystem::getRoots(rootBuffer);
 
     const char *roots = rootBuffer;
@@ -129,11 +131,9 @@ RexxMethod0(RexxArrayObject, file_list_roots)
  */
 RexxMethod1(RexxStringObject, file_qualify, CSTRING, name)
 {
-    char qualified_name[SysFileSystem::MaximumFileNameLength];
-    // qualifyStreamName will not expand if not a null string on entry.
-    qualified_name[0] = '\0';
-    SysFileSystem::qualifyStreamName(name, qualified_name, sizeof(qualified_name));
-    return context->String(qualified_name);
+    QualifiedName qualifiedName(name);
+
+    return context->String(qualifiedName);
 }
 
 
@@ -151,7 +151,7 @@ RexxMethod1(logical_t, file_exists, CSTRING, name)
  */
 RexxMethod1(logical_t, file_delete_file, CSTRING, name)
 {
-    return SysFileSystem::deleteFile(name);
+    return SysFileSystem::deleteFile(name) == 0;
 }
 
 
@@ -160,7 +160,7 @@ RexxMethod1(logical_t, file_delete_file, CSTRING, name)
  */
 RexxMethod1(logical_t, file_delete_directory, CSTRING, name)
 {
-    return SysFileSystem::deleteDirectory(name);
+    return SysFileSystem::deleteDirectory(name) == 0;
 }
 
 
@@ -210,12 +210,40 @@ RexxMethod2(logical_t, file_set_last_modified, CSTRING, name, int64_t, time)
 
 
 /**
+ * Return the last access date as a Ticks time value.
+ */
+RexxMethod1(int64_t, file_get_last_accessed, CSTRING, name)
+{
+    return SysFileSystem::getLastAccessDate(name);
+}
+
+
+/**
+ * Return the last modified date as a Ticks time value.
+ */
+RexxMethod2(logical_t, file_set_last_accessed, CSTRING, name, int64_t, time)
+{
+    return SysFileSystem::setLastAccessDate(name, time);
+}
+
+
+/**
  * Set the read-only flag for the target file
  */
 RexxMethod1(logical_t, file_set_read_only, CSTRING, name)
 {
     return SysFileSystem::setFileReadOnly(name);
 }
+
+
+/**
+ * Set the read-only flag for the target file
+ */
+RexxMethod1(logical_t, file_set_writable, CSTRING, name)
+{
+    return SysFileSystem::setFileWritable(name);
+}
+
 
 
 /**
@@ -240,15 +268,19 @@ RexxMethod1(RexxObjectPtr, file_list, CSTRING, name)
     // create an empty array to start
     RexxArrayObject result = context->NewArray(0);
 
-    SysFileIterator iterator(name);
+    MethodFileNameBuffer buffer(context);
+    MethodFileNameBuffer nextFile(context);
+
+    SysFileIterator iterator(name, NULL, buffer);
+    SysFileIterator::FileAttributes attributes;
+
     while (iterator.hasNext())
     {
-        char buffer[SysFileSystem::MaximumPathLength];
-        iterator.next(buffer);
+        iterator.next(nextFile, attributes);
         // don't include the "." and ".." directories in this list
-        if (strcmp(buffer, ".") != 0 && strcmp(buffer, "..") != 0)
+        if (nextFile != "." && nextFile != "..")
         {
-            context->ArrayAppendString(result, buffer, strlen(buffer));
+            context->ArrayAppendString(result, nextFile, nextFile.length());
         }
     }
 
@@ -270,7 +302,36 @@ RexxMethod1(logical_t, file_make_dir, CSTRING, name)
  */
 RexxMethod2(logical_t, file_rename, CSTRING, fromName, CSTRING, toName)
 {
-    return SysFileSystem::moveFile(fromName, toName);
+    return SysFileSystem::moveFile(fromName, toName) == 0;
 }
+
+
+/**
+ * Return the temporary directory.
+ */
+RexxMethod0(RexxStringObject, file_temporary_path)
+{
+    MethodFileNameBuffer temporary(context);
+
+    SysFileSystem::getTemporaryPath(temporary);
+    return context->String(temporary);
+}
+
+
+/**
+ * Return the file system case sensitivity section
+ */
+RexxMethod2(RexxObjectPtr, file_search_path_impl, CSTRING, file, CSTRING, path)
+{
+    MethodFileNameBuffer found(context);
+
+    if (SysFileSystem::searchPath(file, path, found))
+    {
+        return context->String(found);
+    }
+    return context->Nil();
+
+}
+
 
 

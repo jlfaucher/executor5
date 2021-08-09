@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -57,9 +57,9 @@ public:
     StackFrameClass(const char *type, RexxString *name, BaseExecutable *p, RexxObject *target, ArrayClass *arguments, RexxString *t, size_t l);
     inline StackFrameClass(RESTORETYPE restoreType) { ; };
 
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
-    virtual void flatten(Envelope*);
+    void live(size_t) override;
+    void liveGeneral(MarkReason reason) override;
+    void flatten(Envelope*) override;
 
     static void createInstance();
     static RexxClass *classInstance;
@@ -72,8 +72,8 @@ public:
     RexxString *getTraceLine();
     ArrayClass  *getArguments();
     PackageClass *getPackageObject();
-    virtual RexxString *makeString();
-    virtual RexxString *stringValue();
+    RexxString *makeString() override;
+    RexxString *stringValue() override;
 
     RexxObject *newRexx(RexxObject **args, size_t argc);
 

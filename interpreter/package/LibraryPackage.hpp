@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -68,8 +68,8 @@ public:
     LibraryPackage(RexxString *n, RexxPackageEntry *p);
     inline LibraryPackage(RESTORETYPE restoreType) { ; };
 
-    virtual void live(size_t liveMark);
-    virtual void liveGeneral(MarkReason reason);
+    void live(size_t liveMark) override;
+    void liveGeneral(MarkReason reason) override;
 
     bool load();
     void unload();
@@ -89,6 +89,7 @@ public:
     inline bool isInternal() { return internal; }
     inline void makeInternal() { internal = true; }
     inline StringTable *getRoutines() { return publicRoutines; }
+    inline bool isPackage(RexxString *n) { return n->strCaselessCompare(libraryName); }
 
 protected:
 
@@ -112,7 +113,7 @@ public:
     inline LibraryLoaderDispatcher(RexxPackageLoader l) : loader(l) { }
     virtual ~LibraryLoaderDispatcher() { ; }
 
-    virtual void run();
+    void run() override;
 
 protected:
     RexxPackageLoader loader;
@@ -128,7 +129,7 @@ public:
     inline LibraryUnloaderDispatcher(RexxPackageUnloader u) : unloader(u) { }
     virtual ~LibraryUnloaderDispatcher() { ; }
 
-    virtual void run();
+    void run() override;
 
 protected:
     RexxPackageUnloader unloader;

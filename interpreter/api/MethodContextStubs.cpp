@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -46,6 +46,7 @@
 #include "NativeActivation.hpp"
 #include "ProtectedObject.hpp"
 #include "MethodClass.hpp"
+#include "ActivityManager.hpp"
 
 BEGIN_EXTERN_C()
 
@@ -292,11 +293,75 @@ void RexxEntry FreeObjectMemory(RexxMethodContext *c, POINTER p)
     ApiContext context(c);
     try
     {
-        return context.context->freeObjectMemory(p);
+        context.context->freeObjectMemory(p);
     }
     catch (NativeActivation *)
     {
     }
+}
+
+
+RexxObjectPtr RexxEntry SetGuardOnWhenUpdated(RexxMethodContext *c, CSTRING n)
+{
+    ApiContext context(c);
+    try
+    {
+        return context.ret(context.context->guardOnWhenUpdated((const char *)n));
+    }
+    catch (NativeActivation *)
+    {
+        return OREF_NULL;
+    }
+}
+
+
+RexxObjectPtr RexxEntry SetGuardOffWhenUpdated(RexxMethodContext *c, CSTRING n)
+{
+    ApiContext context(c);
+    try
+    {
+        return context.ret(context.context->guardOffWhenUpdated((const char *)n));
+    }
+    catch (NativeActivation *)
+    {
+        return OREF_NULL;
+    }
+}
+
+
+// the following stubs are like the Raise versions, but don't use
+// try/catch to allow a return to the caller. This will unwinded back
+// to the invoking NativeActivation.
+void RexxEntry ThrowException0(RexxMethodContext *c, size_t n)
+{
+    ApiContext context(c);
+    reportException((RexxErrorCodes)n);
+}
+
+void RexxEntry ThrowException1(RexxMethodContext *c, size_t n, RexxObjectPtr o1)
+{
+    ApiContext context(c);
+    reportException((RexxErrorCodes)n, (RexxObject *)o1);
+}
+
+void RexxEntry ThrowException2(RexxMethodContext *c, size_t n, RexxObjectPtr o1, RexxObjectPtr o2)
+{
+    ApiContext context(c);
+    reportException((RexxErrorCodes)n, (RexxObject *)o1, (RexxObject *)o2);
+}
+
+void RexxEntry ThrowException(RexxMethodContext *c, size_t n, RexxArrayObject a)
+{
+    ApiContext context(c);
+    reportException((RexxErrorCodes)n, (ArrayClass *)a);
+}
+
+void RexxEntry ThrowCondition(RexxMethodContext *c, CSTRING n, RexxStringObject desc, RexxObjectPtr add, RexxObjectPtr result)
+{
+    ApiContext context(c);
+    Protected<RexxString> name = new_upper_string(n);
+    context.context->enableConditionTrap();
+    context.activity->raiseCondition(name, OREF_NULL, (RexxString *)desc, (RexxObject *)add, (RexxObject *)result);
 }
 
 
@@ -324,6 +389,14 @@ MethodContextInterface Activity::methodContextFunctions =
     AllocateObjectMemory,
     FreeObjectMemory,
     ReallocateObjectMemory,
+    GetObjectVariableReference,
+    SetGuardOnWhenUpdated,
+    SetGuardOffWhenUpdated,
+    ThrowException0,
+    ThrowException1,
+    ThrowException2,
+    ThrowException,
+    ThrowCondition,
 };
 
 

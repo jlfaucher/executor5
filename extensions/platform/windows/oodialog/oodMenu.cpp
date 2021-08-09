@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2021 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -1007,7 +1007,7 @@ BOOL CppMenu::maybeConnectItem(uint32_t id, CSTRING text, logical_t connect, CST
             if ( _methodName == NULL )
             {
                 _methodName = strdup_2methodName(text);
-                if ( _methodName = NULL )
+                if ( _methodName == NULL )
                 {
                     oodSetSysErrCode(c->threadContext, ERROR_NOT_ENOUGH_MEMORY);
                     goto done_out;
@@ -3235,7 +3235,7 @@ RexxMethod1(RexxObjectPtr, menu_uninit, CSELF, cMenuPtr)
     CppMenu *cMenu = (CppMenu *)cMenuPtr;
 
 #ifdef _DEBUG
-#if 1
+#if 0
     printf("In UNINIT() of Menu class cMenu=%p\n", cMenu);
 #endif
 #endif

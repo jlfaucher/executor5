@@ -156,6 +156,7 @@ Please reclone the repository from scratch.
 ===============================================================================
 History of merges.
 
+rev 12283
 rev 11510
 rev 11410
 rev 11306
@@ -181,6 +182,8 @@ select most recent commit from SVN
 Right clic: merge...
 Select create merge commit (Merge remote-tracking branch 'svn/trunk')
 Manage the conflicts, if any.
+When all the conflict have been fixed, the status is still "merging-state". Will be reset by a commit.
 Update the section History of merges in this file.
+Commit the changes with message "Merged from branch 'trunk' svn rev <REV>"
 push to Github: in log file, select most recent commit, right clic & choose push...
 select the right repository : gihub

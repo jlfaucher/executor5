@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2020 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -53,6 +53,7 @@
 #include "DirectoryClass.hpp"
 #include "ProtectedObject.hpp"
 #include "BufferClass.hpp"
+#include "ProgramMetaData.hpp"
 #include "RexxInternalApis.h"
 #include "RoutineClass.hpp"
 #include "PackageClass.hpp"
@@ -292,6 +293,18 @@ RexxObject *MethodClass::isPrivateRexx( )
 
 
 /**
+ * Return the Package setting for a method object.
+ *
+ * @return .true if the method is package scope.  .false
+ *         otherwise.
+ */
+RexxObject *MethodClass::isPackageRexx( )
+{
+    return booleanObject(isPackageScope());
+}
+
+
+/**
  * Return the Protected setting for a method object.
  *
  * @return .true if the method is protected.  .false otherwise.
@@ -352,29 +365,77 @@ RexxObject *MethodClass::getScopeRexx()
 
 
 /**
+ * Retrieve a string name for the method scope. If the scope is .nil,
+ * then ".NIL" is returned, otherwise the class name is used.
+ *
+ * @return A string name for the scope.
+ */
+RexxString *MethodClass::getScopeName()
+{
+    return (RexxObject *)scope == TheNilObject ? GlobalNames::DOTNIL : scope->getId();
+}
+
+
+/**
  * Set the entire set of method attributes with one call.  Used
  * during source compilation.
  *
- * @param _private   The private setting.
+ * @param _access   The access setting.
  * @param _protected The protected setting.
  * @param _guarded   The guarded setting.
  */
-void MethodClass::setAttributes(bool _private, bool _protected, bool _guarded)
+void MethodClass::setAttributes(AccessFlag _access, ProtectedFlag _protected, GuardFlag _guarded)
 {
-    if (_private)
+    switch (_access)
     {
-        setPrivate();
+        case PRIVATE_SCOPE:
+            setPrivate();
+            break;
+
+        case PACKAGE_SCOPE:
+            setPackageScope();
+            break;
+
+        // covers PUBLIC and DEFAULT
+        default:
+            break;
     }
-    if (_protected)
+
+    if (_protected == PROTECTED_METHOD)
     {
         setProtected();
     }
-    // guarded is the default, so we need to reverse this
-    if (!_guarded)
+
+    // both GUARDED and DEFAULT are guarded, so check for the reverse.
+    if (_guarded == UNGUARDED_METHOD)
     {
         setUnguarded();
     }
 }
+
+
+
+/**
+ * Restore a program from a simple buffer.
+ *
+ * @param fileName The file name of the program we're restoring from.
+ * @param buffer   The source buffer.  This contains all of the saved metadata
+ *                 ahead of the the flattened object.
+ *
+ * @return The inflated Method object, if valid.
+ */
+MethodClass* MethodClass::restore(RexxString *fileName, BufferClass *buffer)
+{
+    // try to restore the routine object from the compiled file, ProgramMetaData handles all of the details here
+    Protected<RoutineClass> routine = ProgramMetaData::restore(fileName, buffer);
+    if (routine != (RoutineClass *)OREF_NULL)
+    {
+        // create and return a new method, use the restored compiled code for it
+        return new MethodClass(fileName, routine->getCode());
+    }
+    return OREF_NULL;
+}
+
 
 
 /**
@@ -482,7 +543,6 @@ MethodClass *MethodClass::newFileRexx(RexxString *filename, PackageClass *source
 
     // go create a method from filename
     Protected<MethodClass> newMethod = LanguageParser::createMethod(filename, sourceContext);
-
     classThis->completeNewObject(newMethod);
     return newMethod;
 }
@@ -504,7 +564,7 @@ MethodClass *MethodClass::loadExternalMethod(RexxString *methodName, RexxString 
     // convert external into words
     Protected<ArrayClass> _words = StringUtil::words(descriptor->getStringData(), descriptor->getLength());
     // "LIBRARY libbar [foo]"
-    if (_words->size() > 0 && ((RexxString *)(_words->get(1)))->strCompare("LIBRARY"))
+    if (_words->size() > 0 && ((RexxString *)(_words->get(1)))->strCaselessCompare("LIBRARY"))
     {
         RexxString *library = OREF_NULL;
         // the default entry point name is the internal name

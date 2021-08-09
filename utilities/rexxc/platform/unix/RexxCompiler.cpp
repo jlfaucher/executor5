@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                          */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -56,127 +56,103 @@
 # include <features.h>
 #endif
 
-#if defined( HAVE_NL_TYPES_H )
-# include <nl_types.h>
-#endif
-
 #include "rexx.h"
-#include "RexxMessageNumbers.h"
-#define REXXMESSAGEFILE    "rexx.cat"
+#include "RexxInternalApis.h"          /* Get private REXXAPI API's         */
+#include "RexxErrorCodes.h"
 
-#define BUFFERLEN         256           /* Length of message bufs used        */
-#ifdef LINUX
-#define SECOND_PARAMETER 1              /* different sign. Lin-AIX            */
-#else
-#define SECOND_PARAMETER 0              /* 0 for no  NL_CAT_LOCALE            */
-#endif
 
-#ifndef CATD_ERR
-#define CATD_ERR ((nl_catd)-1)         /* Duplicate for AIX                 */
-#endif
-
-void DisplayError(int msgid)           /* simplified catalog access@MAE004M */
+void displayError(int msgid)
 {
-#if defined( HAVE_NL_TYPES_H )
-    nl_catd        catd;                  /* catalog descriptor from catopen() */
-#endif
-    int            set_num = 1;           /* message set 1 from catalog        */
-    const char    *message;               /* message pointer                   */
-    char           DataArea[256];         /* buf to return message             */
+    // retrieve the message from the central catalog
+    const char *message = RexxGetErrorMessage(msgid);
 
-#if defined( HAVE_CATOPEN )
-    /* open message catalog in NLSPATH   */
-    if ((catd = catopen(REXXMESSAGEFILE, SECOND_PARAMETER)) == (nl_catd)CATD_ERR)
+    printf("%s\n", message);    /* print the message                 */
+}
+
+
+/**
+ * Handle syntax errors for the rexxc command
+ */
+void syntaxError()
+{
+    displayError(Error_REXXC_wrongNrArg);
+    displayError(Error_REXXC_SynCheckInfo);
+    exit(-1);
+}
+
+int main(int argc, char **argv)
+{
+    bool  silent = false;
+    bool  encode = false;
+
+    const char *input;
+    const char *output = NULL;
+
+    // first possible flag argument
+    int firstFlag = 2;
+
+    // the source file name is required
+    if (argc < 2)
     {
-        sprintf(DataArea, "%s/%s", ORX_CATDIR, REXXMESSAGEFILE);
-        if ((catd = catopen(DataArea, SECOND_PARAMETER)) == (nl_catd)CATD_ERR)
+        syntaxError();
+    }
+
+    input = argv[1];
+
+    // the output file is optional, but it cannot be a possible flag
+    if (argc > 2)
+    {
+        // if not a possible flag, this is the output file
+        if (argv[2][0] != '-')
         {
-            printf("\n*** Cannot open REXX message catalog %s.\nNot in NLSPATH or %s.\n",
-                   REXXMESSAGEFILE, ORX_CATDIR );
-            return;                      /* terminate program                   */
+            output = argv[2];
+            // first possible flage is the third argument
+            firstFlag = 3;
         }
-    }                                 /* retrieve message from repository  */
-    message = catgets(catd, set_num, msgid, NULL);
-    if (!message)                    /* got a message ?                     */
+    }
+
+    // process any remaining arguments as flags.
+    for (int j = firstFlag; j < argc; j++)
     {
-        sprintf(DataArea, "%s/%s", ORX_CATDIR, REXXMESSAGEFILE);
-        if ((catd = catopen(DataArea, SECOND_PARAMETER)) == (nl_catd)CATD_ERR)
+        if (argv[j][0] == '-')
         {
-            printf("\nCannot open REXX message catalog %s.\nNot in NLSPATH or %s.\n",
-                   REXXMESSAGEFILE, ORX_CATDIR);
+            if ((argv[j][1] == 's') || (argv[j][1] == 'S'))
+            {
+                silent = j;
+            }
+            else if ((argv[j][1] == 'e') || (argv[j][1] == 'E'))
+            {
+                encode = j;
+            }
+            // unknown flag
+            else
+            {
+                displayError(Error_REXXC_cmd_parm_incorrect);
+                syntaxError();
+            }
         }
         else
         {
-            message = catgets(catd, set_num, msgid, NULL);
-            if (!message)                  /* got a message ?                   */
-            {
-                printf("\n Error message not found!\n");
-            }
-            else
-            {
-                printf("\n%s\n", message);  /* print the message                 */
-            }
+            displayError(Error_REXXC_cmd_parm_incorrect);
+            syntaxError();
         }
     }
-    else
-    {
-        printf("\n%s\n", message);    /* print the message                 */
-    }
-    catclose(catd);                   /* close the catalog                 */
-#else
-    printf("*** Cannot get description for error %d!", msgid);
-#endif
-    return;                           /* terminate program                 */
-}
 
-int main (int argc, char **argv)
-{
-    bool silent = false;
-    int silentp;
-    char *ptr;
-    /* check for /s option               */
-    for (silentp = 1; silentp < argc; silentp++)
+    // if not silent, output the banner
+    if (!silent)
     {
-        if (argv[silentp][0] == '-' &&
-            (argv[silentp][1] == 's' || argv[silentp][1] == 'S'))
-        {
-            silent = true;
-            break;
-        }
-    }
-    if (!silent)                       /* display version and copyright     */
-    {
-        ptr = RexxGetVersionInformation();
+        char *ptr = RexxGetVersionInformation();
         printf("%s\n", ptr);
         RexxFreeMemory(ptr);
     }
-    /* Check validity of arguments       */
-    if (argc < 2 || argc > 4 ||          /* # args exceeding bounds           */
-        (silent && argc==2) ||             /* -s is the first argument          */
-        (silent && (silentp + 1 < argc)) ||  /* -s is not the last argument       */
-        (!silent && argc==4))           /* 3 arguments, but no /s            */
+
+
+    // if we have an output file, it must be different than the input file
+    if (output != NULL && strcmp(input, output) == 0)
     {
-        if (argc > 2)
-        {
-            DisplayError((int)Error_REXXC_cmd_parm_incorrect_msg);
-        }
-        DisplayError((int) Error_REXXC_wrongNrArg_unix_msg);
-        DisplayError((int) Error_REXXC_SynCheckInfo_msg);
-        exit(-1);                          /* terminate with an error           */
-    }                                    /* end additions                     */
-    /* modified control logic            */
-    if ((argc==4 && silent) || (argc==3 && !silent))
-    {
-        if (strcmp(argv[1], argv[2]) == 0)
-        {
-            DisplayError((int)Error_REXXC_outDifferent_msg);
-            exit(-2);                        /* terminate with an error           */
-        }
-        /* translate and save the output     */
-        return RexxTranslateProgram(argv[1], argv[2], NULL);
+        displayError(Error_REXXC_outDifferent);
+        exit(-2);
     }
-    else                                 /* just doing syntax check           */
-    {
-        return RexxTranslateProgram(argv[1], NULL, NULL);
-    }
+
+    return RexxCompileProgram(input, output, NULL, encode);
 }

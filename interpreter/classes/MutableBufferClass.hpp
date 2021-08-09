@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -61,11 +61,11 @@ class MutableBuffer : public RexxObject
            MutableBuffer(size_t, size_t);
     inline MutableBuffer(RESTORETYPE restoreType) { ; };
 
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
-    virtual void flatten(Envelope *envelope);
+    void live(size_t) override;
+    void liveGeneral(MarkReason reason) override;
+    void flatten(Envelope *envelope) override;
 
-    virtual RexxInternalObject *copy();
+    RexxInternalObject *copy() override;
     void        ensureCapacity(size_t addedLength);
 
     RexxObject *lengthRexx();
@@ -91,9 +91,12 @@ class MutableBuffer : public RexxObject
     RexxInteger   *getBufferSize() { return new_integer(bufferLength); }
     RexxObject    *setBufferSize(RexxInteger*);
     ArrayClass    *makeArrayRexx(RexxString *div);
-    virtual ArrayClass *makeArray();
-    virtual RexxString *makeString();
-    virtual RexxString *primitiveMakeString();
+
+    ArrayClass *makeArray() override;
+    RexxString *makeString() override;
+    RexxString *primitiveMakeString() override;
+    RexxString *stringValue()override;
+
     RexxInteger   *countStrRexx(RexxString *needle);
     RexxInteger   *caselessCountStrRexx(RexxString *needle);
     MutableBuffer *changeStr(RexxString *needle, RexxString *newNeedle, RexxInteger *countArg);
@@ -128,9 +131,10 @@ class MutableBuffer : public RexxObject
     inline const char *getStringData() { return data->getData(); }
     inline size_t      getLength()     { return dataLength; }
     inline char *      getData()       { return data->getData(); }
-           void append(const char *string, size_t l);
-           void append(RexxString *s) { append(s->getStringData(), s->getLength()); };
-           void append(const char *string) { append(string, strlen(string)); }
+    void append(char c);
+    void append(const char *string, size_t l);
+    void append(RexxString *s) { append(s->getStringData(), s->getLength()); };
+    void append(const char *string) { append(string, strlen(string)); }
     inline void copyData(size_t offset, const char *string, size_t l) { data->copyData(offset, string, l); }
     inline void openGap(size_t offset, size_t _size, size_t tailSize) { data->openGap(offset, _size, tailSize); }
     inline void closeGap(size_t offset, size_t _size, size_t tailSize) { data->closeGap(offset, _size, tailSize); }

@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -103,7 +103,7 @@ RexxString *NumberString::d2xD2c(RexxObject *length, bool type)
         {
             resultSize += resultSize;
         }
-        bufferLength = Numerics::maxVal(currentDigits, resultSize) + OVERFLOWSPACE;
+        bufferLength = std::max(currentDigits, resultSize) + OVERFLOWSPACE;
     }
 
     Protected<BufferClass> target = new_buffer(bufferLength);
@@ -613,7 +613,7 @@ NumberString *NumberString::addSub(NumberString *other, ArithmeticOperator opera
     }
 
     // get the minimum exponent from these values
-    wholenumber_t minExp = Numerics::minVal(leftExp, rightExp);
+    wholenumber_t minExp = std::min(leftExp, rightExp);
 
     // we create an adjusted exponent that gives a good relative size indicator
     // one of these will be zero, the other will be the difference in magniture

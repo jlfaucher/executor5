@@ -1,11 +1,11 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2021 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -43,6 +43,8 @@
 #ifndef Included_SysInterpreterInstance_hpp
 #define Included_SysInterpreterInstance_hpp
 
+#include "FileNameBuffer.hpp"
+
 class InterpreterInstance;
 class RexxActivation;
 
@@ -53,7 +55,6 @@ class RexxActivation;
 class SysInterpreterInstance
 {
 public:
-
     // this class is embedded within an InterpreterInstance class, so
     // these are not virtual
     void live(size_t);
@@ -61,7 +62,6 @@ public:
 
     void initialize(InterpreterInstance *i, RexxOption *options);
     void terminate();
-    RexxString *resolveProgramName(RexxString *_name, RexxString *_parentDir, RexxString *_parentExtension);
     void registerCommandHandlers(InterpreterInstance *i);
     void setupProgram(RexxActivation *activation);
 
@@ -77,9 +77,19 @@ class SysSearchPath
 {
 public:
     SysSearchPath(const char *parent, const char *extension);
-    ~SysSearchPath();
+    ~SysSearchPath() { }
 
-    char *path;        // the constructed path
+    inline void addPath(const char *p)
+    {
+        // add path only if not an empty string
+        if (p != NULL && *p != '\0')
+        {
+            path.appendPathSeparator();
+            path += p;
+        }
+    }
+
+    FileNameBuffer path;  // the constructed path
 };
 
 

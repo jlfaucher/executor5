@@ -8,7 +8,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -83,6 +83,8 @@
 #include "BagClass.hpp"
 #include "RexxInfoClass.hpp"
 #include "VariableReference.hpp"
+#include "EventSemaphore.hpp"
+#include "MutexSemaphore.hpp"
 #include "RexxBehaviour.hpp"
 #include "MethodDictionary.hpp"
 #include "LibraryPackage.hpp"
@@ -157,6 +159,7 @@
 #include "UseArgVariableRef.hpp"
 #include "CommandIOConfiguration.hpp"
 #include "AddressWithInstruction.hpp"
+#include "ConstantDirective.hpp"
 #include "RexxMemory.hpp"
 #include "InternalStack.hpp"
 #include "MemoryStack.hpp"
@@ -379,6 +382,18 @@ void MemoryObject::buildVirtualFunctionTable()
    
    objectPtr = ::new (objectLoc) RexxClass(RESTOREIMAGE);
    virtualFunctionTable[T_VariableReferenceClass] = getVftPointer(objectLoc);
+   
+   objectPtr = ::new (objectLoc) EventSemaphoreClass(RESTOREIMAGE);
+   virtualFunctionTable[T_EventSemaphore] = getVftPointer(objectLoc);
+   
+   objectPtr = ::new (objectLoc) RexxClass(RESTOREIMAGE);
+   virtualFunctionTable[T_EventSemaphoreClass] = getVftPointer(objectLoc);
+   
+   objectPtr = ::new (objectLoc) MutexSemaphoreClass(RESTOREIMAGE);
+   virtualFunctionTable[T_MutexSemaphore] = getVftPointer(objectLoc);
+   
+   objectPtr = ::new (objectLoc) RexxClass(RESTOREIMAGE);
+   virtualFunctionTable[T_MutexSemaphoreClass] = getVftPointer(objectLoc);
    
    objectPtr = ::new (objectLoc) RexxNilObject(RESTOREIMAGE);
    virtualFunctionTable[T_NilObject] = getVftPointer(objectLoc);
@@ -727,6 +742,9 @@ void MemoryObject::buildVirtualFunctionTable()
    
    objectPtr = ::new (objectLoc) RexxInstructionAddressWith(RESTOREIMAGE);
    virtualFunctionTable[T_AddressWithInstruction] = getVftPointer(objectLoc);
+   
+   objectPtr = ::new (objectLoc) ConstantDirective(RESTOREIMAGE);
+   virtualFunctionTable[T_ConstantDirective] = getVftPointer(objectLoc);
    
    objectPtr = ::new (objectLoc) RexxObject(RESTOREIMAGE);
    virtualFunctionTable[T_Memory] = getVftPointer(objectLoc);

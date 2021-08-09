@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -280,7 +280,7 @@ bool RexxInteger::doubleValue(double &result)
 bool RexxInteger::numberValue(wholenumber_t &result)
 {
     // is the long value expressable as a whole number in REXX term.
-    if (Numerics::abs(value) > Numerics::MAX_WHOLENUMBER)
+    if (std::abs(value) > Numerics::MAX_WHOLENUMBER)
     {
         return false;                    // nope, not a valid long.
     }
@@ -448,7 +448,7 @@ bool RexxInteger::logicalValue(logical_t &result)
  * @param count     The count of arguments.
  * @param result    The return result protected object.
  */
-void RexxInteger::processUnknown(RexxString *messageName, RexxObject **arguments, size_t count, ProtectedObject &result)
+void RexxInteger::processUnknown(RexxErrorCodes error, RexxString *messageName, RexxObject **arguments, size_t count, ProtectedObject &result)
 {
     // just send this as a message directly to the string object.
     stringValue()->messageSend(messageName, arguments, count, result);
@@ -1038,7 +1038,7 @@ RexxObject *RexxInteger::power(RexxObject *other)
             // - any power larger than 18 (32-bit) or 37 (64-bit), and
             // - any base larger than +/-999 (32-bit) or +/-999999 (64-bit)
             if (power < 0 || power > RexxIntegerMaxPower ||
-                Numerics::abs(value) > RexxIntegerMaxBase)
+                std::abs(value) > RexxIntegerMaxBase)
             {
                 return integer_forward(power, other);
             }

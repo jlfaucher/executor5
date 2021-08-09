@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2021 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -61,6 +61,7 @@
 #include "NumberStringClass.hpp"
 
 #include <stdio.h>
+#include <ctype.h>
 
 // lots of global names used here, so make the
 // namespace global.
@@ -112,7 +113,7 @@ BUILTIN(CENTRE)
 
 BUILTIN(DELSTR)
 {
-    const size_t DELSTR_Min = 2;
+    const size_t DELSTR_Min = 1;
     const size_t DELSTR_Max = 3;
     const size_t DELSTR_string = 1;
     const size_t DELSTR_n =      2;
@@ -121,7 +122,7 @@ BUILTIN(DELSTR)
     fix_args(DELSTR);
 
     RexxString *string = required_string(DELSTR, string);
-    RexxInteger *n = required_integer(DELSTR, n);
+    RexxInteger *n = optional_integer(DELSTR, n);
     RexxInteger *length = optional_integer(DELSTR, length);
 
     return string->delstr(n, length);
@@ -864,7 +865,7 @@ BUILTIN(ERRORTEXT)
         reportException(Error_Incorrect_call_range, "ERRORTEXT", IntegerOne, error_number);
     }
     // get the error message for this number and return the text.
-    RexxString *result = SystemInterpreter::getMessageText(error_number * 1000);
+    RexxString *result = Interpreter::getMessageText(error_number * 1000);
     if (result == OREF_NULL)
     {
         result = GlobalNames::NULLSTRING;
@@ -913,7 +914,7 @@ BUILTIN(ARG)
         }
         else
         {
-            // if the argumetn does not exist, return a null string
+            // if the argument does not exist, return a null string
             RexxObject *result = arglist[position - 1];
             if (result == OREF_NULL)
             {
@@ -1268,7 +1269,7 @@ BUILTIN(DATE)
         case 'L':
         {
             // the month name comes from the message repository
-            RexxString *month_name = SystemInterpreter::getMessageText(Message_Translations_January + month - 1);
+            RexxString *month_name = Interpreter::getMessageText(Message_Translations_January + month - 1);
 
             sprintf(work, "%zd %s %4.4zd", day, month_name->getStringData(), year);
             break;
@@ -1831,6 +1832,9 @@ BUILTIN(VALUE)
     RexxObject *newvalue = optional_argument(VALUE, newValue);
     RexxString *selector = optional_string(VALUE, selector);
 
+    // if not there, we return a null string
+    ProtectedObject result;
+
 
     // get the variable type
     StringSymbolType variableType = variable->isSymbol();
@@ -1839,7 +1843,7 @@ BUILTIN(VALUE)
     // no selector means we're looking up a local variable
     if (selector == OREF_NULL)
     {
-        RexxVariableBase *retriever = VariableDictionary::getVariableRetriever(variable);
+        Protected<RexxVariableBase> retriever = VariableDictionary::getVariableRetriever(variable);
         // this could an invalid name, or we might be trying to assign a value to a non-variable
         // symbol.
         if (retriever == OREF_NULL || (newvalue != OREF_NULL && !assignable))
@@ -1847,7 +1851,7 @@ BUILTIN(VALUE)
             reportException(Error_Incorrect_call_symbol, "VALUE", IntegerOne, variable);
         }
         // get the variable value
-        RexxObject *result = retriever->getValue(context);
+        result = retriever->getValue(context);
         // given a new value?  Assign that
         if (newvalue != OREF_NULL)
         {
@@ -1859,7 +1863,7 @@ BUILTIN(VALUE)
     else if (selector->getLength() == 0)
     {
 
-        RexxObject *result = (RexxObject *)TheEnvironment->entry(variable);
+        result = (RexxObject *)TheEnvironment->entry(variable);
         // the value is .VARIABLE if not found
         if (result == OREF_NULL)
         {
@@ -1875,7 +1879,36 @@ BUILTIN(VALUE)
     // an external selector value
     else
     {
-        RexxObject *result;
+    // The selector ENVIRONMENT means the same on every system, so we handle this here
+        if (selector->strCaselessCompare("ENVIRONMENT"))
+        {
+            Protected<RexxString> name = variable;
+
+            FileNameBuffer buffer;
+
+            // get the variable as set as a result
+            SystemInterpreter::getEnvironmentVariable(name->getStringData(), buffer);
+            result = new_string(buffer);
+
+            // set the variable if we have a new value
+            if (newvalue != OREF_NULL)
+            {
+                // .nil is special, it removes the variable
+                if (newvalue == TheNilObject)
+                {
+                    SystemInterpreter::setEnvironmentVariable(name->getStringData(), NULL);
+                }
+                // we need a string value for the set.
+                else
+                {
+                    Protected<RexxString> stringValue = stringArgument(newvalue, ARG_TWO);
+
+                    SystemInterpreter::setEnvironmentVariable(name->getStringData(), stringValue->getStringData());
+                }
+            }
+            return result;
+        }
+
         // try the platform defined selectors.
         if (SystemInterpreter::valueFunction(variable, newvalue, selector, result))
         {
@@ -2938,10 +2971,7 @@ BUILTIN(QUALIFY)
 
     RexxString *name = optional_string(QUALIFY, name);
 
-    char qualified_name[SysFileSystem::MaximumFileNameLength];
-    // qualifyStreamName will not expand if not a null string on entry.
-    qualified_name[0] = '\0';
-    SysFileSystem::qualifyStreamName(name->getStringData(), qualified_name, sizeof(qualified_name));
+    QualifiedName qualified_name(name->getStringData());
     return new_string(qualified_name);
 }
 

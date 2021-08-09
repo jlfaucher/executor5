@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2021 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -70,6 +70,11 @@ class InterpreterInstance;
 class RexxActivation;
 class RexxDateTime;
 class BufferClass;
+class FileNameBuffer;
+
+/**
+ * A platform-specific class that implements a number of platform abstraction APIs as static methods.
+ */
 
 class SystemInterpreter
 {
@@ -85,29 +90,25 @@ public:
 
     static void initializeInstance(InterpreterInstance *instance);
     static void terminateInstance(InterpreterInstance *instance);
-    static void getCurrentWorkingDirectory(char *);
 
     static RexxObject *popEnvironment(RexxActivation *context);
     static RexxObject *pushEnvironment(RexxActivation *context);
     static void restoreEnvironment(void *CurrentEnv);
     static RexxObject *buildEnvlist();
-    static RexxString *qualifyFileSystemName(RexxString *name);
-    static void getCurrentTime(RexxDateTime *Date );
+    static void getCurrentTime(RexxDateTime *Date);
+    static int64_t getNanosecondTicks();
     static const char *getPlatformName();
     static RexxString *getUserid();
     static void releaseResultMemory(void *);
     static void *allocateResultMemory(size_t);
     static void releaseSegmentMemory(void *);
     static void *allocateSegmentMemory(size_t);
-    static RexxString *getMessageHeader(wholenumber_t code);
-    static RexxString *getMessageText(wholenumber_t code);
-    static bool valueFunction(RexxString *name, RexxObject *newValue, RexxString *selector, RexxObject *&result);
+    static bool valueFunction(RexxString *name, RexxObject *newValue, RexxString *selector, ProtectedObject &result);
     static RexxString *getDefaultAddressName();
     static bool invokeExternalFunction(RexxActivation *, Activity *, RexxString *, RexxObject **, size_t, RexxString *, ProtectedObject &);
     static void validateAddressName(RexxString *name );
-    static void loadImage(char *&imageBuffer, size_t &imageSize);
-    static BufferClass *readProgram(const char *file_name);
-    static int setEnvironmentVariable(RexxString *name, RexxString *value);
+    static void setEnvironmentVariable(const char *name, const char *value);
+    static bool getEnvironmentVariable(const char *variable, FileNameBuffer &buffer);
 
     static sigset_t oldmask;       // masks used for setting signal handlers
     static sigset_t newmask;

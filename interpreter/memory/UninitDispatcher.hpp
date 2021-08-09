@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -55,9 +55,9 @@ public:
     inline UninitDispatcher(RexxInternalObject *t) : target(t) { }
     virtual ~UninitDispatcher() { ; }
 
-    virtual void run();
-    virtual void handleError(wholenumber_t, DirectoryClass *);
-    virtual void handleError(DirectoryClass *);
+    void run() override;
+    void handleError(wholenumber_t, DirectoryClass *) override;
+    void handleError(DirectoryClass *) override;
 
 protected:
     RexxInternalObject *target;  // the object we're invoking

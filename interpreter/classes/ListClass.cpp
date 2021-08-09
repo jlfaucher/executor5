@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -53,6 +53,7 @@
 
 // singleton class instance
 RexxClass *ListClass::classInstance = OREF_NULL;
+const size_t ListClass::DefaultListSize = 8;
 
 
 /**
@@ -120,7 +121,7 @@ void ListClass::initialize(size_t capacity)
     {
         // we don't want to create a zero sized contents, so cap the
         // minimum size at the default
-        capacity = Numerics::maxVal(capacity, DefaultListSize);
+        capacity = std::max(capacity, DefaultListSize);
         // and allocate the initial contents item.
         contents = new (capacity) ListContents(capacity);
     }
@@ -268,7 +269,7 @@ void ListClass::expandContents()
 {
     // double the bucket size for small Lists
     // for Lists above the limit, just add half of the actual bucket size
-    size_t size = contents->capacity(); 
+    size_t size = contents->capacity();
     size += size <= ExpansionDoubleLimit ? size : size / 2;
     expandContents(size);
 }
@@ -302,7 +303,7 @@ void ListClass::ensureCapacity(size_t delta)
     // for Lists above the limit, just add half of the actual bucket size
     if (!contents->hasCapacity(delta))
     {
-        size_t size = contents->capacity(); 
+        size_t size = contents->capacity();
         size += size <= ExpansionDoubleLimit ? size : size / 2;
         expandContents(size);
     }

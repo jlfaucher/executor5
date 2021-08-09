@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
-/* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 1995, 2004 IBM Corporation.wri All rights reserved.             */
+/* Copyright (c) 2005-2020 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -54,7 +54,6 @@
 #include "DirectoryClass.hpp"
 #include "ProtectedObject.hpp"
 #include "BufferClass.hpp"
-#include "SmartBuffer.hpp"
 #include "ProgramMetaData.hpp"
 #include "Utilities.hpp"
 #include "PackageManager.hpp"
@@ -62,6 +61,8 @@
 #include "LanguageParser.hpp"
 #include "MethodArguments.hpp"
 #include <stdio.h>
+#include "ProgramSource.hpp"
+#include "SysFile.hpp"
 
 
 // singleton class instance
@@ -285,12 +286,14 @@ RexxObject *RoutineClass::setSecurityManager(RexxObject *manager)
 BufferClass *RoutineClass::save()
 {
     // detach the source from this routine object before saving
-    detachSource();
+    Protected<ProgramSource> source = detachSource();
 
-    Envelope *envelope = new Envelope;
-    ProtectedObject p(envelope);
+    Protected<Envelope> envelope = new Envelope;
     // now pack into an envelope;
-    return envelope->pack(this);
+    Protected<BufferClass> result = envelope->pack(this);
+    // reattach the source because we might still execute this
+    attachSource(source);
+    return result;
 }
 
 
@@ -325,31 +328,31 @@ LanguageLevel RoutineClass::getLanguageLevel()
 /**
  * Save a routine to a target file.
  *
- * @param filename The name of the file (fully resolved already).
+ * @param fileName
+ * @param encode   Indicates if the file should be saved in binary form or base64 encoded string form.
  */
-void RoutineClass::save(const char *filename)
+void RoutineClass::save(const char *fileName, bool encode)
 {
-    FILE *handle = fopen(filename, "wb");/* open the output file              */
-    if (handle == NULL)                  /* get an open error?                */
-    {
-        /* got an error here                 */
-        reportException(Error_Program_unreadable_output_error, filename);
-    }
+    // make sure this is protected from GC during all of this processing
     ProtectedObject p(this);
 
+    SysFile target;
+
+    if (!target.open(fileName, RX_O_CREAT | RX_O_TRUNC | RX_O_WRONLY, RX_S_IREAD | RX_S_IWRITE, RX_SH_DENYRW))
+    {
+        // got an error here
+        reportException(Error_Program_unreadable_output_error, fileName);
+    }
+
     // save to a flattened buffer
-    BufferClass *buffer = save();
-    ProtectedObject p2(buffer);
+    Protected<BufferClass> buffer = save();
 
     // create an image header
     ProgramMetaData metaData(getLanguageLevel(), buffer->getDataLength());
-    {
-        UnsafeBlock releaser;
 
-        // write out the header information
-        metaData.write(handle, buffer);
-        fclose(handle);
-    }
+    // write out the header information
+    metaData.write(target, buffer, encode);
+    target.close();
 }
 
 
@@ -399,40 +402,10 @@ RoutineClass *RoutineClass::restore(BufferClass *buffer, char *startPointer, siz
  *
  * @return The inflated Routine object, if valid.
  */
-RoutineClass *RoutineClass::restore(RexxString *fileName, BufferClass *buffer)
+RoutineClass* RoutineClass::restore(RexxString *fileName, BufferClass *buffer)
 {
-    const char *data = buffer->getData();
-
-    // does this start with a hash-bang?  Need to scan forward to the first
-    // newline character
-    if (data[0] == '#' && data[1] == '!')
-    {
-        data = Utilities::strnchr(data, buffer->getDataLength(), '\n');
-        if (data == OREF_NULL)
-        {
-            return OREF_NULL;
-        }
-        // step over the linend
-        data++;
-    }
-
-    ProgramMetaData *metaData = (ProgramMetaData *)data;
-    bool badVersion = false;
-    // make sure this is valid for interpreter
-    if (!metaData->validate(badVersion))
-    {
-        // if the failure was due to a version mismatch, this is an error condition.
-        if (badVersion)
-        {
-            reportException(Error_Program_unreadable_version, fileName);
-        }
-        return OREF_NULL;
-    }
-    // this should be valid...try to restore.
-    RoutineClass *routine = restore(buffer, metaData->getImageData(), metaData->getImageSize());
-    // change the program name to match the file this was restored from
-    routine->getPackageObject()->setProgramName(fileName);
-    return routine;
+    // ProgramMetaData handles all of the details here
+    return ProgramMetaData::restore(fileName, buffer);
 }
 
 
@@ -443,45 +416,14 @@ RoutineClass *RoutineClass::restore(RexxString *fileName, BufferClass *buffer)
  *
  * @return The unflattened object.
  */
-RoutineClass *RoutineClass::restore(RXSTRING *inData, RexxString *name)
+RoutineClass* RoutineClass::restore(RXSTRING *inData, RexxString *name)
 {
-    const char *data = inData->strptr;
+    // because we're restoring from instore data that might need decoding,
+    // we need to get this information in a buffer that we can modify.
+    Protected<BufferClass> buffer = new_buffer(inData->strptr, inData->strlength);
 
-    // does this start with a hash-bang?  Need to scan forward to the first
-    // newline character
-    if (data[0] == '#' && data[1] == '!')
-    {
-        data = Utilities::strnchr(data, inData->strlength, '\n');
-        if (data == OREF_NULL)
-        {
-            return OREF_NULL;
-        }
-        // step over the linend
-        data++;
-    }
-
-    ProgramMetaData *metaData = (ProgramMetaData *)data;
-    bool badVersion;
-    // make sure this is valid for interpreter
-    if (!metaData->validate(badVersion))
-    {
-        // if the failure was due to a version mismatch, this is an error condition.
-        if (badVersion)
-        {
-            reportException(Error_Program_unreadable_version, name);
-        }
-        return OREF_NULL;
-    }
-    BufferClass *bufferData = metaData->extractBufferData();
-    ProtectedObject p(bufferData);
-    // we're restoring from the beginning of this.
-    RoutineClass *routine = restore(bufferData, bufferData->getData(), metaData->getImageSize());
-    // if this restored properly (and it should), reconnect it to the source file
-    if (routine != OREF_NULL)
-    {
-        routine->getPackageObject()->setProgramName(name);
-    }
-    return routine;
+    // ProgramMetaData handles all of the details here
+    return ProgramMetaData::restore(name, buffer);
 }
 
 
@@ -524,7 +466,7 @@ RoutineClass *RoutineClass::newRexx(RexxObject **init_args, size_t argCount)
  * Create a routine object from a file.
  *
  * @param filename The target file name.
- * @param scope    The scope that the new method object will be given.
+ * @param scope    The scope that the new routine object will be given.
  *
  * @return The created routine object.
  */
@@ -539,7 +481,7 @@ RoutineClass *RoutineClass::newFileRexx(RexxString *filename, PackageClass *sour
     // parse all of the options
     processNewFileExecutableArgs(filename, sourceContext);
 
-    // go create a method from filename
+    // go create a routine from filename
     Protected<RoutineClass> newRoutine = LanguageParser::createRoutine(filename, sourceContext);
 
     // complete the initialization
@@ -564,7 +506,7 @@ RoutineClass *RoutineClass::loadExternalRoutine(RexxString *name, RexxString *de
     // convert external into words
     Protected<ArrayClass> words = StringUtil::words(libraryDescriptor->getStringData(), libraryDescriptor->getLength());
     // "LIBRARY libbar [foo]"
-    if (words->size() > 0 && ((RexxString *)(words->get(1)))->strCompare("LIBRARY"))
+    if (words->size() > 0 && ((RexxString *)(words->get(1)))->strCaselessCompare("LIBRARY"))
     {
         RexxString *library = OREF_NULL;
         // the default entry point name is the internal name

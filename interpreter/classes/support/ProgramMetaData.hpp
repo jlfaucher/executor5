@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -42,6 +42,8 @@
 #include "LanguageLevel.hpp"
 
 class BufferClass;
+class SysFile;
+class RoutineClass;
 
 class ProgramMetaData
 {
@@ -54,27 +56,32 @@ public:
 
     size_t getDataSize();
     size_t getHeaderSize();
-    BufferClass *extractBufferData();
     char *getImageData();
     size_t getImageSize() { return imageSize; }
-    bool validate(bool &);
-    void write(FILE *handle, BufferClass *program);
-    BufferClass *read(RexxString *name, FILE *handle);
+
+    bool validate(RexxString *fileName);
+    void write(SysFile &target, BufferClass *program, bool encode);
+
+    static RoutineClass* restore(RexxString *fileName, BufferClass *buffer);
+    static bool processRestoreData(RexxString *fileName, BufferClass *data, ProgramMetaData *&metaData);
+
+    static const size_t encodingChunkLength = 72;    // the chunking to use with encoded data
 
 protected:
     enum
     {
         MAGICNUMBER = 11111,           // remains constant from release-to-release
-        METAVERSION = 41               // gets updated when internal form changes
+        METAVERSION = 42               // gets updated when internal form changes
     };
 
 
     char fileTag[16];                  // special header for file tagging
-    unsigned short magicNumber;        // special tag to indicate good meta data
-    unsigned short imageVersion;       // version identifier for validity
-    unsigned short wordSize;           // size of a word
-    unsigned short bigEndian;          // true if this is a big-endian platform
-    LanguageLevel requiredLevel;       // required language level for execution
+    uint16_t       magicNumber;        // special tag to indicate good meta data
+    uint16_t       imageVersion;       // version identifier for validity
+    uint16_t       wordSize;           // size of a word
+    uint16_t       bigEndian;          // true if this is a big-endian platform
+    LanguageLevel  requiredLevel;      // required language level for execution
+    uint32_t       reserved;           // padding to bring imageSize to a 64-bit boundary
     size_t         imageSize;          // size of the image
     char           imageData[4];       // the copied image data
 };

@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -117,7 +117,7 @@ RexxString *RexxString::center(RexxInteger *_length, RexxString *pad)
 RexxString *RexxString::delstr(RexxInteger *position, RexxInteger *_length)
 {
     size_t stringLen = getLength();
-    size_t deletePos = positionArgument(position, ARG_ONE);
+    size_t deletePos = optionalPositionArgument(position, 1, ARG_ONE);
     size_t deleteLen = optionalLengthArgument(_length, stringLen - deletePos + 1, ARG_TWO);
 
     // if the delete position is beyond the
@@ -125,6 +125,12 @@ RexxString *RexxString::delstr(RexxInteger *position, RexxInteger *_length)
     if (deletePos > stringLen)
     {
         return this;
+    }
+
+    // delete all characters?  This is a null string
+    if (deletePos == 1 && deleteLen >= stringLen)
+    {
+        return GlobalNames::NULLSTRING;
     }
 
     // easier to do if origin zero
@@ -207,7 +213,7 @@ RexxString *RexxString::insert(RexxString  *newStrObj, RexxInteger *position, Re
 
     // we might need to truncate the inserted string if the specified length is
     // shorter than the inserted string
-    newStringLength = Numerics::minVal(newStringLength, insertLength);
+    newStringLength = std::min(newStringLength, insertLength);
     size_t padLength = insertLength - newStringLength;
 
     size_t resultLength = targetLength + insertLength + leadPad;
@@ -259,7 +265,7 @@ RexxString *RexxString::left(RexxInteger *_length, RexxString *pad)
     StringBuilder builder(retval);
 
     // cap the length copied from the existing string to its length
-    size_t copyLength = Numerics::minVal(length, size);
+    size_t copyLength = std::min(length, size);
 
     // if we have data to copy, add to the result
     builder.append(getStringData(), copyLength);
@@ -493,7 +499,7 @@ RexxString *RexxString::right(RexxInteger *_length, RexxString  *pad)
 
     // the requested length might be longer than the target string, so
     // cap at that size
-    size_t copyLength = Numerics::minVal(sourceLength, size);
+    size_t copyLength = std::min(sourceLength, size);
     size_t padLength = size - copyLength;
 
     // padding, if required, occurs before the extracted string piece
@@ -505,24 +511,23 @@ RexxString *RexxString::right(RexxInteger *_length, RexxString  *pad)
 
 
 /**
- * Strip a set of leading and/or trailing characters from
- * a string, returning a new string value.
+ * Strip a set of leading and/or trailing characters from a string,
+ * returning a new string value, or if unchanged, the original string.
  *
- * @param option    The option indicating which characters to strip.
- * @param stripchar The set of characters to strip.
+ * @param optionString The option indicating where to strip characters.
+ * @param stripchar    The set of characters to strip.
  *
- * @return A new string instance, with the target characters removed.
+ * @return A string instance with the target characters removed.
  */
 RexxString *RexxString::strip(RexxString *optionString, RexxString *stripchar)
 {
     // get the option character
     char option = optionalOptionArgument(optionString, "BLT", STRIP_BOTH, ARG_ONE);
 
-    // get the strip character set.  The default is to remove spaces and
-    // horizontal tabs
+    // get the strip character set
     stripchar = optionalStringArgument(stripchar, OREF_NULL, ARG_TWO);
 
-    // the default is to strip whitespace characters
+    // the default is to remove spaces and horizontal tabs
     const char *chars = stripchar == OREF_NULL ? " \t" : stripchar->getStringData();
     size_t charsLen = stripchar == OREF_NULL ? strlen(" \t") : stripchar->getLength();
 
@@ -562,7 +567,9 @@ RexxString *RexxString::strip(RexxString *optionString, RexxString *stripchar)
     // if there is anything left, extract the remaining part
     if (length > 0)
     {
-        return new_string(front, length);
+        // it's quite common that nothing was stripped, in which case we can
+        // just return the original string instead of creating a new one
+        return length == getLength() ? this : new_string(front, length);
     }
     else
     {

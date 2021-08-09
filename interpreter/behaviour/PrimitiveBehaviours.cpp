@@ -8,7 +8,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -117,6 +117,10 @@ RexxBehaviour RexxBehaviour::primitiveBehaviours[T_Last_Primitive_Class + 1] =
     RexxBehaviour(T_RexxInfoClass, (PCPPM *)RexxObject::operatorMethods),
     RexxBehaviour(T_VariableReference, (PCPPM *)RexxObject::operatorMethods),
     RexxBehaviour(T_VariableReferenceClass, (PCPPM *)RexxObject::operatorMethods),
+    RexxBehaviour(T_EventSemaphore, (PCPPM *)RexxObject::operatorMethods),
+    RexxBehaviour(T_EventSemaphoreClass, (PCPPM *)RexxObject::operatorMethods),
+    RexxBehaviour(T_MutexSemaphore, (PCPPM *)RexxObject::operatorMethods),
+    RexxBehaviour(T_MutexSemaphoreClass, (PCPPM *)RexxObject::operatorMethods),
     RexxBehaviour(T_NilObject, (PCPPM *)RexxObject::operatorMethods),
     RexxBehaviour(T_Behaviour, (PCPPM *)RexxObject::operatorMethods),
     RexxBehaviour(T_MethodDictionary, (PCPPM *)RexxObject::operatorMethods),
@@ -233,6 +237,7 @@ RexxBehaviour RexxBehaviour::primitiveBehaviours[T_Last_Primitive_Class + 1] =
     RexxBehaviour(T_UseArgVariableRef, (PCPPM *)RexxObject::operatorMethods),
     RexxBehaviour(T_CommandIOConfiguration, (PCPPM *)RexxObject::operatorMethods),
     RexxBehaviour(T_AddressWithInstruction, (PCPPM *)RexxObject::operatorMethods),
+    RexxBehaviour(T_ConstantDirective, (PCPPM *)RexxObject::operatorMethods),
     RexxBehaviour(T_Memory, (PCPPM *)RexxObject::operatorMethods),
     RexxBehaviour(T_InternalStack, (PCPPM *)RexxObject::operatorMethods),
     RexxBehaviour(T_PushThroughStack, (PCPPM *)RexxObject::operatorMethods),

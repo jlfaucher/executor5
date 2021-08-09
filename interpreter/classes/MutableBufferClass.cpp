@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -36,11 +36,13 @@
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 /******************************************************************************/
-/* REXX Kernel                                                                */
 /*                                                                            */
 /* Primitive MutableBuffer Class                                              */
 /*                                                                            */
 /******************************************************************************/
+#include <algorithm>
+#include <ctype.h>
+
 #include "RexxCore.h"
 #include "StringClass.hpp"
 #include "MutableBufferClass.hpp"
@@ -238,7 +240,7 @@ void MutableBuffer::ensureCapacity(size_t addedLength)
     if (resultLength > bufferLength)
     {
         // use the larger of the required length and twice the buffer size as our new size.
-        bufferLength = Numerics::maxVal(resultLength, bufferLength * 2);
+        bufferLength = std::max(resultLength, bufferLength * 2);
 
         // get an expanded buffer
         setField(data, data->expand(bufferLength));
@@ -390,6 +392,22 @@ void MutableBuffer::append(const char *d, size_t l)
 
 
 /**
+ * Append a character to this buffer.
+ *
+ * @param c      The character to append.
+ */
+void MutableBuffer::append(char c)
+{
+    // make sure we have enough room
+    ensureCapacity(1);
+
+    copyData(dataLength, &c, 1);
+    dataLength += 1;
+}
+
+
+
+/**
  * insert string at given position
  *
  * @param str    The string to insert.
@@ -410,7 +428,7 @@ MutableBuffer *MutableBuffer::insert(RexxObject *str, RexxObject *pos, RexxObjec
 
     char padChar = optionalPadArgument(pad, ' ', ARG_FOUR);
 
-    size_t copyLength = Numerics::minVal(insertLength, string->getLength());
+    size_t copyLength = std::min(insertLength, string->getLength());
     size_t padLength = insertLength - copyLength;
 
 
@@ -491,7 +509,7 @@ MutableBuffer *MutableBuffer::overlay(RexxObject *str, RexxObject *pos, RexxObje
     }
 
     // now overlay the string data
-    copyData(begin, string->getStringData(), Numerics::minVal(replaceLength, string->getLength()));
+    copyData(begin, string->getStringData(), std::min(replaceLength, string->getLength()));
     // do we need additional padding?
     if (replaceLength > string->getLength())
     {
@@ -680,7 +698,7 @@ RexxObject *MutableBuffer::setBufferSize(RexxInteger *size)
         // reallocate the buffer
         BufferClass *newBuffer = new_buffer(newsize);
         // if we're shrinking this, it truncates.
-        dataLength = Numerics::minVal(dataLength, newsize);
+        dataLength = std::min(dataLength, newsize);
         newBuffer->copyData(0, data->getData(), dataLength);
         // replace the old buffer
         setField(data, newBuffer);
@@ -712,6 +730,18 @@ ArrayClass  *MutableBuffer::makeArray()
     // forward to the Rexx version with default arguments
     return makeArrayRexx(OREF_NULL);
 }
+
+
+/**
+ * Return the primitive string value of this object
+ *
+ * @return this always just forwards to makeString
+ */
+RexxString* MutableBuffer::stringValue()
+{
+    return makeString();
+}
+
 
 /**
  * Handle the primitive class makeString optimization.  This
@@ -1279,7 +1309,7 @@ MutableBuffer *MutableBuffer::lower(RexxInteger *_start, RexxInteger *_length)
         return this;
     }
 
-    rangeLength = Numerics::minVal(rangeLength, getLength() - startPos);
+    rangeLength = std::min(rangeLength, getLength() - startPos);
 
     // a zero length value is also a non-change.
     if (rangeLength == 0)
@@ -1319,7 +1349,7 @@ MutableBuffer *MutableBuffer::upper(RexxInteger *_start, RexxInteger *_length)
         return this;
     }
 
-    rangeLength = Numerics::minVal(rangeLength, getLength() - startPos);
+    rangeLength = std::min(rangeLength, getLength() - startPos);
 
     // a zero length value is also a non-change.
     if (rangeLength == 0)
@@ -1376,7 +1406,7 @@ MutableBuffer *MutableBuffer::translate(RexxString *tableo, RexxString *tablei, 
     }
 
     // capy the real range
-    range = Numerics::minVal(range, getLength() - startPos + 1);
+    range = std::min(range, getLength() - startPos + 1);
     char *scanPtr = getData() + startPos - 1;
     size_t scanLength = range;
 

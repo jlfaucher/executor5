@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -73,7 +73,12 @@
 #include "SetClass.hpp"
 #include "BagClass.hpp"
 #include "NumberStringClass.hpp"
-
+#include "RexxInfoClass.hpp"
+#include "VariableReference.hpp"
+#include "EventSemaphore.hpp"
+#include "MutexSemaphore.hpp"
+#include "SysFile.hpp"
+#include "SysProcess.hpp"
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -138,8 +143,10 @@ MemoryObject::MemoryObject()
  *               True if we are initializing during an image restore, false
  *               if we need to build the initial image environemnt (i.e., called
  *               via rexximage during a build).
+ * @param imageTarget
+ *               The location to store the image if this is a save operation.
  */
-void MemoryObject::initialize(bool restoringImage)
+void MemoryObject::initialize(bool restoringImage, const char *imageTarget)
 {
     // The constructor makes sure some crucial aspects of the Memory object are set up.
     new (this) MemoryObject;
@@ -195,7 +202,7 @@ void MemoryObject::initialize(bool restoringImage)
     // terminate
     if (!restoringImage)
     {
-        createImage();
+        createImage(imageTarget);
     }
 
     restore();                           // go restore the state of the memory object
@@ -628,7 +635,7 @@ void MemoryObject::restoreImage()
     size_t imageSize;
 
     // load the image file
-    SystemInterpreter::loadImage(restoredImage, imageSize);
+    loadImage(restoredImage, imageSize);
     // we write a size to the start of the image when the image is created.
     // the restoredImage buffer does not include that image size, so we
     // need to pretend the buffer is slightly before the start.
@@ -723,6 +730,91 @@ void MemoryObject::restoreImage()
 
 
 /**
+ * Load the image file into storage
+ *
+ * @param imageBuffer
+ *                  The returned image buffer
+ * @param imageSize The returned image size.
+ */
+void MemoryObject::loadImage(char *&imageBuffer, size_t &imageSize)
+{
+    FileNameBuffer fullname;
+
+    // BASEIMAGE should be located together with the Rexx shared libraries
+    const char *installLocation =  SysProcess::getLibraryLocation();
+    if (installLocation != NULL)
+    {
+        fullname = installLocation;
+        fullname += BASEIMAGE;
+        if (loadImage(imageBuffer, imageSize, fullname))
+        {
+            return;
+        }
+    }
+
+    fullname = BASEIMAGE;
+
+    // try the current directory next
+    if (loadImage(imageBuffer, imageSize, fullname))
+    {
+        return;
+    }
+
+    FileNameBuffer path;
+
+    SystemInterpreter::getEnvironmentVariable("PATH", path);
+
+    // Now try to locate the file on the path if that fails
+    if (SysFileSystem::primitiveSearchName(BASEIMAGE, path, NULL, fullname))
+    {
+        if (loadImage(imageBuffer, imageSize, fullname))
+        {
+            return;
+        }
+    }
+    Interpreter::logicError("cannot locate startup image " BASEIMAGE);
+}
+
+
+/**
+ * Load the image file into storage
+ *
+ * @param imageBuffer
+ *                  The returned image buffer
+ * @param imageSize The returned image size.
+ */
+bool MemoryObject::loadImage(char *&imageBuffer, size_t &imageSize, FileNameBuffer &imageFile)
+{
+    SysFile image;
+    // if unable to open this, return false
+    if (!image.open(imageFile, RX_O_RDONLY, RX_S_IREAD, RX_SH_DENYWR))
+    {
+        return false;
+    }
+
+    size_t bytesRead = 0;
+    // read in for the size of the image
+    if (!image.read((char *)&imageSize, sizeof(imageSize), bytesRead))
+    {
+        return false;
+    }
+
+    // Create new segment for image
+    imageBuffer = (char *)memoryObject.allocateImageBuffer(imageSize);
+    // Create an object the size of the
+    // image. We will be overwriting the
+    // object header.
+    // read in the image, store the
+    // the size read
+    if (!image.read(imageBuffer, imageSize, imageSize))
+    {
+        Interpreter::logicError("could not read in the image");
+    }
+    return true;
+}
+
+
+/**
  * Main live marking routine for normal garbage collection.
  * This starts the process by marking the key root objects.
  *
@@ -753,7 +845,10 @@ void MemoryObject::live(size_t liveMark)
     GlobalProtectedObject *p = protectedObjects;
     while (p != NULL)
     {
-        memory_mark(p->protectedObject);
+        if (p->protectedObject != OREF_NULL)
+        {
+            memory_mark(p->protectedObject);
+        }
         p = p->next;
     }
 }
@@ -1236,7 +1331,7 @@ RexxInternalObject *MemoryObject::holdObject(RexxInternalObject *obj)
  * Save the memory image as part of the interpreter
  * build.
  */
-void MemoryObject::saveImage()
+void MemoryObject::saveImage(const char *imageTarget)
 {
     MemoryStats _imageStats;
 
@@ -1321,6 +1416,10 @@ void MemoryObject::saveImage()
 
         // mark any other referenced objects in the copy.
         copyObject->liveGeneral(SAVINGIMAGE);
+        // so that we don't store variable pointer values in the image, null out the
+        // copy object virtual function pointer now that we're done with it
+        copyObject->setVirtualFunctions(NULL);
+
         // if this is a non-primitive behaviour, we need to mark that also
         // so that it is copied into the buffer.  The primitive behaviours have already
         // been handled as part of the savearray.
@@ -1332,12 +1431,17 @@ void MemoryObject::saveImage()
 
     resetMarkHandler();
 
-    FILE *image = fopen(BASEIMAGE,"wb");
+    SysFile image;
+
+    image.open(imageTarget == NULL ? BASEIMAGE : imageTarget, RX_O_CREAT | RX_O_TRUNC | RX_O_WRONLY, RX_S_IREAD | RX_S_IWRITE, RX_SH_DENYRW);
+
     // place the real size at the beginning of the buffer
     memcpy(imageBuffer, &saveHandler.imageOffset, sizeof(size_t));
     // and finally write this entire image out.
-    fwrite(imageBuffer, 1, saveHandler.imageOffset, image);
-    fclose(image);
+    size_t written = 0;
+
+    image.write(imageBuffer, saveHandler.imageOffset, written);
+    image.close();
     free(imageBuffer);
 
 #ifdef MEMPROFILE
@@ -1380,6 +1484,7 @@ void MemoryObject::tracingMark(RexxInternalObject *root, MarkReason reason)
  * Perform an in-place unflatten operation on an object
  * in a buffer.
  *
+ * @param envelope  The envelope for the unflatten operation.
  * @param sourceBuffer
  *                   The source buffer that contains this data (will need fixups at the end)
  * @param startPointer
@@ -1388,7 +1493,7 @@ void MemoryObject::tracingMark(RexxInternalObject *root, MarkReason reason)
  *
  * @return The first "real" object in the buffer.
  */
-RexxInternalObject *MemoryObject::unflattenObjectBuffer(BufferClass *sourceBuffer, char *startPointer, size_t dataLength)
+RexxInternalObject *MemoryObject::unflattenObjectBuffer(Envelope *envelope, BufferClass *sourceBuffer, char *startPointer, size_t dataLength)
 {
     // get an end pointer
     RexxInternalObject *endPointer = (RexxInternalObject *)(startPointer + dataLength);
@@ -1400,6 +1505,8 @@ RexxInternalObject *MemoryObject::unflattenObjectBuffer(BufferClass *sourceBuffe
     // pointer for addressing a location as an object.  This will also
     // give use the last object we've processed at the end.
     RexxInternalObject *puffObject = (RexxInternalObject *)startPointer;
+    // this will be the last object we process in the buffer
+    RexxInternalObject *lastObject = OREF_NULL;
 
     // now traverse the buffer fixing all of the behaviour pointers and having the object
     // mark and fix up their references.
@@ -1436,6 +1543,8 @@ RexxInternalObject *MemoryObject::unflattenObjectBuffer(BufferClass *sourceBuffe
         // Note that this flavor of mark_general should update the
         // mark fields in the objects.
         puffObject->liveGeneral(UNFLATTENINGOBJECT);
+        // save the pointer before stepping to the next object so we know the last object.
+        lastObject = puffObject;
         // Point to next object in image.
         puffObject = puffObject->nextObject();
     }
@@ -1450,13 +1559,20 @@ RexxInternalObject *MemoryObject::unflattenObjectBuffer(BufferClass *sourceBuffe
     RexxInternalObject *firstObject = ((RexxInternalObject *)startPointer)->nextObject();
 
     // this is the location of the next object after the buffer
-    char *nextObject = (char *)sourceBuffer->nextObject();
+    RexxInternalObject *nextObject = sourceBuffer->nextObject();
     // this is the size of any tailing buffer portion after the last unflattened object.
-    size_t tailSize = nextObject - (char *)endPointer;
+    size_t tailSize = (char *)nextObject - (char *)endPointer;
 
-    // puffObject is the last object we processed.  Add any tail data size on to that object
+    // lastObject is the last object we processed.  Add any tail data size on to that object
     // so we don't create an invalid gap in the heap.
-    puffObject->setObjectSize(puffObject->getObjectSize() + tailSize);
+    lastObject->setObjectSize(lastObject->getObjectSize() + tailSize);
+
+    // now have the memory object traverse this set of objects handling
+    // the unflatten calls.
+    // Set envelope to the real address of the new objects.  This tells
+    // mark_general to send unflatten to run any proxies.
+    memoryObject.unflattenProxyObjects(envelope, firstObject, nextObject);
+
     // now adjust the front portion of the buffer object to reveal all of the
     // unflattened data.  There is a dummy object at the front of the buffer...we want to
     // step to the the first real object
@@ -1721,6 +1837,10 @@ void MemoryObject::restore()
     RESTORE_CLASS(Buffer, RexxClass);
     RESTORE_CLASS(WeakReference, RexxClass);
     RESTORE_CLASS(StackFrame, RexxClass);
+    RESTORE_CLASS(RexxInfo, RexxClass);
+    RESTORE_CLASS(VariableReference, RexxClass);
+    RESTORE_CLASS(EventSemaphore, RexxClass);
+    RESTORE_CLASS(MutexSemaphore, RexxClass);
 
     // mark the memory object as old space.
     memoryObject.setOldSpace();

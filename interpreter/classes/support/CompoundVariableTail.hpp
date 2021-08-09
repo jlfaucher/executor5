@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -51,6 +51,9 @@
 
 class BufferClass;
 
+/**
+ * A builder for constructing a tail for a compound variable.
+ */
 class CompoundVariableTail
 {
   public:
@@ -142,7 +145,7 @@ class CompoundVariableTail
    }
 
    RexxString *createCompoundName(RexxString *);
-   virtual RexxString *makeString();
+   RexxString *makeString();
 
    inline void init()
    {

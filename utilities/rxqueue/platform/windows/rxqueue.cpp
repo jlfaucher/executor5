@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -57,6 +57,7 @@
 #include "rexx.h"              /* needed for queue functions & codes */
 /* used for queue name                */
 #include "RexxErrorCodes.h"    /* generated file containing message numbers */
+#include "RexxInternalApis.h"
 
 #define RXQUEUE_CLEAR    -2    /* used for queue mode CLEAR flag     */
 #define BAD_MESSAGE      -6    /* Exit RC for message not found.     */
@@ -145,7 +146,11 @@ int __cdecl main(
 
     if (quename == NULL)         /* if there is no queue specified:    */
     {
-        quename = "SESSION";     /* No name -> this is a session queue */
+                                  /* scan current environment           */
+        if (!(quename = getenv("RXQUEUE")) || !quename)
+        {
+            quename = "SESSION";     /* use session if not found           */
+        }
     }
 
 /*********************************************************************/
@@ -239,6 +244,7 @@ static void options_error(int type,      /* Error type.                */
     /* substitute an empty string for the parameter.                   */
     /*******************************************************************/
     /* Begin assign message numbers to error codes */
+
     switch (type)
     {
         case 0: /* invocation error */
@@ -273,36 +279,24 @@ static void options_error(int type,      /* Error type.                */
             MsgNumber = Error_RXQUE_syntax;
     } /* endswitch */
 
-    hDll = LoadLibrary(DLLNAME);
 
-    if (hDll)
+    // retrieve the message from the central catalog
+    const char *message = RexxGetErrorMessage(MsgNumber);
+    strncpy(DataArea, message, sizeof(DataArea));
+
+    const char *pszMessage;
+    /* now do the parameter substitutions in the message template... */
+    char *pInsert = strstr(DataArea, "%1");
+    if (pInsert != NULL)
     {
-        if (LoadString(hDll, MsgNumber, DataArea, sizeof(DataArea)))
-        {
-            /* check for messages with inserts */
-            if ((MsgNumber == Error_RXQUE_name) || (MsgNumber == Error_RXQUE_exist))
-            {
-                char *pInsert = NULL;
-
-                /* search %1 and replace it with %s for message insertion */
-                strcpy(DataArea2, DataArea);
-                pInsert = strstr(DataArea2, "%1");
-                if (pInsert)
-                {
-                    pInsert++; /* advance to 1 of %1 */
-                    *pInsert = 's';
-                    sprintf(DataArea, DataArea2, quename);
-                }
-            }
-        }
-        else
-        {
-            strcpy(DataArea,"Error, but no error message available.");
-        }
+        pInsert++; /* advance to 1 of %1 */
+        *pInsert = 's';
+        snprintf(DataArea2, sizeof(DataArea2), DataArea, quename);
+        pszMessage = DataArea2;
     }
     else
     {
-        strcpy(DataArea,"Error, but no error message available because REXX.DLL not loaded.");
+        pszMessage = DataArea;
     }
 
 
@@ -312,8 +306,7 @@ static void options_error(int type,      /* Error type.                */
     /* and return an error code when we exit.                         */
     /******************************************************************/
 
-    printf("REX%d: %s\n", MsgNumber, DataArea);
-    FreeLibrary(hDll);
+    printf("%s\n", pszMessage);
 
     exit(type);
 }

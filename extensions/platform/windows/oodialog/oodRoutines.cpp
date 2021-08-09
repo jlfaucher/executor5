@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2020 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -49,6 +49,8 @@
 #include <dlgs.h>
 #include <shlwapi.h>
 #include "APICommon.hpp"
+#include "Utilities.hpp"
+#include "SysFileSystem.hpp"
 #include "oodCommon.hpp"
 #include "oodDeviceGraphics.hpp"
 #include "oodShared.hpp"
@@ -56,6 +58,8 @@
 
 #define MB_BUTTON_KEYWORDS "ABORTRETRYIGNORE CANCELTRYCONTINUE HELP OK OKCANCEL RETRYCANCEL YESNO YESNOCANCEL"
 #define FILENAME_BUFFER_LEN 65535
+// We may need a much large buffer for multiple file selection on open.
+#define FILENAME_MULTI_BUFFER_LEN (4 * 1024 * 1024)
 
 
 /**
@@ -171,7 +175,6 @@ static char *searchSoundPath(CSTRING file, RexxCallContext *c)
     // We need a buffer for the path to search, a buffer for the returned full
     // file name, (if found,) and a pointer to char (an unused arg to
     // SearchPath().)
-    char *buf = NULL;
     char *fullFileName = NULL;
     char *pFileName;
 
@@ -185,54 +188,50 @@ static char *searchSoundPath(CSTRING file, RexxCallContext *c)
     if ( cchSoundPath == 0 && rc != ERROR_ENVVAR_NOT_FOUND )
     {
         oodSetSysErrCode(c->threadContext, rc);
-        goto err_out;
+        return NULL;
     }
 
     // Allocate our needed buffers.
-    buf = (char *)malloc(cchCWD + cchSoundPath + 3);
+    AutoFree buf = (char *)malloc(cchCWD + cchSoundPath + 3);
     fullFileName = (char *)malloc(_MAX_PATH);
-    if ( buf == NULL || fullFileName == NULL )
+    if (buf == NULL || fullFileName == NULL)
     {
+        safeFree(fullFileName);
         outOfMemoryException(c->threadContext);
-        goto err_out;
     }
 
     // Now get the current directory and the sound path.
     cchCWD = GetCurrentDirectory(cchCWD + 1, buf);
-    if ( cchCWD == 0 )
+    if (cchCWD == 0)
     {
+        safeFree(fullFileName);
         oodSetSysErrCode(c->threadContext);
-        goto err_out;
+        return NULL;
     }
 
-    if ( cchSoundPath != 0 )
+    if (cchSoundPath != 0)
     {
         buf[cchCWD++] = ';';
         cchSoundPath = GetEnvironmentVariable("SOUNDPATH", buf + cchCWD, cchSoundPath + 1);
-        if ( cchSoundPath == 0 )
+        if (cchSoundPath == 0)
         {
+            safeFree(fullFileName);
             oodSetSysErrCode(c->threadContext);
-            goto err_out;
+            return NULL;
         }
     }
 
-    uint32_t errorMode = SetErrorMode(SEM_FAILCRITICALERRORS);
+    AutoErrorMode errorMode(SEM_FAILCRITICALERRORS);
     cchSoundPath = SearchPath(buf, file, NULL, _MAX_PATH, fullFileName, &pFileName);
-    SetErrorMode(errorMode);
 
-    if ( cchSoundPath == 0 || cchSoundPath >= _MAX_PATH )
+    if (cchSoundPath == 0 || cchSoundPath >= _MAX_PATH)
     {
+        safeFree(fullFileName);
         oodSetSysErrCode(c->threadContext);
-        goto err_out;
+        return NULL;
     }
 
-    free(buf);
     return fullFileName;
-
-err_out:
-    safeFree(buf);
-    safeFree(fullFileName);
-    return NULL;
 }
 
 /**
@@ -299,15 +298,36 @@ RexxRoutine8(RexxObjectPtr, fileNameDlg_rtn,
     OpenFileName.Flags = OFN_SHOWHELP | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY | OFN_ENABLEHOOK |
                          OFN_EXPLORER | OFN_ENABLESIZING;
 
-    // Allocate a large buffer for the returned file name(s).
-    char * pszFiles = (char *)LocalAlloc(GPTR, FILENAME_BUFFER_LEN);
+    // Open or save file dialog.  Allow multiple file selection on open, or not.
+    bool open = true;
+    bool multiSelect = false;
+    if ( argumentExists(4) && *loadOrSave != '\0' )
+    {
+        char f = toupper(*loadOrSave);
+        if ( f == 'S' || f == '0' )
+        {
+            open = false;
+        }
+    }
+    if ( open && argumentExists(7) && *multi != '\0' )
+    {
+        char f = toupper(*multi);
+        if ( f == 'M' || f == '1' )
+        {
+            multiSelect = true;
+        }
+    }
+
+    // Allocate a buffer for the returned file name(s).
+    // We use a very large buffer for multiple file selection on open.
+    char * pszFiles = (char *)LocalAlloc(GPTR, multiSelect ? FILENAME_MULTI_BUFFER_LEN : FILENAME_BUFFER_LEN);
     if ( pszFiles == NULL )
     {
         outOfMemoryException(context->threadContext);
         return NULLOBJECT;
     }
     OpenFileName.lpstrFile = pszFiles;
-    OpenFileName.nMaxFile = FILENAME_BUFFER_LEN;
+    OpenFileName.nMaxFile = multiSelect ? FILENAME_MULTI_BUFFER_LEN : FILENAME_BUFFER_LEN;
 
     // Preselected file name and / or the directory to start in.
     if ( argumentExists(1) && *preselected != '\0' )
@@ -365,26 +385,6 @@ RexxRoutine8(RexxObjectPtr, fileNameDlg_rtn,
         }
     }
 
-    // Open or save file dialog.  Allow mutiple file selection on open, or not.
-    bool open = true;
-    bool multiSelect = false;
-    if ( argumentExists(4) && *loadOrSave != '\0' )
-    {
-        char f = toupper(*loadOrSave);
-        if ( f == 'S' || f == '0' )
-        {
-            open = false;
-        }
-    }
-    if ( open && argumentExists(7) && *multi != '\0' )
-    {
-        char f = toupper(*multi);
-        if ( f == 'M' || f == '1' )
-        {
-            multiSelect = true;
-        }
-    }
-
     // Dialog title.
     if ( argumentExists(5) && *_title != '\0' )
     {
@@ -427,6 +427,19 @@ RexxRoutine8(RexxObjectPtr, fileNameDlg_rtn,
         }
 
         success = GetOpenFileName(&OpenFileName);
+        // On Windows 10 GetOpenFileName seems to return true even if
+        // the provided lpstrFile buffer is too small to hold all selected
+        // file names.  Although in this case lpstrFile is returned with
+        // its first two bytes giving the required buffer size, this won't
+        // help.  For one, two bytes are limited to 64K, and also we surely
+        // can't retry as the user would have to redo the selection.
+        // Strictly speaking, we also cannot use CommDlgExtendedError to
+        // check for an error as it is documented to return undefined if the
+        // last call was a success.  But it seems to work.
+        if ( success )
+        {
+            success = CommDlgExtendedError() != FNERR_BUFFERTOOSMALL;
+        }
 
         if ( success && multiSelect )
         {

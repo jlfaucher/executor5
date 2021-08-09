@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -59,14 +59,6 @@ class SysThread
 
 public:
 
-    typedef enum
-    {
-        LOW_PRIORITY,
-        MEDIUM_PRIORITY,
-        GUARDED_PRIORITY,
-        HIGH_PRIORITY
-    } ThreadPriority;
-
     enum
     {
         THREAD_STACK_SIZE = 1024*512
@@ -81,9 +73,7 @@ public:
     }
 
     virtual void attachThread();
-    void setPriority(ThreadPriority priority);
     virtual void dispatch();
-    char *getStackBase();
     void terminate();
     void startup();
     void shutdown();
@@ -95,12 +85,18 @@ public:
     bool equals(SysThread &other);
     inline size_t hash() { return (((size_t)_threadHandle) >> 8) * 37; }
     void waitForTermination();
+
+
+    static void sleep(int msecs);
+    static void longSleep(uint64_t microseconds);
     static uint64_t getMillisecondTicks()
     {
         // on Windows, this is limited to the resolution of the system timer,
         // which is typically in the range of 10 milliseconds to 16 milliseconds.
         return GetTickCount64();
     }
+
+    static int createThread(HANDLE &threadHandle, DWORD &threadId, size_t stackSize, LPTHREAD_START_ROUTINE, void *startArgument);
 
 protected:
     void createThread();

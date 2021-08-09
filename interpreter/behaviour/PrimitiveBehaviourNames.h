@@ -8,7 +8,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -107,6 +107,10 @@
 #define TheRexxInfoClassBehaviour    (&RexxBehaviour::primitiveBehaviours[T_RexxInfoClass])
 #define TheVariableReferenceBehaviour      (&RexxBehaviour::primitiveBehaviours[T_VariableReference])
 #define TheVariableReferenceClassBehaviour    (&RexxBehaviour::primitiveBehaviours[T_VariableReferenceClass])
+#define TheEventSemaphoreBehaviour      (&RexxBehaviour::primitiveBehaviours[T_EventSemaphore])
+#define TheEventSemaphoreClassBehaviour    (&RexxBehaviour::primitiveBehaviours[T_EventSemaphoreClass])
+#define TheMutexSemaphoreBehaviour      (&RexxBehaviour::primitiveBehaviours[T_MutexSemaphore])
+#define TheMutexSemaphoreClassBehaviour    (&RexxBehaviour::primitiveBehaviours[T_MutexSemaphoreClass])
 #define TheNilObjectBehaviour      (&RexxBehaviour::primitiveBehaviours[T_NilObject])
 #define TheBehaviourBehaviour      (&RexxBehaviour::primitiveBehaviours[T_Behaviour])
 #define TheMethodDictionaryBehaviour      (&RexxBehaviour::primitiveBehaviours[T_MethodDictionary])
@@ -223,6 +227,7 @@
 #define TheUseArgVariableRefBehaviour      (&RexxBehaviour::primitiveBehaviours[T_UseArgVariableRef])
 #define TheCommandIOConfigurationBehaviour      (&RexxBehaviour::primitiveBehaviours[T_CommandIOConfiguration])
 #define TheAddressWithInstructionBehaviour      (&RexxBehaviour::primitiveBehaviours[T_AddressWithInstruction])
+#define TheConstantDirectiveBehaviour      (&RexxBehaviour::primitiveBehaviours[T_ConstantDirective])
 #define TheMemoryBehaviour      (&RexxBehaviour::primitiveBehaviours[T_Memory])
 #define TheInternalStackBehaviour      (&RexxBehaviour::primitiveBehaviours[T_InternalStack])
 #define ThePushThroughStackBehaviour      (&RexxBehaviour::primitiveBehaviours[T_PushThroughStack])

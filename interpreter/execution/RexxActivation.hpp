@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2020 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -119,28 +119,31 @@ class RexxActivation : public ActivationBase
    RexxActivation(Activity *_activity, RoutineClass *_routine, RexxCode *_code, RexxString *calltype, RexxString *env, ActivationContext context);
    RexxActivation(Activity *_activity, RexxActivation *_parent, RexxCode *_code, ActivationContext context);
 
-   virtual void live(size_t);
-   virtual void liveGeneral(MarkReason reason);
+   void live(size_t) override;
+   void liveGeneral(MarkReason reason) override;
 
-   virtual RexxObject *dispatch();
-   virtual wholenumber_t digits();
-   virtual wholenumber_t fuzz();
-   virtual bool form();
-   virtual void setDigits(wholenumber_t);
-   virtual void setFuzz(wholenumber_t);
-   virtual void setForm(bool);
-   virtual bool trap(RexxString *, DirectoryClass *);
-   virtual bool willTrap(RexxString *);
+   RexxObject *dispatch() override;
+   wholenumber_t digits() override;
+   wholenumber_t fuzz() override;
+   bool form() override;
+   void setDigits(wholenumber_t) override;
+   void setFuzz(wholenumber_t) override;
+   void setForm(bool) override;
+   bool trap(RexxString *, DirectoryClass *) override;
+   bool willTrap(RexxString *) override;
 
-   virtual void setObjNotify(MessageClass *);
-   virtual void termination();
-   virtual SecurityManager *getSecurityManager();
-   virtual bool isForwarded() { return settings.isForwarded(); }
-   virtual const NumericSettings *getNumericSettings();
-   virtual RexxActivation  *getRexxContext();
-   virtual RexxActivation  *findRexxContext();
-   virtual RexxObject      *getReceiver();
-   virtual bool             isRexxContext();
+   void setObjNotify(MessageClass *) override;
+   void termination() override;
+   SecurityManager *getSecurityManager() override;
+   bool isForwarded() override { return settings.isForwarded(); }
+   const NumericSettings *getNumericSettings() override;
+   RexxActivation  *getRexxContext() override;
+   RexxActivation  *findRexxContext() override;
+   RexxObject      *getReceiver() override;
+   bool             isRexxContext() override;
+   PackageClass    *getPackage() override;
+
+   MethodClass     *getMethod();
 
    void        inheritPackageSettings();
    void        allocateStackFrame();
@@ -209,7 +212,7 @@ class RexxActivation : public ActivationBase
    RexxObject      * internalCallTrap(RexxString *, RexxInstruction *, DirectoryClass *, ProtectedObject &);
    bool              callMacroSpaceFunction(RexxString *, RexxObject **, size_t, RexxString *, int, ProtectedObject &);
    static RoutineClass* getMacroCode(RexxString *macroName);
-   RexxString       *resolveProgramName(RexxString *name);
+   RexxString       *resolveProgramName(RexxString *name, ResolveType type);
    RexxClass        *findClass(RexxString *name);
    RexxObject       *resolveDotVariable(RexxString *name, RexxObject *&);
    void              command(RexxString *, RexxString *, CommandIOConfiguration *config);
@@ -279,7 +282,6 @@ class RexxActivation : public ActivationBase
        return isInterpret() ? executable->getPackageObject() : packageObject;
    }
 
-   PackageClass     *getPackage();
    RexxObject       *getLocalEnvironment(RexxString *name);
    void              setReturnStatus(ReturnStatus status);
 
@@ -355,11 +357,12 @@ class RexxActivation : public ActivationBase
    inline void              clearTraceSettings() { settings.packageSettings.traceSettings.setTraceOff(); settings.intermediateTrace = false; }
    inline bool              tracingResults() {return settings.packageSettings.traceSettings.tracingResults(); }
    inline bool              tracingAll() {return settings.packageSettings.traceSettings.tracingAll(); }
+   inline bool              tracingLabels() {return settings.packageSettings.traceSettings.tracingLabels(); }
    inline bool              inDebug() { return settings.packageSettings.traceSettings.isDebug() && !debugPause;}
    inline void              traceResult(RexxObject * v) { if (tracingResults()) traceValue(v, TRACE_PREFIX_RESULT); };
    inline void              traceKeywordResult(RexxString *k, RexxObject *v) { if (tracingResults()) traceTaggedValue(TRACE_PREFIX_KEYWORD, NULL, true, k, VALUE_MARKER, v); }
    inline void              traceVariableAlias(RexxString *k, RexxString *v) { if (tracingResults()) traceTaggedValue(TRACE_PREFIX_ALIAS, NULL, true, k, VALUE_MARKER, v); }
-   inline void              traceResultValue(RexxObject * v) {  };
+   inline void              traceResultValue(RexxObject * v) { traceValue(v, TRACE_PREFIX_RESULT); };
    inline bool              tracingInstructions() { return tracingAll(); }
    inline bool              tracingErrors() { return settings.packageSettings.traceSettings.tracingErrors(); }
    inline bool              tracingFailures() { return settings.packageSettings.traceSettings.tracingFailures(); }
@@ -377,8 +380,18 @@ class RexxActivation : public ActivationBase
        settings.packageSettings.traceSettings.resetDebug();
        settings.setDebugBypass(true);
    }
-   inline bool              isNovalueErrorEnabled() { return settings.packageSettings.isNovalueErrorEnabled(); }
-   inline void              disableNovalueError() { return settings.packageSettings.disableNovalueError(); }
+   inline bool              isErrorSyntaxEnabled() { return settings.packageSettings.isErrorSyntaxEnabled(); }
+   inline void              disableErrorSyntax() { return settings.packageSettings.disableErrorSyntax(); }
+   inline bool              isFailureSyntaxEnabled() { return settings.packageSettings.isFailureSyntaxEnabled(); }
+   inline void              disableFailureSyntax() { return settings.packageSettings.disableFailureSyntax(); }
+   inline bool              isLostdigitsSyntaxEnabled() { return settings.packageSettings.isLostdigitsSyntaxEnabled(); }
+   inline void              disableLostdigitsSyntax() { return settings.packageSettings.disableLostdigitsSyntax(); }
+   inline bool              isNostringSyntaxEnabled() { return settings.packageSettings.isNostringSyntaxEnabled(); }
+   inline void              disableNostringSyntax() { return settings.packageSettings.disableNostringSyntax(); }
+   inline bool              isNotreadySyntaxEnabled() { return settings.packageSettings.isNotreadySyntaxEnabled(); }
+   inline void              disableNotreadySyntax() { return settings.packageSettings.disableNotreadySyntax(); }
+   inline bool              isNovalueSyntaxEnabled() { return settings.packageSettings.isNovalueSyntaxEnabled(); }
+   inline void              disableNovalueSyntax() { return settings.packageSettings.disableNovalueSyntax(); }
 
 
    inline void              stopExecution(ExecutionState state)

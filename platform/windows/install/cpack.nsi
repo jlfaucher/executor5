@@ -3,8 +3,8 @@
 ;
 ; This script requires 2 plugins added to your NISI installation.  They need to
 ; be put into ${NSISDIR}\Plugins directory:
-;   services.dll       -> http://nsis.sourceforge.net/File:Services.zip
-;   ooRexxProcess.dll  -> http://sourceforge.net/projects/oorexx/files/  under oorexx-buildutils
+;   services.dll       -> https://nsis.sourceforge.net/File:Services.zip
+;   ooRexxProcess.dll  -> https://sourceforge.net/projects/oorexx/files/  under oorexx-buildutils
 ;
 ; Run as:
 ;  makensis /DVERSION=x.x /DNODOTVER=xx /DSRCDIR=xxx /DBINDIR=xxx /DCPU=xxx oorexx.nsi
@@ -77,7 +77,7 @@ ${UnStrTok}
 ;!define MUI_FINISHPAGE_SHOWREADME_FUNCTION SomeFunctionToBeCreated
 
 !define MUI_FINISHPAGE_LINK "Getting started with Windows ${LONGNAME}"
-!define MUI_FINISHPAGE_LINK_LOCATION "http://www.rexxla.org/rexxlang/rexxtut.html"
+!define MUI_FINISHPAGE_LINK_LOCATION "https://www.rexxla.org/rexxlang/rexxtut.html"
 
 !define MUI_ABORTWARNING
 
@@ -154,7 +154,9 @@ Var UninstLog
   !define MUI_PAGE_CUSTOMFUNCTION_SHOW Directory_Page_show
   !insertmacro MUI_PAGE_DIRECTORY
 
+  /* rxapi service stuff no longer applies
   Page custom Rxapi_Options_page Rxapi_Options_leave
+  */
   Page custom File_Associations_page File_Associations_leave
   Page custom SendTo_Items_page SendTo_Items_leave
   Page custom Associate_rexx_page Associate_rexx_leave
@@ -374,7 +376,7 @@ Section "${LONGNAME} Core (required)" SecMain
   CreateShortCut "$SMPROGRAMS\${LONGNAME}\${SHORTNAME} LICENSE.lnk" "$INSTDIR\CPLv1.0.txt" "" "$INSTDIR\CPLv1.0.txt" 0
   ${AddItem} "$SMPROGRAMS\${LONGNAME}\${SHORTNAME} LICENSE.lnk"
 
-  WriteINIStr "$SMPROGRAMS\${LONGNAME}\${SHORTNAME} Home Page.url" "InternetShortcut" "URL" "http://www.oorexx.org/"
+  WriteINIStr "$SMPROGRAMS\${LONGNAME}\${SHORTNAME} Home Page.url" "InternetShortcut" "URL" "https://www.oorexx.org/"
   ${AddItem} "$SMPROGRAMS\${LONGNAME}\${SHORTNAME} Home Page.url"
 
   ; If we are doing an upgrade, these settings are all left however they were.
@@ -388,18 +390,6 @@ Section "${LONGNAME} Core (required)" SecMain
 
     ; Set the environment variables, PATH, REXX_HOME, etc..
     Call DoEnvVariables
-
-    ; If an administrator, install rxapi as a service depending on what the user
-    ; selected.
-    ${If} $IsAdminUser == "true"
-      Call InstallRxapi
-    ${EndIf}
-  ${else}
-    ; We are doing an upgrade, but if rxapi was installed as a service
-    ; previously, the user has the choice of starting it.
-    ${If} $RxapiIsService == 'true'
-      Call StartRxapi
-    ${EndIf}
   ${EndIf}
 
 
@@ -410,9 +400,9 @@ Section "${LONGNAME} Core (required)" SecMain
   WriteRegExpandStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${SHORTNAME}" "InstallLocation" '"$INSTDIR"'
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${SHORTNAME}" "DisplayName" "${LONGNAME}"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${SHORTNAME}" "DisplayIcon" "${DISPLAYICON}"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${SHORTNAME}" "HelpLink" "http://www.rexxla.org/support.html"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${SHORTNAME}" "URLUpdateInfo" "http://sourceforge.net/project/showfiles.php?group_id=119701"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${SHORTNAME}" "URLInfoAbout" "http://www.rexxla.org/"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${SHORTNAME}" "HelpLink" "https://www.rexxla.org/support.html"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${SHORTNAME}" "URLUpdateInfo" "https://sourceforge.net/project/showfiles.php?group_id=119701"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${SHORTNAME}" "URLInfoAbout" "https://www.rexxla.org/"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${SHORTNAME}" "DisplayVersion" "${VERSION}"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${SHORTNAME}" "Publisher" "Rexx Language Association"
 
@@ -3558,6 +3548,8 @@ FunctionEnd
  */
 Function InstallRxapi
 
+/*
+  rxapi no longer runs as a service, so we never install
   ${If} $RxAPIInstallService == 1
     ; User asked to install rxapi as a service.
     DetailPrint "Installing rxapi as a Windows Service"
@@ -3571,6 +3563,7 @@ Function InstallRxapi
       MessageBox MB_OK|MB_ICONEXCLAMATION|MB_TOPMOST "Failed to install rxapi as a Windows Service: $R0\n" /SD IDOK
     ${EndIf}
   ${EndIf}
+ */
 FunctionEnd
 
 /** CheckIsRxapiService()
@@ -3628,6 +3621,7 @@ FunctionEnd
  */
 Function StartRxapi
 
+  /*
   ${If} $RxAPIStartService == 1
     ; User asked to start the rxapi service.
     Services::SendServiceCommand 'start' 'RXAPI'
@@ -3640,6 +3634,7 @@ Function StartRxapi
     ${EndIf}
   ${EndIf}
 
+  */
 FunctionEnd
 
 /** StopRxapi()

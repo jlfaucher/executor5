@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -58,40 +58,10 @@ void SysThread::attachThread()
     attached = true;      // we didn't create this one
 }
 
-
-void SysThread::setPriority(int priority)
-{
-    int schedpolicy;
-    struct sched_param schedparam;
-
-    pthread_getschedparam(_threadID,  &schedpolicy, &schedparam);
-
-    /* Medium_priority(=100) is used for every new thread */
-    schedparam.sched_priority = priority;
-    pthread_setschedparam(_threadID, schedpolicy, &schedparam);
-}
-
-
 void SysThread::dispatch()
 {
     // default dispatch returns immediately
 }
-
-
-char *SysThread::getStackBase()
-{
-   int32_t temp;
-#pragma GCC diagnostic push
-// avoid CLANG warning: address of stack memory associated with local variable returned
-#pragma clang diagnostic ignored "-Wreturn-stack-address"
-// avoid CLANG warning: unknown warning group '-Wreturn-local-addr', ignored
-#pragma clang diagnostic ignored "-Wunknown-pragmas"
-// avoid GCC warning: function returns address of local variable
-#pragma GCC diagnostic ignored "-Wreturn-local-addr"
-   return ((char *)(&temp)) - THREAD_STACK_SIZE;
-#pragma GCC diagnostic pop
-}
-
 
 void SysThread::terminate()
 {
@@ -140,67 +110,47 @@ static void * call_thread_function(void *argument)
 // create a new thread and attach to an activity
 void SysThread::createThread()
 {
-    pthread_attr_t  newThreadAttr;
-    int schedpolicy, maxpri, minpri;
-    struct sched_param schedparam;
+    // we own this thread vs. running on an exising thread
+    attached = false;
 
-    attached = false;           // we own this thread
-
-    // Create an attr block for Thread.
-    pthread_attr_init(&newThreadAttr);
-#if defined(LINUX) ||  defined(OPSYS_SUN) || defined(AIX)
-    /* scheduling on two threads controlled by the result method of the */
-    /* message object do not work properly without an enhanced priority */
-    pthread_getschedparam(pthread_self(), &schedpolicy, &schedparam);
-
-#if defined(AIX)
-  // Starting with AIX 5.3 the priority for a thread created by
-  // a non root user can not be higher then 59. The priority
-  // of a user prog should not be higher then 59 (IBM AIX development).
-  schedparam.sched_priority = 59;
-#else
-#   ifdef _POSIX_PRIORITY_SCHEDULING
-        maxpri = sched_get_priority_max(schedpolicy);
-        minpri = sched_get_priority_min(schedpolicy);
-        schedparam.sched_priority = (minpri + maxpri) / 2;
-#   endif
-#endif
-
-#if defined(OPSYS_SUN)
-    /* PTHREAD_EXPLICIT_SCHED ==> use scheduling attributes of the new object */
-    pthread_attr_setinheritsched(&newThreadAttr, PTHREAD_EXPLICIT_SCHED);
-
-    /* Performance measurements show massive performance improvements > 50 % */
-    /* using Round Robin scheduling instead of FIFO scheduling               */
-    pthread_attr_setschedpolicy(&newThreadAttr, SCHED_RR);
-#endif
-
-#if defined(AIX)
-    /* PTHREAD_EXPLICIT_SCHED ==> use scheduling attributes of the new object */
-    pthread_attr_setinheritsched(&newThreadAttr, PTHREAD_EXPLICIT_SCHED);
-
-    /* Each thread has an initial priority that is dynamically modified by   */
-    /* the scheduler, according to the thread's activity; thread execution   */
-    /* is time-sliced. On other systems, this scheduling policy may be       */
-    /* different.                                                            */
-    pthread_attr_setschedpolicy(&newThreadAttr, SCHED_OTHER);
-#endif
-
-    pthread_attr_setschedparam(&newThreadAttr, &schedparam);
-#endif
-
-    // Set the stack size.
-    pthread_attr_setstacksize(&newThreadAttr, THREAD_STACK_SIZE);
-
-    // Now create the thread
-    int rc = pthread_create(&_threadID, &newThreadAttr, call_thread_function, (void *)this);
+    // create the thread now
+    int rc = createThread(_threadID, THREAD_STACK_SIZE, call_thread_function, (void *)this);
     if (rc != 0)
     {
         _threadID = 0;
         fprintf(stderr," *** ERROR: At SysThread(), createThread - RC = %d !\n", rc);
     }
-    pthread_attr_destroy(&newThreadAttr);
     return;
+}
+
+
+/**
+ * Create a new thread.
+ *
+ * @param threadNumber
+ *                  The returned thread ID
+ * @param stackSize The required stack size
+ * @param startRoutine
+ *                  The thread startup routine.
+ * @param startArgument
+ *                  The typeless argument passed to the startup routine.
+ *
+ * @return The success/failure return code.
+ */
+int SysThread::createThread(pthread_t &threadNumber, size_t stackSize, void *(*startRoutine)(void *), void *startArgument)
+{
+    pthread_attr_t  newThreadAttr;
+
+    // Create an attr block for Thread.
+    pthread_attr_init(&newThreadAttr);
+
+    // Set the stack size.
+    pthread_attr_setstacksize(&newThreadAttr, stackSize);
+
+    // Now create the thread
+    int rc = pthread_create(&threadNumber, &newThreadAttr, startRoutine, (void *)startArgument);
+    pthread_attr_destroy(&newThreadAttr);
+    return rc;
 }
 
 
@@ -214,4 +164,45 @@ void SysThread::waitForTermination()
         _threadID = 0;
     }
 }
+
+
+/**
+ * Platform wrapper around a simple sleep function.
+ *
+ * @param msecs  The number of milliseconds to sleep.
+ */
+void SysThread::sleep(int msecs)
+{
+    // usleep uses micro seconds, so we need to multiply.
+    usleep(msecs*1000);
+}
+
+
+/**
+ * Platform wrapper around a sleep function that can sleep for long periods of time. .
+ *
+ * @param microseconds
+ *               The number of microseconds to delay.
+ */
+void SysThread::longSleep(uint64_t microseconds)
+{
+    // split into two part: secs and nanoseconds
+    long secs = (long)microseconds / 1000000;
+    long nanoseconds = (long)(microseconds % 1000000) * 1000;
+
+#if defined( HAVE_NANOSLEEP )
+    struct timespec    Rqtp, Rmtp;
+    Rqtp.tv_sec = secs;
+    Rqtp.tv_nsec = nanoseconds;
+    nanosleep(&Rqtp, &Rmtp);
+#elif defined( HAVE_NSLEEP )
+    struct timestruc_t Rqtp, Rmtp;
+    Rqtp.tv_sec = secs;
+    Rqtp.tv_nsec = nanoseconds;
+    nsleep(&Rqtp, &Rmtp);
+#else
+    usleep(microseconds);
+#endif
+}
+
 

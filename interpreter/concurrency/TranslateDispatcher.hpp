@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                          */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -48,12 +48,13 @@ public:
     inline TranslateDispatcher() : ActivityDispatcher() { ; }
     virtual ~TranslateDispatcher() { ; }
 
-    virtual void run();
-    virtual void handleError(wholenumber_t, DirectoryClass *);
+    void run() override;
+    void handleError(wholenumber_t, DirectoryClass *) override;
 
-    const char *programName;             /* REXX program to run               */
-    PRXSTRING  instore;                  /* Instore array                     */
+    const char *programName;             // REXX program to run
+    PRXSTRING  instore;                  // Instore array
     const char *outputName;              // optional program output name
+    bool       encode;                   // does the ouput get string encoded when saved
 };
 
 
@@ -63,12 +64,12 @@ public:
     inline TranslateInstoreDispatcher() : ActivityDispatcher() { ; }
     virtual ~TranslateInstoreDispatcher() { ; }
 
-    virtual void run();
-    virtual void handleError(wholenumber_t, DirectoryClass *);
+    void run() override;
+    void handleError(wholenumber_t, DirectoryClass *) override;
 
-    const char *programName;             /* REXX program to run               */
+    const char *programName;             // REXX program to run
     CONSTRXSTRING *source;               // the image to translate
-    RXSTRING  *image;                    // the translated image              */
+    RXSTRING  *image;                    // the translated image
 };
 
 

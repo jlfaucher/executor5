@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -56,6 +56,7 @@
 #include "LanguageLevel.hpp"
 #include "RexxErrorCodes.h"
 #include "CommandIOConfiguration.hpp"
+#include "MethodClass.hpp"
 
 
 class RexxInstruction;
@@ -107,18 +108,20 @@ class LanguageParser: public RexxInternalObject
     LanguageParser(RexxString *name, ProgramSource *s);
     inline LanguageParser(RESTORETYPE restoreType) { ; };
 
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
+    void live(size_t) override;
+    void liveGeneral(MarkReason reason) override;
 
     // main execution methods
     void        translate();
     void        compileSource();
     void        initializeForParsing();
     void        initializeForDirectives();
+    void        initializeForTranslation();
     void        resolveDependencies();
     void        flushControl(RexxInstruction *);
     RexxCode   *translateBlock();
     RexxCode   *translateInterpret(PackageClass *sourceContext, StringTable *contextLabels);
+    RexxInternalObject *translateConstantExpression(RexxToken *token, RexxErrorCodes error);
     RoutineClass *generateProgram(PackageClass *sourceContext = OREF_NULL);
     RoutineClass *generateRoutine(PackageClass *sourceContext = OREF_NULL);
     MethodClass *generateMethod(PackageClass *sourceContext = OREF_NULL);
@@ -182,6 +185,7 @@ class LanguageParser: public RexxInternalObject
     RexxVariableBase *addVariable(RexxToken *);
     RexxVariableBase *requiredVariable(RexxToken *, const char *);
     void        addClause(RexxInstruction *);
+    void        resolveCalls();
     void        addLabel(RexxInstruction *, RexxString *);
     RexxInstruction *findLabel(RexxString *);
     void        setGuard();
@@ -192,7 +196,7 @@ class LanguageParser: public RexxInternalObject
     inline void  reclaimClause()  { flags.set(reclaimed); };
     inline bool  atEnd() { return !flags.test(reclaimed) && !moreLines(); };
 
-           void setInterpret() { flags.set(interpret); }
+           void setInterpret() { flags.set(interpret); flags.set(noDirectives); }
     inline bool isInterpret() { return flags.test(interpret); }
     inline bool noClauseAvailable() { return flags.test(noClause); }
     inline bool clauseAvailable() { return !flags.test(noClause); }
@@ -250,15 +254,15 @@ class LanguageParser: public RexxInternalObject
     RexxInstruction *callNew();
     RexxInstruction *commandNew();
     RexxInstruction *doNew();
-    RexxInstruction *newControlledLoop(RexxString *label, RexxToken *nameToken);
-    RexxInstruction *newDoOverLoop(RexxString *label, RexxToken *nameToken);
-    RexxInstruction *newDoWithLoop(RexxString *label);
+    RexxInstruction *newControlledLoop(RexxString *label, RexxVariableBase *countVariable, RexxToken *nameToken);
+    RexxInstruction *newDoOverLoop(RexxString *label, RexxVariableBase *countVariable, RexxToken *nameToken);
+    RexxInstruction *newDoWithLoop(RexxString *label, RexxVariableBase *countVariable);
     RexxInstruction *newSimpleDo(RexxString *label);
-    RexxInstruction *newLoopForever(RexxString *label);
-    RexxInstruction *newLoopWhile(RexxString *label, WhileUntilLoop &conditional);
-    RexxInstruction *newLoopUntil(RexxString *label, WhileUntilLoop &conditional);
-    RexxInstruction *parseForeverLoop(RexxString *label);
-    RexxInstruction *parseCountLoop(RexxString *label);
+    RexxInstruction *newLoopForever(RexxString *label, RexxVariableBase *countVariable);
+    RexxInstruction *newLoopWhile(RexxString *label, RexxVariableBase *countVariable, WhileUntilLoop &conditional);
+    RexxInstruction *newLoopUntil(RexxString *label, RexxVariableBase *countVariable, WhileUntilLoop &conditional);
+    RexxInstruction *parseForeverLoop(RexxString *label, RexxVariableBase *countVariable);
+    RexxInstruction *parseCountLoop(RexxString *label, RexxVariableBase *countVariable);
     RexxInstruction *createLoop(bool isLoop);
     RexxInstruction *dropNew();
     RexxInstruction *elseNew(RexxToken *);
@@ -332,12 +336,12 @@ class LanguageParser: public RexxInternalObject
     bool        hasBody();
     void        decodeExternalMethod(RexxString *methodName, RexxString *externalSpec, RexxString *&library, RexxString *&procedure);
     MethodClass *createNativeMethod(RexxString *name, RexxString *library, RexxString *procedure);
-    void        createMethod(RexxString *name, bool classMethod, bool privateMethod, bool protectedMethod, bool guardedMethod, bool isAttribute);
-    void        createAttributeGetterMethod(RexxString *name, RexxVariableBase *retriever, bool classMethod, bool privateMethod, bool protectedMethod, bool guardedMethod);
-    void        createAttributeSetterMethod(RexxString *name, RexxVariableBase *retriever, bool classMethod, bool privateMethod, bool protectedMethod, bool guardedMethod);
-    void        createDelegateMethod(RexxString *name, RexxVariableBase *retriever, bool classMethod, bool privateMethod, bool protectedMethod, bool guardedMethod, bool isAttribute);
-    void        createConstantGetterMethod(RexxString *name, RexxObject *value);
-    void        createAbstractMethod(RexxString *name, bool classMethod, bool privateMethod, bool protectedMethod, bool guardedMethod, bool isAttribute);
+    void        createMethod(RexxString *name, bool classMethod, AccessFlag privateMethod, ProtectedFlag protectedMethod, GuardFlag guardedMethod, bool isAttribute);
+    void        createAttributeGetterMethod(RexxString *name, RexxVariableBase *retriever, bool classMethod, AccessFlag privateMethod, ProtectedFlag protectedMethod, GuardFlag guardedMethod);
+    void        createAttributeSetterMethod(RexxString *name, RexxVariableBase *retriever, bool classMethod, AccessFlag privateMethod, ProtectedFlag protectedMethod, GuardFlag guardedMethod);
+    void        createDelegateMethod(RexxString *name, RexxVariableBase *retriever, bool classMethod, AccessFlag privateMethod, ProtectedFlag protectedMethod, GuardFlag guardedMethod, bool isAttribute);
+    void        createConstantGetterMethod(RexxString *name, RexxObject *value, RexxInternalObject *expression, SourceLocation &location);
+    void        createAbstractMethod(RexxString *name, bool classMethod, AccessFlag privateMethod, ProtectedFlag protectedMethod, GuardFlag guardedMethod, bool isAttribute);
     void        checkDuplicateMethod(RexxString *name, bool classMethod, RexxErrorCodes errorMsg);
     void        addMethod(RexxString *name, MethodClass *method, bool classMethod);
     bool        isDuplicateClass(RexxString *name);
@@ -381,6 +385,7 @@ class LanguageParser: public RexxInternalObject
     bool checkRedirectNormal(RexxToken *token);
     OutputOption::Enum parseRedirectOutputOptions();
     void parseRedirectOptions(RexxInternalObject *&source, RedirectionType::Enum &type);
+    RexxInternalObject *parseVariableReferenceTerm();
 
     // various error processing methods
     void        error(RexxErrorCodes);
@@ -429,7 +434,7 @@ class LanguageParser: public RexxInternalObject
     static MethodClass *createMethod(RexxString *name, BufferClass *source);
     static MethodClass *createMethod(RexxString *name, PackageClass *sourceContext);
     static RoutineClass *createRoutine(RexxString *name, ArrayClass *source, PackageClass *sourceContext);
-    static RoutineClass *createRoutine(RexxString *name, BufferClass *source);
+    static RoutineClass *createRoutine(RexxString *name, BufferClass *source, PackageClass *sourceContext);
     static RoutineClass *createRoutine(RexxString *name, PackageClass *sourceContext);
     static RoutineClass *createProgram(RexxString *name, BufferClass *source);
     static RoutineClass *createProgram(RexxString *name, ArrayClass *source, PackageClass *sourceContext);
@@ -502,6 +507,9 @@ protected:
     size_t           currentStack;       // current expression stack depth
     size_t           maxStack;           // maximum stack depth
     size_t           variableIndex;      // current variable index slot
+    size_t           constantMaxStack;           // maximum stack depth for the evaluated constants
+    size_t           constantVariableIndex;      // current variable index slot for evaluated constants
+    StringTable     *constantVariables;          // root of associated variable list for evaluated constants.
 
     // table of character values
     static int characterTable[];

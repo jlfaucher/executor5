@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2020 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -46,9 +46,10 @@
 #include "ActivityManager.hpp"
 #include "MethodArguments.hpp"
 
+#include <ctype.h>
 
 /**
- * Take in an agument passed to a method, convert it to a length
+ * Take in an argument passed to a method, convert it to a length
  * object, verifying that the number is a non-negative value.
  * If the argument is omitted, an error is raised.
  *
@@ -57,7 +58,7 @@
  *
  * @return The argument converted to a non-negative integer value.
  */
-size_t lengthArgument(RexxObject *argument, size_t position )
+size_t lengthArgument(RexxObject *argument, size_t position)
 {
     if (argument == OREF_NULL)
     {
@@ -74,7 +75,7 @@ size_t lengthArgument(RexxObject *argument, size_t position )
 
 
 /**
- * Take in an agument passed to a method, convert it to a length
+ * Take in an argument passed to a method, convert it to a length
  * object, verifying that the number is a non-negative value.
  * If the argument is omitted, an error is raised.
  *
@@ -83,7 +84,7 @@ size_t lengthArgument(RexxObject *argument, size_t position )
  *
  * @return The argument converted to a non-negative integer value.
  */
-size_t lengthArgument(RexxObject *argument, const char *position )
+size_t lengthArgument(RexxObject *argument, const char *position)
 {
     if (argument == OREF_NULL)
     {
@@ -100,7 +101,61 @@ size_t lengthArgument(RexxObject *argument, const char *position )
 
 
 /**
- * Take in an agument passed to a method, convert it to a length
+ * Take in an argument passed to a method, convert it to a
+ * numeric object. If the argument is omitted, an error is
+ * raised.
+ *
+ * @param argument The argument reference to test.
+ * @param position The position of the argument (used for error reporting.)
+ *
+ * @return The argument converted to an integer value.
+ */
+wholenumber_t numberArgument(RexxObject *argument, size_t position)
+{
+    if (argument == OREF_NULL)
+    {
+        missingArgument(position);
+    }
+
+    wholenumber_t    value;
+    // converted using the ARGUMENT_DIGITS value
+    if (!argument->numberValue(value, Numerics::ARGUMENT_DIGITS))
+    {
+        reportException(Error_Incorrect_method_whole, argument);
+    }
+    return value;
+}
+
+
+/**
+ * Take in an argument passed to a method, convert it to a
+ * numeric object. If the argument is omitted, an error is
+ * raised.
+ *
+ * @param argument The argument reference to test.
+ * @param position The position of the argument (used for error reporting.)
+ *
+ * @return The argument converted to an integer value.
+ */
+wholenumber_t numberArgument(RexxObject *argument, const char *position)
+{
+    if (argument == OREF_NULL)
+    {
+        missingArgument(position);
+    }
+    wholenumber_t    value;
+    // converted using the ARGUMENT_DIGITS value
+    if (!argument->numberValue(value, Numerics::ARGUMENT_DIGITS))
+    {
+        reportException(Error_Invalid_argument_whole, position, argument);
+    }
+    return value;
+}
+
+
+
+/**
+ * Take in an argument passed to a method, convert it to a length
  * object, verifying that the number is a non-negative value.
  * If the argument is omitted, an error is raised.
  *
@@ -121,7 +176,7 @@ size_t nonNegativeArgument(RexxObject *argument, size_t position )
 
 
 /**
- * Take in an agument passed to a method, convert it to a length
+ * Take in an argument passed to a method, convert it to a length
  * object, verifying that the number is a non-negative value.
  * If the argument is omitted, an error is raised.
  *
@@ -142,7 +197,7 @@ size_t nonNegativeArgument(RexxObject *argument, const char *position )
 
 
 /**
- * Take in an agument passed to a method, convert it to a position
+ * Take in an argument passed to a method, convert it to a position
  * value, verifying that the number is a positive value.
  * If the argument is omitted, an error is raised.
  *
@@ -168,7 +223,7 @@ size_t positionArgument(RexxObject *argument, size_t position )
 
 
 /**
- * Take in an agument passed to a method, convert it to a position
+ * Take in an argument passed to a method, convert it to a position
  * value, verifying that the number is a positive value.
  * If the argument is omitted, an error is raised.
  *
@@ -324,6 +379,31 @@ char optionArgument(RexxObject *argument, const char *validOptions, const char *
         reportException(Error_Incorrect_method_option, validOptions, parameter);
     }
     return option;
+}
+
+
+/**
+ * Take in an argument passed to a method, convert it to a
+ * floating point number. If the argument is omitted, an error is
+ * raised.
+ *
+ * @param argument The argument reference to test.
+ * @param position The name of the argument (used for error reporting.)
+ *
+ * @return The argument converted to a double floating point value.
+ */
+double floatingPointArgument(RexxObject *argument, const char *name)
+{
+    if (argument == OREF_NULL)
+    {
+        missingArgument(name);
+    }
+    double value;
+    if (!argument->doubleValue(value))
+    {
+        reportException(Error_Invalid_argument_number, name, argument);
+    }
+    return value;
 }
 
 

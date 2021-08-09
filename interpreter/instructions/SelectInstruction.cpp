@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -134,7 +134,7 @@ void RexxInstructionSelect::execute(RexxActivation *context, ExpressionStack *st
 
     // create an active DO block, which marks that we have an active SELECT
     // in case someone tries do SIGNAL into the middle of the instruction.
-    DoBlock *doblock = new DoBlock (this, context->getIndent());
+    DoBlock *doblock = new DoBlock (context, this);
     // set the block to the top of the context stack.
     context->newBlockInstruction(doblock);
     // Debug pause requires a conditional pause that terminates the block construct
@@ -364,7 +364,7 @@ void RexxInstructionSelectCase::execute(RexxActivation *context, ExpressionStack
 
     // create an active DO block, which marks that we have an active SELECT
     // in case someone tries do SIGNAL into the middle of the instruction.
-    DoBlock *doblock = new DoBlock (this, context->getIndent());
+    DoBlock *doblock = new DoBlock (context, this);
     // set the block to the top of the context stack.
     context->newBlockInstruction(doblock);
 

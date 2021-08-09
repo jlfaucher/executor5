@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -183,7 +183,7 @@ public:
     void translateRexxProgram(const char *sourcefile, ManagedRxstring &imageData);
     void readRxstringFromFile(SysFile *file, ManagedRxstring &target, size_t size);
     RexxReturnCode mapReturnResult(ServiceMessage &m);
-    virtual RexxReturnCode processServiceException(ServiceException *e);
+    RexxReturnCode processServiceException(ServiceException *e) override;
 };
 
 

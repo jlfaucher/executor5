@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -446,7 +446,7 @@ void *wrongReplyListException(RexxThreadContext *c, const char *mName, const cha
  *  'max'; found 'actual'
  *
  *  The reply from the event handler (onSysCommand) must be in the range
- *  –2147483648 to 2147483647; found Tom
+ *  -2147483648 to 2147483647; found Tom
  *
  * @param c      The thread context we are operating under.
  * @param mName  The method name of the event handler

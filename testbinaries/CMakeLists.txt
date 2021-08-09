@@ -1,11 +1,11 @@
 #/*----------------------------------------------------------------------------*/
 #/*                                                                            */
-#/* Copyright (c) 2014-2014 Rexx Language Association. All rights reserved.    */
+#/* Copyright (c) 2014-2021 Rexx Language Association. All rights reserved.    */
 #/*                                                                            */
 #/* This program and the accompanying materials are made available under       */
 #/* the terms of the Common Public License v1.0 which accompanies this         */
 #/* distribution. A copy is also available at the following address:           */
-#/* http://www.oorexx.org/license.html                                         */
+#/* https://www.oorexx.org/license.html                                        */
 #/*                                                                            */
 #/* Redistribution and use in source and binary forms, with or                 */
 #/* without modification, are permitted provided that the following            */
@@ -38,7 +38,14 @@
 #/*----------------------------------------------------------------------------*/
 #/* Global settings                                                            */
 #/*----------------------------------------------------------------------------*/
-cmake_minimum_required (VERSION 2.6)
+if (APPLE)
+# apple build with lower cmake version have an @rpath problem
+    cmake_minimum_required (VERSION 3.12)
+else()
+#for other platforms
+    cmake_minimum_required (VERSION 2.8.12)
+endif()
+cmake_policy(VERSION 2.8...3.3)
 
 #/*----------------------------------------------------------------------------*/
 #/* Project settings                                                           */
@@ -47,7 +54,7 @@ project (oorexxtest)
 
 # handy macro for generating test executable targets
 macro (generate_test_library target)
-   if (WIN32)
+   if (WIN32 AND ${ARGC} GREATER 1)
      set (PLATFORM_EXTRA  ${PROJECT_SOURCE_DIR}/${target}.def)
    endif ()
    add_library(${target} SHARED
@@ -64,7 +71,7 @@ endmacro (generate_test_library)
 generate_test_library(orxfunction)
 generate_test_library(orxmethod)
 generate_test_library(orxclassic)
-generate_test_library(orxclassic1)
+generate_test_library(orxclassic1 def)
 
 
 # this library is linked to other test libraries
@@ -83,11 +90,7 @@ target_include_directories(orxexits PUBLIC
 target_link_libraries(orxexits rexx rexxapi)
 
 # this library has the orxexits dependency
-if (WIN32)
-  set (PLATFORM_EXTRA  ${PROJECT_SOURCE_DIR}/orxinvocation.def)
-endif ()
 add_library(orxinvocation SHARED
-   ${PLATFORM_EXTRA}
    ${PROJECT_SOURCE_DIR}/orxinvocation)
 # Include file definition
 target_include_directories(orxinvocation PUBLIC

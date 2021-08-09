@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2021 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -49,10 +49,18 @@
 #include "Numerics.hpp"
 #include "StringUtil.hpp"
 #include "MethodArguments.hpp"
+#include "Interpreter.hpp"
 
 #include <stdio.h>
 #include <math.h>
 #include <float.h>
+#include <ctype.h>
+#include <locale.h>   // localeconv
+#ifdef HAVE_XLOCALE_H
+# include <xlocale.h> // localeconv on BSD
+#endif
+#include <cmath>
+#include <cfloat>
 
 // singleton class instance
 RexxClass *NumberString::classInstance = OREF_NULL;
@@ -380,7 +388,7 @@ RexxString *NumberString::stringValue()
     // have we hit the trigger value either
     // A) the number of digits to the left of the decimal exceeds the digits setting or
     // B) the number of digits to the right of the decimal point exceed twice the digits setting.
-    if ((adjustedSize >= createdDigits) || (Numerics::abs(numberExponent) > (createdDigits * 2)))
+    if ((adjustedSize >= createdDigits) || (std::abs(numberExponent) > (createdDigits * 2)))
     {
         // we need to go exponential.  Need to make a number of adjustments based
         // on the formatting.
@@ -397,7 +405,7 @@ RexxString *NumberString::stringValue()
         }
 
         // our adjustment may end up with an overflow or underflow, so raise the error
-        if (Numerics::abs(adjustedSize) > Numerics::MAX_EXPONENT)
+        if (std::abs(adjustedSize) > Numerics::MAX_EXPONENT)
         {
             reportException(adjustedSize > 0 ? Error_Overflow_expoverflow : Error_Overflow_expunderflow, adjustedSize, Numerics::DEFAULT_DIGITS);
         }
@@ -411,7 +419,7 @@ RexxString *NumberString::stringValue()
         // format the string form of the exponent
         formatExponent(adjustedSize, expstring);
         // get the exponent value as a positive number from here.
-        adjustedSize = Numerics::abs(adjustedSize);
+        adjustedSize = std::abs(adjustedSize);
     }
 
     wholenumber_t maxNumberSize;
@@ -428,10 +436,10 @@ RexxString *NumberString::stringValue()
     // if the absolute value of the exponent is larger than the
     // length of the number, then we'll need to add additional zeros between
     // the decimal point and the first digit.
-    else if (Numerics::abs(adjustedExponent) >= digitsCount)
+    else if (std::abs(adjustedExponent) >= digitsCount)
     {
         // we add to characters for a leading zero and decimal point
-        maxNumberSize = Numerics::abs(adjustedExponent) + 2;
+        maxNumberSize = std::abs(adjustedExponent) + 2;
     }
     // not adding any digits, the decimal is in the middle, so our
     // result value is the length plus one for a decimal point
@@ -696,10 +704,48 @@ bool NumberString::unsignedNumberValue(size_t &result, wholenumber_t numDigits)
 bool NumberString::doubleValue(double &result)
 {
     // build this from the string value
-    RexxString *string = stringValue();
+    const char *string = stringValue()->getStringData();
     // use the C library routine to convert this to a double value since we
     // use compatible formats
-    result = strtod(string->getStringData(), NULL);
+
+    // strtod() is locale-dependent, and we cannot be sure that we run under
+    // the default "C" locale, as some badly behaved native code (a known
+    // example being BSF.CLS) may have called setlocale(LC_ALL, "") or similar.
+
+    // strtod_l() is available on many platforms, but e. g. Openindiana is
+    // missing it.  Switching back and forth with uselocale() would work
+    // (maybe slow), but uselocale() isn't readily available on Windws,
+    // where it would require setlocale() together with
+    // _configthreadlocale(_ENABLE_PER_THREAD_LOCALE).  We instead employ a
+    // hack: should the current locale not have the dot as decimal radix, we
+    // replace any dot with the current locale radix before conversion.
+
+    char localeRadix = *localeconv()->decimal_point;
+
+    // if the current locale uses a dot as radix, just do a straight conversion
+    // (very common)
+    if (localeRadix == '.')
+    {
+        result = strtod(string, NULL);
+    }
+    else
+    {
+        // The current locale uses no dot.  Change any dot to locale radix
+        // before conversion, but don't modify the Rexx string itself.
+        char *str = strdup(string);
+        if (str == NULL)
+        {
+            return false;
+        }
+        char *dotPos = strchr(str, '.');
+        if (dotPos != NULL)
+        {
+            *dotPos = localeRadix;
+        }
+        result = strtod(str, NULL);
+        free(str);
+    }
+
     // and let pass all of the special cases
     return true;
 }
@@ -1434,7 +1480,7 @@ RexxObject *NumberString::truncInternal(wholenumber_t needed_digits)
         if (integerDigits > 0)
         {
             // figure out how many decimal digits we need from the number
-            decimalDigits = Numerics::minVal(digitsCount - integerDigits, needed_digits);
+            decimalDigits = std::min(digitsCount - integerDigits, needed_digits);
             // if we need more than are available, calculate how much trailing pad we need.
             if (decimalDigits < needed_digits)
             {
@@ -1487,7 +1533,7 @@ RexxObject *NumberString::truncInternal(wholenumber_t needed_digits)
                 // we're using all of the padding and at least one of the digits
                 else
                 {
-                    decimalDigits = Numerics::minVal(decimalDigits, needed_digits - leadDecimalPadding);
+                    decimalDigits = std::min(decimalDigits, needed_digits - leadDecimalPadding);
                 }
             }
         }
@@ -1576,7 +1622,7 @@ RexxObject *NumberString::floorInternal()
             // any non-zero decimals
 
             // get the number of decimals we need to scan
-            size_t decimals = Numerics::minVal(digitsCount, -numberExponent);
+            size_t decimals = std::min(digitsCount, -numberExponent);
             // get the position to start the scan
             size_t lastDecimal = digitsCount - 1;
             bool foundNonZero = false;
@@ -1708,7 +1754,7 @@ RexxObject *NumberString::ceilingInternal()
             // any non-zero decimals
 
             // get the number of decimals we need to scan
-            size_t decimals = Numerics::minVal(digitsCount, -numberExponent);
+            size_t decimals = std::min(digitsCount, -numberExponent);
             // get the position to start the scan
             wholenumber_t lastDecimal = digitsCount - 1;
             bool foundNonZero = false;
@@ -1966,7 +2012,6 @@ RexxString *NumberString::formatInternal(wholenumber_t integers, wholenumber_t d
     wholenumber_t decimalDigits = 0;
     wholenumber_t decimalSpace = 0;
     wholenumber_t leadingExpZeros = 0;
-    wholenumber_t exponentSpaces = 0;
     wholenumber_t trailingDecimalZeros = 0;
     wholenumber_t exponentSize = 0;
 
@@ -1981,7 +2026,7 @@ RexxString *NumberString::formatInternal(wholenumber_t integers, wholenumber_t d
         // than that on the call.  If the number of decimals is greater than the
         // trigger value, or the space required to format a pure decimal number or more than
         // twice the trigger value, we're in exponential form
-        if (adjustedLength >= exptrigger || (adjustedLength < 0 && Numerics::abs(numberExponent) > exptrigger * 2))
+        if (adjustedLength >= exptrigger || (adjustedLength < 0 && std::abs(numberExponent) > exptrigger * 2))
         {
             // we only handle this is the trigger is not explicitly zero
             // we need to show the exponent if this is specified (so far)
@@ -2001,7 +2046,7 @@ RexxString *NumberString::formatInternal(wholenumber_t integers, wholenumber_t d
             // the exponent factor will be added in to the exponent when formatted
             displayedExponent = adjustedLength;
             // format the exponent to a string value now.
-            Numerics::formatWholeNumber(Numerics::abs(displayedExponent), stringExponent);
+            Numerics::formatWholeNumber(std::abs(displayedExponent), stringExponent);
             exponentSize = strlen(stringExponent);
             // if the exponent size is not defaulted, then test that we have space
             // to fit this.
@@ -2109,7 +2154,7 @@ RexxString *NumberString::formatInternal(wholenumber_t integers, wholenumber_t d
                     wholenumber_t adjustedExponent = numberExponent + digitsCount - 1;
 
                     // redo the whole trigger thing
-                    if (showExponentWasTrue | (mathexp != 0 && (adjustedExponent >= exptrigger || (adjustedExponent < 0 && Numerics::abs(numberExponent) > exptrigger * 2))))
+                    if (showExponentWasTrue | (mathexp != 0 && (adjustedExponent >= exptrigger || (adjustedExponent < 0 && std::abs(numberExponent) > exptrigger * 2))))
                     {
                         // this might not have been set on originally, but only occurring because of
                         // the rounding.
@@ -2127,7 +2172,7 @@ RexxString *NumberString::formatInternal(wholenumber_t integers, wholenumber_t d
                         numberExponent -= adjustedExponent;
                         displayedExponent = adjustedExponent;
                         // format exponent to a string
-                        Numerics::formatWholeNumber(Numerics::abs(displayedExponent), stringExponent);
+                        Numerics::formatWholeNumber(std::abs(displayedExponent), stringExponent);
                         // and get the new exponent size
                         exponentSize = strlen(stringExponent);
                         // if we have an explicit size, get the fill zeros as well.
@@ -2491,7 +2536,7 @@ public:
         // a couple of final exponent checks
         // since the number of decimals enters into the exponent, we need to
         // verify that the calculated exponent did not cause an underflow
-        if (Numerics::abs(number->numberExponent) > Numerics::MAX_EXPONENT)
+        if (std::abs(number->numberExponent) > Numerics::MAX_EXPONENT)
         {
             return false;
         }
@@ -2988,7 +3033,7 @@ void NumberString::formatUnsignedInt64(uint64_t integer)
  * @param count     The count of arguments.
  * @param result    The return result protected object.
  */
-void NumberString::processUnknown(RexxString *messageName, RexxObject **arguments, size_t count, ProtectedObject &result)
+void NumberString::processUnknown(RexxErrorCodes error, RexxString *messageName, RexxObject **arguments, size_t count, ProtectedObject &result)
 {
     // just send this as a message directly to the string object.
     stringValue()->messageSend(messageName, arguments, count, result);
@@ -3173,7 +3218,7 @@ wholenumber_t NumberString::comp(RexxObject *right, size_t fuzz)
     }
 
     // get the minimum exponent
-    wholenumber_t minExponent = Numerics::minVal(numberExponent, rightNumber->numberExponent);
+    wholenumber_t minExponent = std::min(numberExponent, rightNumber->numberExponent);
 
     // get values adjusted for the relative magnatudes of the numbers.  This can
     // allow us to avoid performing the actual subtraction.
@@ -3757,7 +3802,7 @@ NumberString *NumberString::Min(RexxObject **args, size_t argCount)
 
 
 /**
- * This method determines if the formatted numberstring is s true integer
+ * This method determines if the formatted numberstring is a true integer
  * string.  That is, its not of the form 1.00E3 but 1000
  *
  * @return true if this can be represented as a true whole number value,
@@ -3779,7 +3824,6 @@ bool NumberString::isInteger()
         return true;
     }
 
-    wholenumber_t expFactor = 0;
     // get size of the integer part of this number
     wholenumber_t adjustedLength = numberExponent + digitsCount;
     // ok, now do the exponent check...if we need one, not an integer
@@ -3795,20 +3839,8 @@ bool NumberString::isInteger()
         return true;
     }
 
-    // get the adjusted length (expValue is negative, so this will
-    // be less than length of the string).
-    wholenumber_t integers = numberExponent + digitsCount;
-    wholenumber_t decimals = digitsCount - integers;
-    // we can have a number of leading zeros for a decimal number,
-    // so it is possible all of our digits are decimals.
-    if (integers < 0)
-    {
-        integers = 0;
-        decimals = digitsCount;
-    }
-
     // validate that all decimal positions are zero
-    for (wholenumber_t numIndex = integers; numIndex < digitsCount; numIndex++)
+    for (wholenumber_t numIndex = adjustedLength; numIndex < digitsCount; numIndex++)
     {
         if (numberDigits[numIndex] != 0)
         {
@@ -4032,7 +4064,7 @@ NumberString *NumberString::newInstanceFromDouble(double number, wholenumber_t p
 {
     // There are some special double values involved here.  We just return some
     // special strings for those.
-    if (isnan(number))
+    if (std::isnan(number))
     {
         return (NumberString *)new_string("nan");
     }
@@ -4045,11 +4077,33 @@ NumberString *NumberString::newInstanceFromDouble(double number, wholenumber_t p
         return (NumberString *)new_string("-infinity");
     }
 
+    // with precision restricted to a maximum of 16, the length of a %.*g
+    // string can be up to 23 characters, e. g. -1.234567890123457e-308
+    char doubleStr[32]; // allow for + 2 precision, NUL, and margin
 
-    // Max length of double str is 22, make 32 just to be safe
-    char doubleStr[32];
-    // get double as a string value, using the provided precision
-    sprintf(doubleStr, "%.*g", (int)(precision + 2), number);
+    // get double as a string value, using the provided precision (16 at most)
+    snprintf(doubleStr, sizeof(doubleStr), "%.*g", std::min(16, (int)precision) + 2, number);
+
+    // snprintf() is locale-dependent, and we cannot be sure that we run under
+    // the default "C" locale, as some badly behaved native code (a known
+    // example being BSF.CLS) may have called setlocale(LC_ALL, "") or similar.
+    // As snprintf_l() only exists on BSD-based and Windows systems and
+    // uselocale() isn't readily available on Windws, where it would require
+    // setlocale() together with _configthreadlocale(_ENABLE_PER_THREAD_LOCALE),
+    // we employ a hack: should the current locale not have the dot as decimal
+    // radix, we replace the actual radix with a dot in the converted string.
+    char radixChar = *localeconv()->decimal_point;
+    if (radixChar != '.')
+    {
+        // find the locale radix position in the converted string
+        char *radixPos = strchr(doubleStr, radixChar);
+        if (radixPos != NULL)
+        {
+            // we found a locale radix .. convert it to a dot
+            *radixPos = '.';
+        }
+    }
+
     size_t resultLen = strlen(doubleStr);
     // create a new number string with this size
     NumberString *result = new (resultLen) NumberString (resultLen, precision);
@@ -4125,7 +4179,7 @@ NumberString *NumberString::newInstanceFromUint64(uint64_t integer)
     return newNumber;
 }
 
-// the numbersstring operator table
+// the numberstring operator table
 PCPPM NumberString::operatorMethods[] =
 {
    NULL,                               // first entry not used

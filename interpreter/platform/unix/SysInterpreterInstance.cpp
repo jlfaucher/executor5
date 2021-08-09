@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2021 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -124,67 +124,21 @@ SysSearchPath::SysSearchPath(const char *parentDir, const char *extensionPath)
 {
     const char *sysPath = getenv("PATH");
     const char *rexxPath = getenv("REXX_PATH");
-    size_t sysPathSize = sysPath == NULL ? 0 : strlen(sysPath);
-    size_t rexxPathSize = rexxPath == NULL ? 0 : strlen(rexxPath);
-    size_t parentSize = parentDir == NULL ? 0 : strlen(parentDir);
-    size_t extensionSize = extensionPath == NULL ? 0 : strlen(extensionPath);
 
 #ifdef ORX_REXXPATH
-    if (!rexxPath)
+    if (rexxPath == NULL)
     {
        rexxPath = ORX_REXXPATH;
-       rexxPathSize = strlen(rexxPath);
     }
 #endif
 
-
-    // enough room for separators and a terminating null
-    path = (char *)SystemInterpreter::allocateResultMemory(sysPathSize + rexxPathSize + parentSize + extensionSize + 16);
-    *path = '\0';     // add a null character so strcat can work
-    if (parentDir != NULL)
-    {
-        strcpy(path, parentDir);
-        strcat(path, ":");
-    }
-
-    // add on the current directory
-    strcat(path, ".:");
-
-    if (extensionPath != NULL)
-    {
-        strcat(path, extensionPath);
-        if (path[strlen(path) - 1] != ':')
-        {
-            strcat(path, ":");
-        }
-    }
-
-    // the rexxpath
-    if (rexxPath != NULL)
-    {
-        strcat(path, rexxPath);
-        if (path[strlen(path) - 1] != ':')
-        {
-            strcat(path, ":");
-        }
-    }
-
-    // and finally the normal path
-    if (sysPath != NULL)
-    {
-        strcat(path, sysPath);
-        if (path[strlen(path) - 1] != ':')
-        {
-            strcat(path, ":");
-        }
-    }
-}
-
-
-/**
- * Deconstructor for releasing storage used by the constructed path.
- */
-SysSearchPath::~SysSearchPath()
-{
-    SystemInterpreter::releaseResultMemory(path);
+    addPath(parentDir);
+    // add on the current directory after the parent dir
+    addPath(".");
+    // next comes the extension path defined on the instance
+    addPath(extensionPath);
+    // followed by the REXX_PATH
+    addPath(rexxPath);
+    // and finally the PATH
+    addPath(sysPath);
 }

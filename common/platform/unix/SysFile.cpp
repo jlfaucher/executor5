@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -62,7 +62,7 @@
 # include <sys/filio.h>
 #endif
 
-#if defined __APPLE__
+#if defined (__APPLE__) || defined(OPSYS_NETBSD) || defined(OPSYS_FREEBSD) || defined(OPSYS_OPENBSD)
 # define lseek64 lseek
 # define open64 open
 // avoid warning: '(f)stat64' is deprecated: first deprecated in macOS 10.6
@@ -130,6 +130,16 @@ bool SysFile::open(const char *name, int openFlags, int openMode, int shareMode)
     if ( fileHandle == -1 )
     {
         errInfo = errno;
+        return false;
+    }
+
+    // make sure we're not attempting to open a directory
+    struct stat fileInfo;
+    if (fstat(fileHandle, &fileInfo) != 0 || S_ISDIR(fileInfo.st_mode))
+    {
+        ::close(fileHandle);     // remove our file handle
+        fileHandle = -1;
+        errInfo = ENOENT;        // mark this as if open had failed
         return false;
     }
 
@@ -428,7 +438,7 @@ bool SysFile::read(char *buf, size_t len, size_t &bytesRead)
             int blockRead = ::read(fileHandle, buf + bytesRead, (unsigned int)len);
             if (blockRead <= 0)
             {
-                // not get anything?
+                /// not get anything?
                 if (blockRead == 0)
                 {
                     fileeof = true;
@@ -1229,9 +1239,15 @@ bool SysFile::hasData()
     }
 
     // if there is buffered input, we can always return true
-    if (hasBufferedInput())
+    if (ungetchar != -1 || hasBufferedInput())
     {
         return true;
+    }
+
+    // have we already determined we've hit an eof?
+    if (fileeof)
+    {
+        return false;
     }
 
     // if this is a transient stream, we need to use the direct io
@@ -1245,6 +1261,20 @@ bool SysFile::hasData()
     }
 
     // we've already checked for buffered input, now check to see if the .
-    // stream is readable.
-    return !atEof();
+    // stream is readable. There's no version of feof() if you are working with a stream
+    // handle, so we will read one character, and move the seek pointer back if we got something.
+
+    char c;
+    int count = ::read(fileHandle, &c, (unsigned int)1);
+    if (count <= 0)
+    {
+        // remember that we've seen this
+        fileeof = true;
+        return false;
+    }
+    // back the position up
+    ::lseek(fileHandle, SEEK_CUR, -1);
+    // we have data
+    return true;
 }
+

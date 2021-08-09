@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -63,6 +63,7 @@ public:
      bool wait(uint32_t);
      void reset();
      inline bool posted() { return postedCount != 0; }
+     static void createTimeOut(uint32_t t, timespec &ts);
 
 protected:
      pthread_cond_t  semCond;
@@ -79,8 +80,9 @@ public:
      void create(bool critical = false);
      inline void open() { ; }
      void close();
-     inline void request() { pthread_mutex_lock(&mutexMutex); }
-     inline void release() { pthread_mutex_unlock(&mutexMutex); }
+     bool request(uint32_t t);
+     inline bool request() { if (!created) return false; return pthread_mutex_lock(&mutexMutex) == 0; }
+     inline bool release() { return pthread_mutex_unlock(&mutexMutex) == 0; }
      inline bool requestImmediate() { return pthread_mutex_trylock(&mutexMutex) == 0;}
 
 protected:

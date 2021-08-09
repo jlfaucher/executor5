@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -41,6 +41,15 @@
 
 // These are private APIs for communication between ooRexx components.
 
+/*********************************************************************/
+/* Defines used by SysStemSort --                                    */
+/*********************************************************************/
+#define SORT_CASESENSITIVE 0
+#define SORT_CASEIGNORE    1
+
+#define SORT_ASCENDING 0
+#define SORT_DECENDING 1
+
 
 #ifdef __cplusplus
 extern "C"
@@ -51,12 +60,17 @@ int REXXENTRY RexxResolveExit(const char *, REXXPFN *);
 int REXXENTRY RexxResolveRoutine(const char *, REXXPFN *);
 
 RexxReturnCode REXXENTRY RexxResolveMacroFunction (const char *, PRXSTRING );
-void REXXENTRY RexxCreateInterpreterImage();
+void REXXENTRY RexxCreateInterpreterImage(const char *t);
 
 RexxReturnCode REXXENTRY RexxLoadSubcom(const char *, const char *);
 RexxReturnCode REXXENTRY RexxResolveSubcom(const char *name, REXXPFN *);
 RexxReturnCode RexxEntry RexxCreateSessionQueue();
 RexxReturnCode RexxEntry RexxDeleteSessionQueue();
+RexxReturnCode REXXENTRY RexxStemSort(RexxStemObject stem, const char *tailExtension, int order, int type,
+    wholenumber_t start, wholenumber_t end, wholenumber_t firstcol, wholenumber_t lastcol);
+const char* REXXENTRY RexxGetErrorMessage(int number);
+const char* REXXENTRY RexxGetErrorMessageByNumber(int number);
+RexxReturnCode REXXENTRY RexxCompileProgram(const char *input, const char *output, PRXSYSEXIT, bool encode);
 
 #ifdef __cplusplus
 }

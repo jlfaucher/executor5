@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -141,13 +141,13 @@ class VariableDictionary : public RexxInternalObject
     void ensureCapacity(size_t delta);
     void checkFull();
 
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
-    virtual void flatten(Envelope *envelope);
+    void live(size_t) override;
+    void liveGeneral(MarkReason reason) override;
+    void flatten(Envelope *envelope) override;
 
-    virtual RexxInternalObject  *copy();
-    virtual void         copyValues();
-            VariableDictionary *deepCopy();
+    RexxInternalObject  *copy() override;
+    void copyValues();
+    VariableDictionary *deepCopy();
 
     RexxObject  *realValue(RexxString *name);
     inline StemClass *getStem(RexxString *stemName) { return (StemClass *)getStemVariable(stemName)->getVariableValue(); }

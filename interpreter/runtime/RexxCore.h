@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -174,6 +174,10 @@ extern MemoryObject memoryObject;
 //       instances:
 //
 //       RexxObject *newRexx(RexxObject **args, size_t argc);
+//
+//    f) add a RESTORE_CLASS() macro call for the class in RexxMemory::restore()
+//       so that the TheXxxxxxXxxxxxxClass variable gets restored when the image
+//       is loaded.
 
 // Steps for writing a new class:
 // All objects allocated from the object heap must implement
@@ -293,6 +297,8 @@ extern MemoryObject memoryObject;
 #define TheStackFrameClass StackFrameClass::classInstance
 #define TheRexxInfoClass RexxInfo::classInstance
 #define TheVariableReferenceClass VariableReference::classInstance
+#define TheEventSemaphoreClass EventSemaphoreClass::classInstance
+#define TheMutexSemaphoreClass MutexSemaphoreClass::classInstance
 
 // shorthand access to some important objects.
 #define TheEnvironment memoryObject.environment

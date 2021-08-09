@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -142,10 +142,10 @@ class PushThroughStack : public RexxInternalObject
     inline PushThroughStack(RESTORETYPE restoreType) { ; };
     PushThroughStack(size_t size);
 
-    void         init(size_t);
+    void init(size_t);
 
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
+    void live(size_t) override;
+    void liveGeneral(MarkReason reason) override;
 
     // the position is origin zero, relative to the current.  Current
     // is the position of the last item pushed on to the stack.

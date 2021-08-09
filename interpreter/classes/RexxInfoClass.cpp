@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2021 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -48,6 +48,9 @@
 #include "MethodArguments.hpp"
 #include "Interpreter.hpp"
 #include "SystemInterpreter.hpp"
+#include "SysProcess.hpp"
+#include "ArrayClass.hpp"
+#include "PackageClass.hpp"
 
 RexxClass *RexxInfo::classInstance = OREF_NULL;   // singleton class instance
 
@@ -112,13 +115,14 @@ RexxObject *RexxInfo::copyRexx()
  */
 void RexxInfo::live(size_t liveMark)
 {
+    memory_mark(objectVariables);
     memory_mark(endOfLine);
-    memory_mark(pathSeparator);
     memory_mark(directorySeparator);
-    memory_mark(interpreterVersion);
+    memory_mark(pathSeparator);
     memory_mark(interpreterName);
-    memory_mark(languageLevel);
     memory_mark(interpreterDate);
+    memory_mark(interpreterVersion);
+    memory_mark(languageLevel);
     memory_mark(platformName);
 }
 
@@ -132,13 +136,14 @@ void RexxInfo::live(size_t liveMark)
  */
 void RexxInfo::liveGeneral(MarkReason reason)
 {
+    memory_mark_general(objectVariables);
     memory_mark_general(endOfLine);
-    memory_mark_general(pathSeparator);
     memory_mark_general(directorySeparator);
-    memory_mark_general(interpreterVersion);
+    memory_mark_general(pathSeparator);
     memory_mark_general(interpreterName);
-    memory_mark_general(languageLevel);
     memory_mark_general(interpreterDate);
+    memory_mark_general(interpreterVersion);
+    memory_mark_general(languageLevel);
     memory_mark_general(platformName);
 }
 
@@ -148,17 +153,18 @@ void RexxInfo::liveGeneral(MarkReason reason)
  *
  * @param envelope The envelope that will hold the flattened object.
  */
-void RexxInfo::flatten (Envelope *envelope)
+void RexxInfo::flatten(Envelope *envelope)
 {
     setUpFlatten(RexxInfo)
 
+    flattenRef(objectVariables);
     flattenRef(endOfLine);
-    flattenRef(pathSeparator);
     flattenRef(directorySeparator);
-    flattenRef(interpreterVersion);
+    flattenRef(pathSeparator);
     flattenRef(interpreterName);
-    flattenRef(languageLevel);
     flattenRef(interpreterDate);
+    flattenRef(interpreterVersion);
+    flattenRef(languageLevel);
     flattenRef(platformName);
 
     cleanUpFlatten
@@ -316,13 +322,24 @@ RexxObject *RexxInfo::getRelease()
 
 
 /**
- * Get the revision level for this interpreter.
+ * Get the modification level for this interpreter.
  *
- * @return The revision level as an Integer object.
+ * @return The modification level as an Integer object.
+ */
+RexxObject *RexxInfo::getModification()
+{
+    return new_integer(ORX_MOD);
+}
+
+
+/**
+ * Get the source-control revision for this interpreter.
+ *
+ * @return The revision as an Integer object.
  */
 RexxObject *RexxInfo::getRevision()
 {
-    return new_integer(ORX_MOD);
+    return new_integer(ORX_BLD);
 }
 
 
@@ -466,8 +483,46 @@ RexxObject *RexxInfo::getMaxPathLength()
  */
 RexxObject *RexxInfo::getMaxArraySize()
 {
-    // see interpreter/classes/ArrayClass.hpp
-    return new_integer(Numerics::MAX_WHOLENUMBER / 10);
+    return new_integer(ArrayClass::MaxFixedArraySize);
+}
+
+
+/**
+ * Return the full path of the currently running executable.
+ *
+ * @return A full path name as a string or .nil if this cannot be determined.
+ */
+RexxObject *RexxInfo::getRexxExecutable()
+{
+    const char *path = SysProcess::getExecutableFullPath();
+    if (path == NULL)
+    {
+        return TheNilObject;
+    }
+    RexxClass *fileClass = TheRexxPackage->findClass(GlobalNames::FILE);
+    Protected<RexxObject> pathString = new_string(path);
+    ProtectedObject result;
+    return fileClass->sendMessage(GlobalNames::NEW, pathString, result);
+}
+
+
+/**
+ * Return the Rexx library directory.
+ *
+ * @return The directory portion of the path of the Rexx shared libraries,
+ *         including a trailing (back)slash.
+ */
+RexxObject *RexxInfo::getRexxLibrary()
+{
+    const char *path = SysProcess::getLibraryLocation();
+    if (path == NULL)
+    {
+        return TheNilObject;
+    }
+    RexxClass *fileClass = TheRexxPackage->findClass(GlobalNames::FILE);
+    Protected<RexxObject> pathString = new_string(path);
+    ProtectedObject result;
+    return fileClass->sendMessage(GlobalNames::NEW, pathString, result);
 }
 
 

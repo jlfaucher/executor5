@@ -1,11 +1,11 @@
 #/*----------------------------------------------------------------------------*/
 #/*                                                                            */
-#/* Copyright (c) 2014-2018 Rexx Language Association. All rights reserved.    */
+#/* Copyright (c) 2014-2021 Rexx Language Association. All rights reserved.    */
 #/*                                                                            */
 #/* This program and the accompanying materials are made available under       */
 #/* the terms of the Common Public License v1.0 which accompanies this         */
 #/* distribution. A copy is also available at the following address:           */
-#/* http://www.oorexx.org/license.html                                         */
+#/* https://www.oorexx.org/license.html                                        */
 #/*                                                                            */
 #/* Redistribution and use in source and binary forms, with or                 */
 #/* without modification, are permitted provided that the following            */
@@ -39,22 +39,45 @@
 #/*----------------------------------------------------------------------------*/
 #/* Global settings                                                            */
 #/*----------------------------------------------------------------------------*/
-cmake_minimum_required (VERSION 2.8)
+message(STATUS "CMake version is ${CMAKE_VERSION}")
+if (APPLE)
+    # apple builds with prior cmake version have an @rpath problem
+    cmake_minimum_required (VERSION 3.12)
+else ()
+    # for other platforms
+    cmake_minimum_required (VERSION 2.8.12)
+endif ()
+cmake_policy(VERSION 2.8...3.20)
+
+# must come before the project command
+# 13.6 High Sierra is the minimum system supported
+if( APPLE AND BUILD_OSX_UNIVERSAL_BINARIES )
+  set( CMAKE_OSX_DEPLOYMENT_TARGET 13.6 CACHE STRING  "" FORCE)
+endif()
+
+project (ooRexx)
+
+if( APPLE AND BUILD_OSX_UNIVERSAL_BINARIES )
+  set( CMAKE_OSX_ARCHITECTURES arm64 x86_64 )
+endif()
+
 include(CheckIncludeFile)
 include(CheckLibraryExists)
 include(CheckFunctionExists)
 include(CheckSymbolExists)
 include(CheckCSourceCompiles)
-set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
+include(CheckStructHasMember)
+include(GNUInstallDirs)
+set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
-set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
+set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 set (CMAKE_PDB_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 set (CMAKE_SAMPLES_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/samples)
 #/*----------------------------------------------------------------------------*/
 #/* Project settings                                                           */
 #/*----------------------------------------------------------------------------*/
-project (ooRexx)
 # The version of ooRexx to make
+set (ORX_API_LEVEL 4)
 set (ORX_MAJOR 5)
 set (ORX_MINOR 0)
 set (ORX_MOD_LVL 0)
@@ -75,22 +98,46 @@ else ()
     message(STATUS "Building for a 32-bit architecture")
 endif ()
 
+
+# Unix: used in macro create_install_symlink()
+set(SYM_LINK_CREATE_FROM     3)                # define lower bound
+math(EXPR SYM_LINK_CREATE_TO "${ORX_API_LEVEL}-1") # define upper bound is dependent on ${ORX_MAJOR}
+
+
+# OOREXX_SHEBANG_PROGRAM default:
+set (OOREXX_SHEBANG_PROGRAM "/usr/bin/env rexx")
+
+# if ORX_SHEBANG defined change default shebang accordingly
+if (ORX_SHEBANG)
+   if (${ORX_SHEBANG} STREQUAL "1")
+      # set hard coded path to installation directory
+      if (WIN32)
+         # Windows does not use the shebang, let the default stay
+         message(STATUS "OOREXX_SHEBANG_PROGRAM: \"${OOREXX_SHEBANG_PROGRAM}\" (default: \"-DORX_SHEBANG=1\" gets ignored on Windows)")
+      else ()
+         if (APPLE)
+            # APPLE-special: install into homedirectory's Applications folder
+            set (OOREXX_SHEBANG_PROGRAM "$ENV{HOME}/Applications/ooRexx${ORX_MAJOR}/bin/rexx")
+         else ()
+            set (OOREXX_SHEBANG_PROGRAM "${CMAKE_INSTALL_PREFIX}/bin/rexx")
+         endif ()
+         message(STATUS "OOREXX_SHEBANG_PROGRAM: \"${OOREXX_SHEBANG_PROGRAM}\" (ORX_SHEBANG=1 hence hardcoded to installation directory)")
+      endif ()
+   else ()
+      # use supplied string verbatim; note: the shebang "#!" is already supplied in the sample Rexx file
+      set (OOREXX_SHEBANG_PROGRAM "${ORX_SHEBANG}")
+      message(STATUS "OOREXX_SHEBANG_PROGRAM: \"${OOREXX_SHEBANG_PROGRAM}\" (value supplied via ORX_SHEBANG)")
+   endif ()
+else ()
+    message(STATUS "OOREXX_SHEBANG_PROGRAM: \"${OOREXX_SHEBANG_PROGRAM}\" (default)")
+endif()
+
 find_package(Subversion)
 if(SUBVERSION_FOUND)
   set(ORX_WC_REVISION 0)
-  # If the specified directory is not an SVN working copy then Subversion_WC_INFO will
-  # return an error and the generation of the makefile will be aborted.
-  # So call Subversion_WC_INFO only if svn info doesn't return an error.
-  # (the test AND IS_DIRECTORY ".svn" is too restrictive : .svn is not necessarily in trunk)
-  execute_process(COMMAND ${Subversion_SVN_EXECUTABLE} info ${PROJECT_SOURCE_DIR}
-    RESULT_VARIABLE Subversion_svn_info_result)
-  if(${Subversion_svn_info_result} EQUAL 0)
-    Subversion_WC_INFO(${PROJECT_SOURCE_DIR} ORX)
-    set(ORX_BLD_LVL ${ORX_WC_REVISION})
-  endif()
+  Subversion_WC_INFO(${PROJECT_SOURCE_DIR} ORX IGNORE_SVN_FAILURE)
+  set(ORX_BLD_LVL ${ORX_WC_REVISION})
 endif()
-
-
 message(STATUS "SVN Revision Number is ${ORX_BLD_LVL}")
 
 if (WIN32)
@@ -123,20 +170,20 @@ set (CMAKE_CXX_CREATE_SHARED_MODULE 1)
 # Set the platform subdirectory name
 if (WIN32)
    set (ORX_PLATFORM_DIR platform/windows)
+   set (ORX_IMAGE_OUTPUT_LOCATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 else ()
    set (ORX_PLATFORM_DIR platform/unix)
+   set (ORX_IMAGE_OUTPUT_LOCATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 endif ()
 # Set path to look for include files
 include_directories(BEFORE api api/${ORX_PLATFORM_DIR})
 
 
-# Rexx search path
-set (CMAKE_REXXPATH ${CMAKE_CURRENT_BINARY_DIR}/bin)
+# defining ORX_REXXPATH will set a default for the REXX_PATH environment variable
 if (ORX_REXXPATH)
-    message(STATUS "Setting REXX search path to ${ORX_REXXPATH}")
+    message(STATUS "Setting REXX_PATH default to ${ORX_REXXPATH}")
     set (CMAKE_REXXPATH ${ORX_REXXPATH})
-
-endif()
+endif ()
 
 
 # Common install variables
@@ -171,13 +218,13 @@ if (WIN32)
    set(NSIS_INSTALLER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${ORX_PLATFORM_DIR}/install)
 
    # NSIS version identifier that includes the build level
-   set (ORX_VERSION_NSIS ${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL}.${ORX_BLD_LVL})
+   set (ORX_VERSION_NSIS ${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL}-${ORX_BLD_LVL})
 
    # The DOC source dir is usually specified in native form...need to convert it
    # to the CMAKE format for the install commands.
    if (DOC_SOURCE_DIR)
       file(TO_CMAKE_PATH ${DOC_SOURCE_DIR} DOC_SOURCE_DIR)
-   endif()
+   endif ()
 
    # location where we assemble everything to build the installer
    set (NSIS_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/NSIS)
@@ -202,69 +249,63 @@ if (WIN32)
      set(NSIS_COMPONENT_SHORTCUTS_Docs "${NSIS_COMPONENT_SHORTCUTS_Docs}\n!insertmacro ConfigureDocShortCut \"${name}\" \"${file}\"")
    ENDMACRO ()
 
-   set (OOREXX_SHEBANG_PROGRAM "/usr/bin/rexx")
+else ()
 
- else ()
-   if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-     set(CMAKE_INSTALL_PREFIX
-       $<IF:$<PLATFORM_ID:Darwin>,$ENV{HOME}/Applications/ooRexx${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL},/usr>
-       CACHE
-       PATH
-       "Default install path"
-       FORCE)
-   endif()
+   # To ensure the required libraries are always found, regardless of whether
+   # executables are run directly from the build tree or after installation, we
+   # use settings similar to what is suggested in "Always full RPATH" at:
+   # https://gitlab.kitware.com/cmake/community/-/wikis/doc/cmake/RPATH-handling
+
+   # use (i.e. don't skip) the full RPATH for the build tree
+   set (CMAKE_SKIP_BUILD_RPATH FALSE)
+
+   # when building, don't use the install RPATH already (only later when installing)
+   set (CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+
    if (APPLE)
-     set (CMAKE_MACOSX_RPATH TRUE) # remove warning Policy CMP0042 is not set
-     if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-       set (INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/bin)
-       set (CMAKE_INSTALL_RPATH @executable_path)
-     else ()
-       set (INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/lib)
-       # set (CMAKE_INSTALL_RPATH ${INSTALL_LIB_DIR})
-       set (CMAKE_INSTALL_RPATH @executable_path/../lib)
-     endif ()
+       SET (CMAKE_INSTALL_RPATH "@executable_path/../lib")
    else ()
-     if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-         set (CMAKE_INSTALL_PREFIX /usr)
-     endif ()
-     find_path(INSTALL_LIB_DIR libc.so PATHS ${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_INSTALL_PREFIX}/lib64)
-     # at least on Ubuntu above doesn't seem to work; use fallback:
-     if (${INSTALL_LIB_DIR} STREQUAL "INSTALL_LIB_DIR-NOTFOUND")
-       set (INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/lib)
-     endif ()
+       # using $ORIGIN/.. instead of ${CMAKE_INSTALL_PREFIX} allows the package
+       # to be relocated during installation, but this comes at a cost: we can't
+       # be sure that all platforms we intend to run on really support $ORIGIN
+       SET (CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
    endif ()
 
+   # add the automatically determined parts of the RPATH
+   # which point to directories outside the build tree to the install RPATH
+   set (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+   # if the user didn't specify a CMAKE_INSTALL_PREFIX we override the CMake
+   # default on Apple Darwin to $HOME/Applications/ooRexx5
+   if (APPLE AND CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+     set (CMAKE_INSTALL_PREFIX $ENV{HOME}/Applications/ooRexx${ORX_MAJOR}
+       CACHE PATH "Default install path" FORCE)
+     set (INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/lib)
+   else ()
+     set (INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+   endif ()
+   message(STATUS "CMAKE_INSTALL_PREFIX is ${CMAKE_INSTALL_PREFIX}")
+   message(STATUS "INSTALL_LIB_DIR is ${INSTALL_LIB_DIR}")
+
    set (INSTALL_EXECUTABLE_DIR ${CMAKE_INSTALL_PREFIX}/bin)
-   set (catdir ${INSTALL_EXECUTABLE_DIR})
    set (INSTALL_CLS_DIR ${INSTALL_EXECUTABLE_DIR})
    set (INSTALL_INCLUDE_DIR ${CMAKE_INSTALL_PREFIX}/include)
    set (INSTALL_SAMPLES_DIR ${CMAKE_INSTALL_PREFIX}/share/${CMAKE_PROJECT_NAME})
    set (INSTALL_MAN_DIR ${CMAKE_INSTALL_PREFIX}/share/man)
-   set (OOREXX_SHEBANG_PROGRAM ${CMAKE_INSTALL_PREFIX}/bin/rexx)
 endif ()
+
 # Set compiler and linker flags common to all build environments
+# current trunk uses the C++ "override" keyword, which requires C++11
+if (CMAKE_VERSION VERSION_LESS "3.1")
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+  endif ()
+else ()
+  set (CMAKE_CXX_STANDARD 11)
+endif ()
+
 include_directories(${PROJECT_BINARY_DIR})
 if (WIN32)
-   add_definitions(/DORX_VER=${ORX_MAJOR}
-            /DORX_REL=${ORX_MINOR}
-            /DORX_MOD=${ORX_MOD_LVL}
-            /DORX_BLD=${ORX_BLD_LVL}
-            /DORX_VER_STR=${ORX_VER_STR}
-            /DOOREXX_COPY_YEAR="${ORX_COPY_YEAR}"
-            /DORX_SYS_STR="${ORX_SYS_STR}"
-            /DORX_CATDIR="${catdir}"
-            /DORX_SHARED_LIBRARY_EXT="${CMAKE_SHARED_LIBRARY_SUFFIX}"
-            /DORX_REXXPATH="${CMAKE_REXXPATH}"
-# suppress CRT_SECURE warnings
-# (we might instead use the secure versions, by using these two DEFINEs:
-#           /D_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES=1
-#           /D_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES_COUNT=1
-            /D_CRT_SECURE_NO_DEPRECATE
-            /D_CRT_SECURE_NO_WARNINGS
-            /D_CRT_NONSTDC_NO_DEPRECATE
-# suppress warning C4291: no matching operator delete found; memory will not be freed if initialization throws an exception
-            /wd4291
-            /DWIN32 /D_WINDOWS /DHAVE_CONFIG_H)
    if (${ORX_ARCHITECTURE} STREQUAL "64")
       set (EXE_MANIFEST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${ORX_PLATFORM_DIR}/rexx64.exe.manifest)
       set (NSIS_CPU "x86_64")
@@ -274,105 +315,110 @@ if (WIN32)
    endif ()
    file(TO_NATIVE_PATH ${EXE_MANIFEST_FILE} EXE_MANIFEST_FILE)
    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:524288")
+   add_definitions(/DORX_VER=${ORX_MAJOR}
+            /DORX_REL=${ORX_MINOR}
+            /DORX_MOD=${ORX_MOD_LVL}
+            /DORX_BLD=${ORX_BLD_LVL}
+            /DORX_VER_STR=${ORX_VER_STR}
+            /DOOREXX_COPY_YEAR="${ORX_COPY_YEAR}"
+            /DORX_SYS_STR="${ORX_SYS_STR}"
+            /DORX_SHARED_LIBRARY_EXT="${CMAKE_SHARED_LIBRARY_SUFFIX}"
+            /DORX_SYSTEM_PROCESSOR="${NSIS_CPU}"
+            /DORX_REXXPATH="${CMAKE_REXXPATH}"
+            # we build for Vista or higher; no more XP support
+            # (this define restricts us to the Win 6.0 APIs; anything higher will fail)
+            /D_WIN32_WINNT=0x0600
+            # suppress CRT_SECURE warnings
+            # (we might instead use the secure versions, by using these two DEFINEs:
+#           /D_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES=1
+#           /D_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES_COUNT=1
+            /D_CRT_SECURE_NO_DEPRECATE
+            /D_CRT_SECURE_NO_WARNINGS
+            /D_CRT_NONSTDC_NO_DEPRECATE
+            /DNOMINMAX
+            # suppress warning C4291: no matching operator delete found; memory will not be freed if initialization throws an exception
+            /wd4291
+# give errors for missing override specifications or method hiding with warning level 3
+#           /w34263 /w34266
+            /DWIN32 /D_WINDOWS /DHAVE_CONFIG_H)
 else ()
-   add_definitions(-DORX_VER=${ORX_MAJOR} -DORX_REL=${ORX_MINOR} -DORX_MOD=${ORX_MOD_LVL} -DORX_FIX=0
+   add_definitions(-DORX_VER=${ORX_MAJOR} -DORX_REL=${ORX_MINOR} -DORX_MOD=${ORX_MOD_LVL} -DORX_BLD=${ORX_BLD_LVL}
+
             -DOOREXX_COPY_YEAR="${ORX_COPY_YEAR}"
             -DORX_SYS_STR="${ORX_SYS_STR}"
-            -DORX_CATDIR="${catdir}" -D_GNU_SOURCE
+             -D_GNU_SOURCE
             -DORX_SHARED_LIBRARY_EXT="${CMAKE_SHARED_LIBRARY_SUFFIX}"
+            -DORX_SYSTEM_PROCESSOR="${CMAKE_SYSTEM_PROCESSOR}"
             -DORX_REXXPATH="${CMAKE_REXXPATH}"
             -D${ORX_SYS_STR} -DOPSYS_${ORX_SYS_STR} -DHAVE_CONFIG_H)
-    set (ORX_SYSLIB_DL dl)
+    set (ORX_SYSLIB_DL ${CMAKE_DL_LIBS})
     set (ORX_SYSLIB_PTHREAD pthread)
 endif ()
 
 # Check header files and functions. These are all defined to the config.h file.
-check_include_file(ctype.h HAVE_CTYPE_H)
-check_include_file(float.h HAVE_FLOAT_H)
-check_include_file(limits.h HAVE_LIMITS_H)
-check_include_file(locale.h HAVE_LOCALE_H)
+check_include_file(xlocale.h HAVE_XLOCALE_H)
 check_include_file(malloc.h HAVE_MALLOC_H)
-check_include_file(memory.h HAVE_MEMORY_H)
-check_function_exists(memset HAVE_MEMSET)
-check_function_exists(nsleep HAVE_NSLEEP)
-check_function_exists(setlocale HAVE_SETLOCALE)
+check_include_file(alloca.h HAVE_ALLOCA_H)
 check_include_file(signal.h HAVE_SIGNAL_H)
-check_include_file(stdarg.h HAVE_STDARG_H)
-check_include_file(stddef.h HAVE_STDDEF_H)
-check_include_file(stdio.h HAVE_STDIO_H)
-check_include_file(stdlib.h HAVE_STDLIB_H)
-check_include_file(string.h HAVE_STRING_H)
 check_include_file(time.h HAVE_TIME_H)
-check_function_exists(vprintf HAVE_VPRINTF)
-check_include_file(fcntl.h HAVE_FCNTL_H)
-check_function_exists(nanosleep HAVE_NANOSLEEP)
 check_include_file(inttypes.h HAVE_INTTYPES_H)
 check_include_file(stdint.h HAVE_STDINT_H)
 if (NOT WIN32)
-  check_include_file(attr/xattr.h HAVE_ATTR_XATTR_H)
+  check_function_exists(nsleep HAVE_NSLEEP)
+  check_function_exists(nanosleep HAVE_NANOSLEEP)
+  check_library_exists(crypt crypt "" HAVE_LIBCRYPT)
+  if (HAVE_LIBCRYPT)
+    set(CMAKE_REQUIRED_LIBRARIES crypt)
+  endif ()
+  check_function_exists(crypt HAVE_CRYPT)
+  check_symbol_exists(wordexp "wordexp.h;stdlib.h" HAVE_WORDEXP)
+  check_include_file(wordexp.h HAVE_WORDEXP_H)
+  check_include_file(sys/xattr.h HAVE_SYS_XATTR_H)
   check_function_exists(catopen HAVE_CATOPEN)
   check_include_file(dlfcn.h HAVE_DLFCN_H)
   check_include_file(features.h HAVE_FEATURES_H)
   check_include_file(filehdr.h HAVE_FILEHDR_H)
-  check_function_exists(fstat HAVE_FSTAT)
-  check_function_exists(gcvt HAVE_GCVT)
-  check_function_exists(geteuid HAVE_GETEUID)
-  check_function_exists(getpgrp HAVE_GETPGRP)
-  check_function_exists(getpwuid HAVE_GETPWUID)
-  check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)
-  check_function_exists(getuserattr HAVE_GETUSERATTR)
-  check_function_exists(IDtouser HAVE_IDTOUSER)
+  check_function_exists(euidaccess HAVE_EUIDACCESS)
   find_library(HAVE_LIBPTHREAD pthread)
   find_library(HAVE_LIBRT rt)
-  check_include_file(mesg.h HAVE_MESG_H)
-  check_include_file(netinet/in.h HAVE_NETINET_IN_H)
   check_include_file(nl_types.h HAVE_NL_TYPES_H)
   check_include_file(pthread.h HAVE_PTHREAD_H)
-  set(CMAKE_REQUIRED_LIBRARIES "pthread")
+  set(CMAKE_REQUIRED_LIBRARIES pthread)
   set(CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE=1")
-  check_function_exists(pthread_mutexattr_settype HAVE_PTHREAD_MUTEXATTR_SETTYPE)
-# Some platforms use an enum for these values rather than defines
-# so we cannot use the simpler check_symbol_exists test to check for these.
-  check_c_source_compiles("#include <pthread.h>
+  check_function_exists(pthread_mutex_timedlock HAVE_PTHREAD_MUTEX_TIMEDLOCK)
+  # this requires -ldl on the link
+  set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_DL_LIBS})
+  check_c_source_compiles("#include <dlfcn.h>
                            int main(int arg, char **argv) {
-                           int tryme;
-                           tryme = PTHREAD_MUTEX_ERRORCHECK;
+                           Dl_info DlInfo;
+                           dladdr((void*)0, &DlInfo);
                            return 0;}"
-                          HAVE_PTHREAD_MUTEX_ERRORCHECK)
-  check_c_source_compiles("#include <pthread.h>
-                           int main(int arg, char **argv) {
-                           int tryme;
-                           tryme = PTHREAD_MUTEX_RECURSIVE;
-                           return 0;}"
-                          HAVE_PTHREAD_MUTEX_RECURSIVE)
+                          HAVE_DLADDR)
   check_symbol_exists(_PC_CASE_SENSITIVE unistd.h HAVE_PC_CASE_SENSITIVE)
+  check_symbol_exists(FNM_CASEFOLD fnmatch.h HAVE_FNM_CASEFOLD)
+  check_symbol_exists(KDMKTONE linux/kd.h HAVE_KDMKTONE)
+  check_symbol_exists(FS_CASEFOLD_FL linux/fs.h HAVE_FS_CASEFOLD_FL)
+  check_symbol_exists(_NSGetExecutablePath mach-o/dyld.h HAVE_NSGETEXECUTABLEPATH)
+  check_symbol_exists(getexecname stdlib.h HAVE_GETEXECNAME)
+  check_symbol_exists(KERN_PROC_PATHNAME sys/sysctl.h HAVE_KERN_PROC_PATHNAME)
+  check_struct_has_member("struct stat" st_mtim sys/stat.h HAVE_STAT_ST_MTIM)
+  check_struct_has_member("struct stat" st_mtimespec sys/stat.h HAVE_STAT_ST_MTIMESPEC)
   check_include_file(pwd.h HAVE_PWD_H)
   check_include_file(sched.h HAVE_SCHED_H)
-  check_function_exists(sighold HAVE_SIGHOLD)
-  check_function_exists(strdup HAVE_STRDUP)
   check_include_file(strings.h HAVE_STRINGS_H)
-  check_include_file(stropts.h HAVE_STROPTS_H)
   check_include_file(sys/filio.h HAVE_SYS_FILIO_H)
   check_include_file(sys/ldr.h HAVE_SYS_LDR_H)
   check_include_file(sys/resource.h HAVE_SYS_RESOURCE_H)
   check_include_file(sys/select.h HAVE_SYS_SELECT_H)
   check_include_file(sys/sem.h HAVE_SYS_SEM_H)
   check_include_file(sys/signal.h HAVE_SYS_SIGNAL_H)
-  check_include_file(sys/socket.h HAVE_SYS_SOCKET_H)
-  check_include_file(sys/stat.h HAVE_SYS_STAT_H)
-  check_include_file(sys/syscall.h HAVE_SYS_SYSCALL_H)
   check_include_file(sys/time.h HAVE_SYS_TIME_H)
-  check_include_file(sys/types.h HAVE_SYS_TYPES_H)
   check_include_file(sys/utsname.h HAVE_SYS_UTSNAME_H)
   check_include_file(sys/wait.h HAVE_SYS_WAIT_H)
-  check_c_source_compiles("#include <sys/types.h>
-                           #include <sys/sem.h>
-                           int main(int arg, char **argv) {
-                           union semun semopts;
-                           return 0;}"
-                          HAVE_UNION_SEMUN)
-  check_include_file(unistd.h HAVE_UNISTD_H)
-  check_include_file(usersec.h HAVE_USERSEC_H)
+  set (CURSES_NEED_NCURSES TRUE)
+  include(FindCurses) # sets CURSES_HAVE_NCURSES_H and CURSES_HAVE_NCURSES_NCURSES_H
+  message(STATUS "CURSES_HAVE_NCURSES_H is ${CURSES_HAVE_NCURSES_H}")
+  message(STATUS "CURSES_HAVE_NCURSES_NCURSES_H is ${CURSES_HAVE_NCURSES_NCURSES_H}")
   if (CMAKE_SYSTEM_NAME MATCHES "(SunOS|Solaris)")
     check_library_exists(socket getaddrinfo "" HAVE_LIBSOCKET)
     if (HAVE_LIBSOCKET)
@@ -390,22 +436,14 @@ if (NOT WIN32)
     if (HAVE_LIBRT)
       set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES} rt)
     endif (HAVE_LIBRT)
-    check_include_file(ncurses/ncurses.h NCURSES_H_)
-    if (NOT NCURSES_H_)
-      check_include_file(ncurses.h HAVE_NCURSES_H)
-    else ()
-      include_directories(/usr/include/ncurses)
-    endif (NOT NCURSES_H_)
-  else ()
-    check_include_file(ncurses.h HAVE_NCURSES_H)
   endif ()
 endif ()
 set (PACKAGE ${PROJECT_NAME})
-set (PACKAGE_BUGREPORT "http://sourceforge.net/projects/oorexx/")
+set (PACKAGE_BUGREPORT "https://sourceforge.net/projects/oorexx/")
 set (PACKAGE_NAME ${PROJECT_NAME})
 set (PACKAGE_STRING ${PROJECT_NAME})
 set (PACKAGE_TARNAME "ooRexx.tar")
-set (PACKAGE_URL "http://www.oorexx.org/")
+set (PACKAGE_URL "https://www.oorexx.org/")
 set (PACKAGE_VERSION ${ORX_VER_STR})
 set (VERSION ${ORX_VER_STR})
 set (STDC_HEADERS 1)
@@ -450,11 +488,10 @@ set (build_runtime_dir ${build_interpreter_dir}/runtime)
 set (build_streamlibrary_dir ${build_interpreter_dir}/streamLibrary)
 set (build_extensions_dir extensions)
 set (build_extensions_platform_dir ${build_extensions_dir}/${ORX_PLATFORM_DIR})
-set (build_extensions_rexxutil_dir ${build_extensions_dir}/rexxutil)
-set (build_extensions_rexxutil_platform_dir ${build_extensions_rexxutil_dir}/${ORX_PLATFORM_DIR})
 set (build_extensions_rxftp_dir ${build_extensions_dir}/rxftp)
 set (build_extensions_csvstream_dir ${build_extensions_dir}/csvStream)
 set (build_extensions_json_dir ${build_extensions_dir}/json)
+set (build_extensions_dateparser_dir ${build_extensions_dir}/dateparser)
 set (build_extensions_rxmath_dir ${build_extensions_dir}/rxmath)
 set (build_extensions_rxregexp_dir ${build_extensions_dir}/rxregexp)
 set (build_extensions_rxsock_dir ${build_extensions_dir}/rxsock)
@@ -488,6 +525,9 @@ set (build_utilities_rexxpaws_dir ${build_utilities_dir}/platform/windows/rexxpa
 set (build_utilities_rexxhide_dir ${build_utilities_dir}/platform/windows/rexxhide)
 
 if (WIN32)
+# change exception handling flag for [bugs:#1728] Hang condition
+string(REGEX REPLACE "/EHsc" "/EHsc-" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+
 # This replaces the /MD compile flag with /MT.
 set(CompilerFlags
         CMAKE_CXX_FLAGS
@@ -506,6 +546,38 @@ endif ()
 #/* Build targets                                                              */
 #/*----------------------------------------------------------------------------*/
 
+# macro to create and install symbolic links on Unix
+macro(create_install_symlink target)
+   if (UNIX)   # checking for UNIX here simplifies invocation of this macro (no need to check operating system for the invoker)
+      set(baseName   "${CMAKE_SHARED_LIBRARY_PREFIX}${target}")
+      set(targetName "${baseName}${CMAKE_SHARED_LIBRARY_SUFFIX}")
+
+      foreach(loop_var RANGE ${SYM_LINK_CREATE_FROM} ${SYM_LINK_CREATE_TO})
+         if (APPLE)   # Darwin has version numbers before ".dylib"
+            set(linkName "${baseName}.${loop_var}${CMAKE_SHARED_LIBRARY_SUFFIX}")
+         else ()
+            set(linkName "${baseName}${CMAKE_SHARED_LIBRARY_SUFFIX}.${loop_var}")
+         endif ()
+
+         # message(STATUS "---> macro create_install_symlink() ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}: ln -sf targetName=[${targetName}] linkName=[${linkName}]")
+
+         add_custom_command(
+             TARGET ${target}
+             POST_BUILD
+             COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} ln -sf ${targetName} ${linkName}
+             DEPENDS ${target}
+             # COMMENT "--> ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}: [ln -sf ${targetName} ${linkName} DEPENDS ${target}]"
+         )
+
+         install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${linkName}
+                 COMPONENT Core
+                 DESTINATION ${INSTALL_LIB_DIR}
+         )
+      endforeach(loop_var)
+   endif ()
+endmacro(create_install_symlink)
+
+
 #################### librexxapi.so ##########################
 # Full set of files used in all platforms.
 set (common_rexxapi_sources
@@ -522,21 +594,24 @@ set (common_rexxapi_sources
             ${build_rexxapi_client_platform_dir}/SysLocalAPIManager.cpp
             ${build_rexxapi_common_dir}/RegistrationTable.cpp
             ${build_rexxapi_common_dir}/ServiceMessage.cpp
+            ${build_rexxapi_common_dir}/CSStream.cpp
             ${build_rexxapi_common_platform_dir}/SysAPIManager.cpp
-            ${build_rexxapi_common_platform_dir}/SysCSStream.cpp
-            ${build_rexxapi_common_platform_dir}/SysProcess.cpp
             ${build_common_dir}/Utilities.cpp
             ${build_common_platform_dir}/SysSemaphore.cpp
             ${build_common_platform_dir}/SysLibrary.cpp
             ${build_common_platform_dir}/SysFile.cpp
+            ${build_common_platform_dir}/SysProcess.cpp
             ${build_common_platform_dir}/SysThread.cpp)
 # additional source files required by specific platforms
 if (WIN32)
    set (platform_rexxapi_sources
+            ${build_rexxapi_common_platform_dir}/SysCSNamedPipeStream.cpp
             ${build_rexxapi_client_platform_dir}/rexxapi.def
             ${build_platform_dir}/verinfo.rc)
    set (platform_rexxapi_libs wsock32)
 else ()
+   set (platform_rexxapi_sources
+            ${build_rexxapi_common_platform_dir}/SysCSStream.cpp)
    set (platform_rexxapi_libs ${ORX_SYSLIB_DL} ${ORX_SYSLIB_PTHREAD})
 endif ()
 # Library definition
@@ -558,7 +633,8 @@ target_link_libraries(rexxapi ${platform_rexxapi_libs} ${CMAKE_REQUIRED_LIBRARIE
 install(TARGETS rexxapi RUNTIME DESTINATION ${INSTALL_LIB_DIR} COMPONENT Core
                         LIBRARY DESTINATION ${INSTALL_LIB_DIR} COMPONENT Core
                         ARCHIVE DESTINATION ${INSTALL_INCLUDE_DIR} COMPONENT DevLib)
-set_target_properties(rexxapi PROPERTIES VERSION ${ORX_VERSION})
+set_target_properties(rexxapi PROPERTIES SOVERSION ${ORX_API_LEVEL})
+create_install_symlink(rexxapi)
 
 #################### librexx.so ##########################
 # Sources for librexx.so
@@ -582,11 +658,13 @@ set (classes_sources ${build_classes_dir}/ArrayClass.cpp
             ${build_classes_dir}/ClassClass.cpp
             ${build_classes_dir}/ContextClass.cpp
             ${build_classes_dir}/DirectoryClass.cpp
+            ${build_classes_dir}/EventSemaphore.cpp
             ${build_classes_dir}/IntegerClass.cpp
             ${build_classes_dir}/ListClass.cpp
             ${build_classes_dir}/MessageClass.cpp
             ${build_classes_dir}/MethodClass.cpp
             ${build_classes_dir}/MutableBufferClass.cpp
+            ${build_classes_dir}/MutexSemaphore.cpp
             ${build_classes_dir}/NumberStringClass.cpp
             ${build_classes_dir}/NumberStringMath.cpp
             ${build_classes_dir}/NumberStringMath2.cpp
@@ -617,6 +695,7 @@ set (classes_sources ${build_classes_dir}/ArrayClass.cpp
 set (package_sources ${build_package_dir}/LibraryPackage.cpp
             ${build_package_dir}/PackageManager.cpp)
 set (memory_sources ${build_memory_dir}/DeadObject.cpp
+            ${build_memory_dir}/FileNameBuffer.cpp
             ${build_memory_dir}/GlobalNames.cpp
             ${build_memory_dir}/MapBucket.cpp
             ${build_memory_dir}/MapTable.cpp
@@ -635,6 +714,7 @@ set (memory_sources ${build_memory_dir}/DeadObject.cpp
             ${build_memory_dir}/RexxMemory.cpp)
 set (execution_sources ${build_execution_dir}/CPPCode.cpp
             ${build_execution_dir}/ActivationStack.cpp
+            ${build_execution_dir}/ActivationSettings.cpp
             ${build_execution_dir}/RexxActivation.cpp
             ${build_execution_dir}/BaseCode.cpp
             ${build_execution_dir}/RexxCode.cpp
@@ -690,6 +770,7 @@ set (instructions_sources  ${build_instructions_dir}/AddressInstruction.cpp
             ${build_instructions_dir}/CommandInstruction.cpp
             ${build_instructions_dir}/CommandIOContext.cpp
             ${build_instructions_dir}/CommandIOConfiguration.cpp
+            ${build_instructions_dir}/ConstantDirective.cpp
             ${build_instructions_dir}/InputRedirector.cpp
             ${build_instructions_dir}/OutputRedirector.cpp
             ${build_instructions_dir}/DoBlock.cpp
@@ -746,14 +827,13 @@ set (parser_sources ${build_parser_dir}/Clause.cpp
             ${build_parser_dir}/ProgramSource.cpp
             ${build_parser_dir}/Scanner.cpp
             ${build_parser_dir}/Token.cpp)
-set (platform_sources ${build_interpreter_platform_dir}/ErrorMessages.cpp
-            ${build_interpreter_platform_dir}/ExternalFunctions.cpp
-            ${build_interpreter_platform_dir}/FileSystem.cpp
+set (platform_sources ${build_interpreter_platform_dir}/ExternalFunctions.cpp
             ${build_interpreter_platform_dir}/MemorySupport.cpp
             ${build_interpreter_platform_dir}/MiscSystem.cpp
             ${build_interpreter_platform_dir}/SysActivity.cpp
             ${build_interpreter_platform_dir}/SysFileSystem.cpp
             ${build_interpreter_platform_dir}/SysInterpreterInstance.cpp
+            ${build_interpreter_platform_dir}/SysRexxUtil.cpp
             ${build_interpreter_platform_dir}/SystemCommands.cpp
             ${build_interpreter_platform_dir}/SystemInitialization.cpp
             ${build_interpreter_platform_dir}/SystemInterpreter.cpp
@@ -763,12 +843,14 @@ set (platform_sources ${build_interpreter_platform_dir}/ErrorMessages.cpp
 set (common_sources ${build_common_dir}/Utilities.cpp
             ${build_common_platform_dir}/SysFile.cpp
             ${build_common_platform_dir}/SysLibrary.cpp
+            ${build_common_platform_dir}/SysProcess.cpp
             ${build_common_platform_dir}/SysSemaphore.cpp
             ${build_common_platform_dir}/SysThread.cpp)
 set (runtime_sources ${build_runtime_dir}/InternalPackage.cpp
             ${build_runtime_dir}/Interpreter.cpp
             ${build_runtime_dir}/InterpreterInstance.cpp
             ${build_runtime_dir}/Numerics.cpp
+            ${build_runtime_dir}/RexxUtilCommon.cpp
             ${build_runtime_dir}/Version.cpp)
 set (streamlibrary_sources ${build_streamlibrary_dir}/StreamCommandParser.cpp
             ${build_streamlibrary_dir}/StreamNative.cpp
@@ -794,8 +876,8 @@ set (common_interpreter_sources ${classes_sources}
 # additional source files required by specific platforms
 if (WIN32)
    set (platform_interpreter_sources ${build_interpreter_platform_dir}/rexx.def
-            ${build_interpreter_platform_dir}/winmsgtb.rc)
-   set (platform_interpreter_libs comctl32)
+                                     ${build_platform_dir}/verinfo.rc)
+   set (platform_interpreter_libs comctl32 shlwapi version)
 else ()
    set (platform_interpreter_sources ${build_interpreter_platform_dir}/RexxMain.cpp)
    set (platform_rexx_libs ${ORX_SYSLIB_DL} ${ORX_SYSLIB_PTHREAD})
@@ -836,7 +918,8 @@ target_link_libraries(rexx rexxapi ${platform_interpreter_libs} ${CMAKE_REQUIRED
 install(TARGETS rexx RUNTIME DESTINATION ${INSTALL_LIB_DIR} COMPONENT Core
                      LIBRARY DESTINATION ${INSTALL_LIB_DIR} COMPONENT Core
                      ARCHIVE DESTINATION ${INSTALL_INCLUDE_DIR} COMPONENT DevLib)
-set_target_properties(rexx PROPERTIES VERSION ${ORX_VERSION})
+set_target_properties(rexx PROPERTIES SOVERSION ${ORX_API_LEVEL})
+create_install_symlink(rexx)
 
 #################### orexx (executable) ##########################
 if (WIN32)
@@ -890,7 +973,7 @@ set (core_classes ${build_rexx_classes_dir}/CoreClasses.orx
 # additional source files required by specific platforms
 if (WIN32)
    set (platform_rexximage_sources
-            ${build_platform_dir}/rexx.rc)
+            ${build_platform_dir}/verinfo.rc)
 endif ()
 # Sources for rexximg
 add_executable(rexximage ${build_utilities_rexximage_dir}/rexximage.cpp
@@ -912,6 +995,15 @@ macro (copy_build_file name source)
        DEPENDS ${source}/${name}
        )
 endmacro (copy_build_file)
+
+# handy macro for copying files from the source into the build samples directory.
+macro (copy_samples_file name source)
+    ADD_CUSTOM_COMMAND(
+       OUTPUT ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/${name}
+       COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/${source}/${name} ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/${name}
+       DEPENDS ${source}/${name}
+       )
+endmacro (copy_samples_file)
 
 # handy macro for configuring files from the source into the build directory.
 macro (configure_build_file name source)
@@ -938,25 +1030,28 @@ if (WIN32)
 endif ()
 
 # Build the rexx.img file
-add_custom_command(OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/rexx.img
-           COMMAND $<TARGET_FILE:rexximage>
-           DEPENDS rexximage rxapi rexxutil ${image_class_files} ${platform_rexx_img_depends}
+add_custom_command(OUTPUT ${ORX_IMAGE_OUTPUT_LOCATION}/rexx.img
+           COMMAND $<TARGET_FILE:rexximage> ${ORX_IMAGE_OUTPUT_LOCATION}/rexx.img
+           DEPENDS rexximage rxapi ${image_class_files} ${platform_rexx_img_depends}
            WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-add_custom_target(rexx_img ALL DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/rexx.img)
-install(PROGRAMS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/rexx.img COMPONENT Core DESTINATION ${INSTALL_EXECUTABLE_DIR} PERMISSIONS OWNER_EXECUTE GROUP_EXECUTE WORLD_EXECUTE OWNER_READ GROUP_READ WORLD_READ)
+
+add_custom_target(rexx_img ALL DEPENDS ${ORX_IMAGE_OUTPUT_LOCATION}/rexx.img)
+install(PROGRAMS ${ORX_IMAGE_OUTPUT_LOCATION}/rexx.img COMPONENT Core DESTINATION ${INSTALL_LIB_DIR} PERMISSIONS OWNER_EXECUTE GROUP_EXECUTE WORLD_EXECUTE OWNER_READ GROUP_READ WORLD_READ)
 
 #################### rxapi (executable) #########################
 # additional source files required by specific platforms
 if (WIN32)
    set (platform_rxapi_sources
             ${build_rexxapi_server_platform_dir}/APIService.cpp
+            ${build_rexxapi_common_platform_dir}/SysCSNamedPipeStream.cpp
             ${build_rexxapi_server_platform_dir}/rxapi.rc
             ${build_rexxapi_server_platform_dir}/rxapi.ico)
    set (rxapi_executable_type WIN32)
    set (platform_rxapi_libs wsock32 shlwapi)
 else ()
    set (platform_rxapi_sources
-            ${build_rexxapi_server_platform_dir}/linux/APIService.cpp)
+            ${build_rexxapi_common_platform_dir}/SysCSStream.cpp
+            ${build_rexxapi_server_platform_dir}/APIService.cpp)
    set (platform_rxapi_libs ${ORX_SYSLIB_DL} ${ORX_SYSLIB_PTHREAD})
 endif ()
 # Sources for rxapi
@@ -967,12 +1062,12 @@ add_executable(rxapi ${rxapi_executable_type}
          ${build_rexxapi_server_dir}/MacroSpaceManager.cpp
          ${build_rexxapi_server_dir}/QueueManager.cpp
          ${build_rexxapi_server_dir}/RegistrationManager.cpp
+         ${build_rexxapi_common_dir}/CSStream.cpp
          ${build_rexxapi_common_dir}/RegistrationTable.cpp
          ${build_rexxapi_common_dir}/ServiceMessage.cpp
          ${build_rexxapi_common_platform_dir}/SysAPIManager.cpp
-         ${build_rexxapi_common_platform_dir}/SysCSStream.cpp
-         ${build_rexxapi_common_platform_dir}/SysProcess.cpp
          ${build_common_dir}/Utilities.cpp
+         ${build_common_platform_dir}/SysProcess.cpp
          ${build_common_platform_dir}/SysSemaphore.cpp
          ${build_common_platform_dir}/SysThread.cpp
          ${platform_rxapi_sources})
@@ -1028,13 +1123,12 @@ if (XALAN_EXECUTABLE)
     generate_message_file(${build_messages_dir}/RexxErrorCodes.h ${build_messages_dir}/RexxErrorCodes.xsl)
     generate_message_file(${build_messages_dir}/RexxMessageNumbers.h ${build_messages_dir}/RexxMessageNumbers.xsl)
     generate_message_file(${build_messages_dir}/RexxMessageTable.h ${build_messages_dir}/RexxMessageTable.xsl)
+    generate_message_file(${build_messages_dir}/RexxErrorMessages.h ${build_messages_dir}/RexxErrorMessages.xsl)
     generate_message_file(${build_api_dir}/oorexxerrors.h ${build_messages_dir}/ApiErrorCodes.xsl)
     generate_message_file(${build_messages_dir}/errnums.xml ${build_messages_dir}/errnums.xsl)
     generate_message_file(${build_messages_dir}/errnumsrxqueue.xml ${build_messages_dir}/errnumsrxqueue.xsl)
     generate_message_file(${build_messages_dir}/errnumssubcom.xml ${build_messages_dir}/errnumssubcom.xsl)
     generate_message_file(${build_messages_dir}/errnumsrexxc.xml ${build_messages_dir}/errnumsrexxc.xsl)
-    generate_message_file(${build_interpreter_dir}/platform/windows/winmsgtb.rc ${build_interpreter_dir}/platform/windows/WinMessageResource.xsl)
-    generate_message_file(${build_interpreter_dir}/platform/unix/gencat.inp ${build_interpreter_dir}/platform/unix/UnixGencat.xsl)
 
     generate_class_header(PrimitiveBehaviourNames.h PrimitiveBehaviourNames.xsl)
     generate_class_header(PrimitiveBehaviours.cpp PrimitiveBehaviours.xsl)
@@ -1043,14 +1137,13 @@ if (XALAN_EXECUTABLE)
 
     set (REXXMSG_FILES ${build_messages_dir}/RexxErrorCodes.h
                        ${build_messages_dir}/RexxMessageNumbers.h
+                       ${build_messages_dir}/RexxErrorMessages.h
                        ${build_messages_dir}/RexxMessageTable.h
                        ${build_api_dir}/oorexxerrors.h
                        ${build_messages_dir}/errnums.xml
                        ${build_messages_dir}/errnumsrxqueue.xml
                        ${build_messages_dir}/errnumssubcom.xml
                        ${build_messages_dir}/errnumsrexxc.xml
-                       ${build_interpreter_dir}/platform/windows/winmsgtb.rc
-                       ${build_interpreter_dir}/platform/unix/gencat.inp
                        ${build_behaviour_dir}/PrimitiveBehaviourNames.h
                        ${build_behaviour_dir}/PrimitiveBehaviours.cpp
                        ${build_behaviour_dir}/VirtualFunctionTable.cpp
@@ -1062,14 +1155,14 @@ if (XALAN_EXECUTABLE)
     add_dependencies(rexx message_headers)
     add_dependencies(rexxapi message_headers)
 
-endif()
+endif ()
 
 
 #################### rexxc (executable) #########################
 # additional source files required by specific platforms
 if (WIN32)
    set (platform_rexxc_sources
-            ${build_platform_dir}/rexx.rc)
+            ${build_platform_dir}/verinfo.rc)
 else ()
    set (platform_rexxc_libs ${ORX_SYSLIB_DL} ${ORX_SYSLIB_PTHREAD})
 endif ()
@@ -1130,36 +1223,10 @@ target_include_directories(rxsubcom PUBLIC
 target_link_libraries(rxsubcom rexx rexxapi ${platform_subcom_libs} ${CMAKE_REQUIRED_LIBRARIES})
 install(TARGETS rxsubcom RUNTIME COMPONENT Core DESTINATION ${INSTALL_EXECUTABLE_DIR})
 
-#################### librexxutil.so ################
-# additional source files required by specific platforms
-if (WIN32)
-   set (platform_rexxutil_sources
-            ${build_extensions_rexxutil_platform_dir}/rexxutil.def
-            ${build_platform_dir}/verinfo.rc)
-   set (platform_rexxutil_libs shlwapi)
-else ()
-   set (platform_rexxutil_libs ${ORX_SYSLIB_DL} ${ORX_SYSLIB_PTHREAD})
-endif ()
-# Sources for librexxutil.so
-add_library(rexxutil SHARED ${build_extensions_rexxutil_platform_dir}/rexxutil.cpp
-                            ${platform_rexxutil_sources})
-# Include file definition
-target_include_directories(rexxutil PUBLIC
-             ${build_lib_dir}
-             ${build_api_dir}
-             ${build_api_platform_dir}
-             ${build_messages_dir})
-# Extra link library definitions
-target_link_libraries(rexxutil rexx rexxapi ${platform_rexxutil_libs} ${CMAKE_REQUIRED_LIBRARIES})
-install(TARGETS rexxutil RUNTIME COMPONENT Core DESTINATION ${INSTALL_LIB_DIR}
-                         LIBRARY DESTINATION ${INSTALL_LIB_DIR} COMPONENT Core)
-set_target_properties(rexxutil PROPERTIES VERSION ${ORX_VERSION})
-
 #################### librxmath.so ################
 # additional source files required by specific platforms
 if (WIN32)
    set (platform_rxmath_sources
-            ${build_platform_dir}/rxmath.def
             ${build_platform_dir}/verinfo.rc)
 endif ()
 # Sources for librxmath.so
@@ -1175,13 +1242,13 @@ target_include_directories(rxmath PUBLIC
 target_link_libraries(rxmath rexx rexxapi ${platform_rxmath_libs} ${CMAKE_REQUIRED_LIBRARIES})
 install(TARGETS rxmath RUNTIME COMPONENT Core DESTINATION ${INSTALL_LIB_DIR}
                        LIBRARY DESTINATION ${INSTALL_LIB_DIR} COMPONENT Core)
-set_target_properties(rxmath PROPERTIES VERSION ${ORX_VERSION})
+set_target_properties(rxmath PROPERTIES SOVERSION ${ORX_API_LEVEL})
+create_install_symlink(rxmath)
 
 #################### librxsock.so ################
 # additional source files required by specific platforms
 if (WIN32)
    set (platform_rxsock_sources
-            ${build_platform_dir}/rxsock.def
             ${build_platform_dir}/verinfo.rc)
 endif ()
 
@@ -1193,14 +1260,14 @@ add_library(rxsock SHARED ${build_extensions_rxsock_dir}/rxsock.cpp
 target_link_libraries(rxsock rexx rexxapi ${platform_rxsock_libs} ${CMAKE_REQUIRED_LIBRARIES})
 install(TARGETS rxsock RUNTIME COMPONENT Core DESTINATION ${INSTALL_LIB_DIR}
                        LIBRARY DESTINATION ${INSTALL_LIB_DIR} COMPONENT Core)
-set_target_properties(rxsock PROPERTIES VERSION ${ORX_VERSION})
+set_target_properties(rxsock PROPERTIES SOVERSION ${ORX_API_LEVEL})
+create_install_symlink(rxsock)
 
 
 #################### librxregexp.so ################
 # additional source files required by specific platforms
 if (WIN32)
    set (platform_rxregexp_sources
-            ${build_platform_dir}/rxregexp.def
             ${build_platform_dir}/verinfo.rc)
 endif ()
 
@@ -1219,13 +1286,13 @@ target_include_directories(rxregexp PUBLIC
 target_link_libraries(rxregexp rexx rexxapi ${platform_rxregexp_libs} ${CMAKE_REQUIRED_LIBRARIES})
 install(TARGETS rxregexp RUNTIME COMPONENT Core DESTINATION ${INSTALL_LIB_DIR}
                          LIBRARY DESTINATION ${INSTALL_LIB_DIR} COMPONENT Core)
-set_target_properties(rxregexp PROPERTIES VERSION ${ORX_VERSION})
+set_target_properties(rxregexp PROPERTIES SOVERSION ${ORX_API_LEVEL})
+create_install_symlink(rxregexp)
 
 #################### libhostemu.so ################
 # additional source files required by specific platforms
 if (WIN32)
    set (platform_hostemu_sources
-            ${build_platform_dir}/hostemu.def
             ${build_platform_dir}/verinfo.rc)
 else ()
    set (platform_hostemu_libs ${ORX_SYSLIB_DL} ${ORX_SYSLIB_PTHREAD})
@@ -1244,11 +1311,16 @@ target_include_directories(hostemu PUBLIC
 target_link_libraries(hostemu rexx rexxapi ${platform_hostemu_libs} ${CMAKE_REQUIRED_LIBRARIES})
 install(TARGETS hostemu RUNTIME COMPONENT Core DESTINATION ${INSTALL_LIB_DIR}
                         LIBRARY DESTINATION ${INSTALL_LIB_DIR} COMPONENT Core)
-set_target_properties(hostemu PROPERTIES VERSION ${ORX_VERSION})
+set_target_properties(hostemu PROPERTIES SOVERSION ${ORX_API_LEVEL})
+create_install_symlink(hostemu)
 
 #################### librxunixsys.so ################
 if (NOT WIN32)
 # Sources for librxunixsys.so
+check_library_exists(crypt crypt "" HAVE_LIBCRYPT)
+if (HAVE_LIBCRYPT)
+   set (platform_rxunixsys_libs crypt)
+endif ()
 add_library(rxunixsys SHARED ${build_extensions_platform_dir}/rxunixsys/rxunixsys.cpp)
 # Include file definition
 target_include_directories(rxunixsys PUBLIC
@@ -1256,17 +1328,11 @@ target_include_directories(rxunixsys PUBLIC
              ${build_api_platform_dir}
              ${extensions_unix_dir}/rxunixsys)
 # Extra link library definitions
-# gcc (at least on Linux) requires linking with -lcrypt
-# clang (at least on Darwin) doesn't have libcrypt
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_link_libraries(rxunixsys rexx rexxapi crypt ${CMAKE_REQUIRED_LIBRARIES})
-else ()
-    target_link_libraries(rxunixsys rexx rexxapi ${CMAKE_REQUIRED_LIBRARIES})
-endif ()
-
-set_target_properties(rxunixsys PROPERTIES VERSION ${ORX_VERSION})
+target_link_libraries(rxunixsys rexx rexxapi ${platform_rxunixsys_libs} ${CMAKE_REQUIRED_LIBRARIES})
+set_target_properties(rxunixsys PROPERTIES SOVERSION ${ORX_API_LEVEL})
 install(TARGETS rxunixsys RUNTIME DESTINATION ${INSTALL_LIB_DIR}
                           LIBRARY DESTINATION ${INSTALL_LIB_DIR} COMPONENT Core)
+   create_install_symlink(rxunixsys)
 endif ()
 
 #################### liborxncurses.so ################
@@ -1284,10 +1350,11 @@ if (NOT WIN32)
    target_link_libraries(orxncurses rexx rexxapi ncurses ${CMAKE_REQUIRED_LIBRARIES})
    # Make sure ncurses.cls gets copied
    add_custom_target(ncurses_cls  ALL DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ncurses.cls)
-   set_target_properties(orxncurses PROPERTIES VERSION ${ORX_VERSION})
+   set_target_properties(orxncurses PROPERTIES SOVERSION ${ORX_API_LEVEL})
    install(TARGETS orxncurses RUNTIME DESTINATION ${INSTALL_LIB_DIR}
                           LIBRARY DESTINATION ${INSTALL_LIB_DIR} COMPONENT Core)
    install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ncurses.cls COMPONENT Core DESTINATION ${INSTALL_CLS_DIR})
+   create_install_symlink(orxncurses)
 endif ()
 
 #################### orexxole.dll ################
@@ -1312,7 +1379,6 @@ if (WIN32)
    copy_build_file(winsystm.cls ${build_extensions_rxwinsys_dir})
    # Sources for rxwinwys.dll
    add_library(rxwinsys SHARED ${build_extensions_rxwinsys_dir}/rxwinsys.cpp
-                ${build_extensions_rxwinsys_dir}/rxwinsys.def
                 ${build_platform_dir}/verinfo.rc)
    # Include file definition
    target_include_directories(rxwinsys PUBLIC
@@ -1331,10 +1397,9 @@ if (WIN32)
    set (OOD_MAJOR 4)
    set (OOD_MINOR 2)
    set (OOD_MOD_LVL 4)
-   set (OOD_BLD_LVL 11506)
-   set (OOD_VER_STR "4.2.4.11506")
-   set (OOD_COPY_YEAR "2005-2018")
-   set (OOD_SVN_REVSION 11506)
+   set (OOD_BLD_LVL 11861)
+   set (OOD_VER_STR "4.2.4.12250")
+   set (OOD_COPY_YEAR "2005-2021")
 
    #################### ooshapes.dll ################
    # Sources for ooshapes.dll
@@ -1342,8 +1407,7 @@ if (WIN32)
                 ${build_extensions_oodialog_dir}/APICommon.cpp
                 ${build_extensions_oodialog_dir}/ooShapes.cpp
                 ${build_extensions_oodialog_dir}/ooShapesAid.cpp
-                ${build_extensions_oodialog_dir}/ooShapesPE.cpp
-                ${build_extensions_oodialog_dir}/ooShapes.def)
+                ${build_extensions_oodialog_dir}/ooShapesPE.cpp)
    # Override the compile definitions with ooShapes-exclusive defines
    set_property(TARGET ooshapes
           PROPERTY COMPILE_DEFINITIONS
@@ -1400,7 +1464,6 @@ if (WIN32)
                 ${build_extensions_oodialog_dir}/oodViewControls.cpp
 #               ${build_extensions_oodialog_dir}/ooShapes.cpp
 #               ${build_extensions_oodialog_dir}/ooShapesAid.cpp
-                ${build_extensions_oodialog_dir}/ooDialog.def
                 ${build_extensions_oodialog_dir}/ooDialog.rc)
    # Override the compile definitions with ooDialog-exclusive defines
    set_property(TARGET oodialog
@@ -1543,7 +1606,7 @@ endif ()
 if (WIN32)
    # Sources for rexxhide.
    add_executable(rexxhide WIN32 ${build_utilities_rexxhide_dir}/rexxhide.cpp
-                           ${build_platform_dir}/rexx.rc)
+                           ${build_platform_dir}/verinfo.rc)
    # Include file definition
    target_include_directories(rexxhide PUBLIC
                ${build_lib_dir}
@@ -1562,7 +1625,7 @@ endif ()
 if (WIN32)
    # Sources for rexxpaws.
    add_executable(rexxpaws ${build_utilities_rexxpaws_dir}/rexxpaws.cpp
-                           ${build_platform_dir}/rexx.rc)
+                           ${build_platform_dir}/verinfo.rc)
    # Include file definition
    target_include_directories(rexxhide PUBLIC
                ${build_lib_dir}
@@ -1580,20 +1643,59 @@ endif ()
 #################### misc files ##########################
 
 # These artifacts apply to all platforms
-# For the .cls class files, we copy these to the build directory so that the build has a full
-# working copy of the class files for testing/development purposes
-copy_build_file(rxregexp.cls ${build_extensions_rxregexp_dir})
-copy_build_file(rxftp.cls ${build_extensions_rxftp_dir})
-copy_build_file(csvStream.cls ${build_extensions_csvstream_dir})
-copy_build_file(json.cls ${build_extensions_json_dir})
-copy_build_file(socket.cls ${build_extensions_rxsock_dir})
+# We copy the .cls class files to the build directory so that the build has a
+# full working copy of the class files for testing/development purposes
+copy_build_file(rxregexp.cls     ${build_extensions_rxregexp_dir})
+copy_build_file(rxftp.cls        ${build_extensions_rxftp_dir})
+copy_build_file(csvStream.cls    ${build_extensions_csvstream_dir})
+copy_build_file(json.cls         ${build_extensions_json_dir})
+copy_build_file(dateparser.cls   ${build_extensions_dateparser_dir})
+copy_build_file(socket.cls       ${build_extensions_rxsock_dir})
 copy_build_file(streamsocket.cls ${build_extensions_rxsock_dir})
-copy_build_file(mime.cls ${build_extensions_rxsock_dir})
-copy_build_file(smtp.cls ${build_extensions_rxsock_dir})
+copy_build_file(mime.cls         ${build_extensions_rxsock_dir})
+copy_build_file(smtp.cls         ${build_extensions_rxsock_dir})
+copy_samples_file(complex.cls       ${build_samples_dir})
+copy_samples_file(pipe.cls          ${build_samples_dir})
+copy_samples_file(semcls.cls        ${build_samples_dir})
+copy_samples_file(treeDirectory.cls ${build_samples_dir})
+copy_samples_file(jabberwocky.txt   ${build_samples_dir})
 
 # the shebang line needs adjusting in the .rex files, so we need to
-# do this based on the build target
+# do this based on the build target, sorted here alphabetically
+configure_build_file(arithmeticEvaluation.rex ${build_samples_dir})
+configure_build_file(arrayCallback.rex ${build_samples_dir})
+configure_build_file(ccreply.rex ${build_samples_dir})
+configure_build_file(concurrency.rex ${build_samples_dir})
+configure_build_file(constrained.rex ${build_samples_dir})
+configure_build_file(delegation.rex ${build_samples_dir})
+configure_build_file(dynamicMethod.rex ${build_samples_dir})
+configure_build_file(factor.rex ${build_samples_dir})
+configure_build_file(greply.rex ${build_samples_dir})
+configure_build_file(guess.rex ${build_samples_dir})
+configure_build_file(interface.rex ${build_samples_dir})
+configure_build_file(ktguard.rex ${build_samples_dir})
+configure_build_file(makestring.rex ${build_samples_dir})
+configure_build_file(month.rex ${build_samples_dir})
+configure_build_file(philfork.rex ${build_samples_dir})
+configure_build_file(properties.rex ${build_samples_dir})
+configure_build_file(qdate.rex ${build_samples_dir})
+configure_build_file(qtime.rex ${build_samples_dir})
 configure_build_file(rexxtry.rex ${build_samples_dir})
+configure_build_file(rexxcps.rex ${build_samples_dir})
+configure_build_file(scclient.rex ${build_samples_dir})
+configure_build_file(scserver.rex ${build_samples_dir})
+configure_build_file(sfclient.rex ${build_samples_dir})
+configure_build_file(sfserver.rex ${build_samples_dir})
+configure_build_file(singleLinkedList.rex ${build_samples_dir})
+configure_build_file(sortComposite.rex ${build_samples_dir})
+configure_build_file(stack.rex ${build_samples_dir})
+configure_build_file(synchronousConcurrency.rex ${build_samples_dir})
+configure_build_file(timezone.rex ${build_samples_dir})
+configure_build_file(treeTraversal.rex ${build_samples_dir})
+configure_build_file(usecomp.rex ${build_samples_dir})
+configure_build_file(usepipe.rex ${build_samples_dir})
+configure_build_file(usesingleton.rex ${build_samples_dir})
+configure_build_file(usetree.rex ${build_samples_dir})
 
 add_custom_target(class_files ALL DEPENDS
     ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/rxregexp.cls
@@ -1604,8 +1706,15 @@ add_custom_target(class_files ALL DEPENDS
     ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/streamsocket.cls
     ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mime.cls
     ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/smtp.cls
-    ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/rexxtry.rex)
+    ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/dateparser.cls
 
+    ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/complex.cls
+    ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/pipe.cls
+    ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/semcls.cls
+    ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/treeDirectory.cls
+    ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/jabberwocky.txt
+
+    ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/rexxtry.rex)
 
 install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/rxregexp.cls COMPONENT Core DESTINATION ${INSTALL_CLS_DIR})
 
@@ -1613,6 +1722,7 @@ install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/rxftp.cls COMPONENT Core DESTINA
 
 install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/csvStream.cls COMPONENT Core DESTINATION ${INSTALL_CLS_DIR})
 install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/json.cls COMPONENT Core DESTINATION ${INSTALL_CLS_DIR})
+install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/dateparser.cls COMPONENT Core DESTINATION ${INSTALL_CLS_DIR})
 
 install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/socket.cls COMPONENT Core DESTINATION ${INSTALL_CLS_DIR})
 install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/streamsocket.cls COMPONENT Core DESTINATION ${INSTALL_CLS_DIR})
@@ -1630,51 +1740,52 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${build_api_dir}/oorexxapi.h COMPONENT
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${build_api_dir}/oorexxerrors.h COMPONENT DevLib DESTINATION ${INSTALL_INCLUDE_DIR})
 
 # common sample programs
-install(PROGRAMS ${SAMPLES_SOURCE}/rexxcps.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/ccreply.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/complex.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/greply.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/guess.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/ktguard.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/makestring.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/month.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/philfork.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/pipe.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/properties.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/qdate.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/qtime.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/scclient.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/scserver.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/semcls.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/sfclient.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/sfserver.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/stack.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/usecomp.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/usepipe.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/arithmeticEvaluation.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/arrayCallback.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/concurrency.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/constrained.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/timezone.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/delegation.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/dynamicMethod.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/interface.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/singleLinkedList.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/sortComposite.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/synchronousConcurrency.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(FILES ${SAMPLES_SOURCE}/jabberwocky.txt COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/treeTraversal.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/arithmeticEvaluation.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/arrayCallback.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/ccreply.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/concurrency.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/constrained.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/delegation.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/dynamicMethod.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/factor.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/greply.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/guess.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/interface.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/ktguard.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/makestring.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/month.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/philfork.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/properties.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/qdate.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/qtime.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/scclient.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/scserver.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/sfclient.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/sfserver.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/singleLinkedList.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/sortComposite.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/stack.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/synchronousConcurrency.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/timezone.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/treeTraversal.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/usecomp.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/usepipe.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/usesingleton.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/usetree.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+
+install(PROGRAMS ${SAMPLES_SOURCE}/complex.cls COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${SAMPLES_SOURCE}/pipe.cls COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+install(PROGRAMS ${SAMPLES_SOURCE}/semcls.cls COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
 install(PROGRAMS ${SAMPLES_SOURCE}/treeDirectory.cls COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
-install(PROGRAMS ${SAMPLES_SOURCE}/usetree.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+
+
+# used in synchronousConcurrency.rex
+install(FILES ${SAMPLES_SOURCE}/jabberwocky.txt COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
+
+# Not strictly a sample but useful
+install(PROGRAMS ${CMAKE_SAMPLES_OUTPUT_DIRECTORY}/rexxcps.rex COMPONENT Samples DESTINATION ${INSTALL_SAMPLES_DIR})
 
 if (NOT WIN32)
-   add_custom_command(OUTPUT rexx.cat
-              COMMAND gencat rexx.cat ${CMAKE_CURRENT_SOURCE_DIR}/${build_interpreter_dir}/platform/unix/gencat.inp
-              DEPENDS ${image_class_files} ${platform_rexx_img_depends}
-              WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-   add_custom_target(rexx_cat ALL DEPENDS rexx.cat)
-   install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/rexx.cat DESTINATION ${catdir} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ OWNER_EXECUTE GROUP_EXECUTE WORLD_EXECUTE)
-
    macro (add_manpage name cat)
       add_custom_command(OUTPUT ${name}.${cat}.gz
               COMMAND gzip -c
@@ -1692,12 +1803,7 @@ if (NOT WIN32)
    add_manpage (rxqueue 1)
    add_manpage (rxsubcom 1)
 
-   install(FILES rexxapi/server/platform/unix/rxapid DESTINATION ${INSTALL_EXECUTABLE_DIR} PERMISSIONS OWNER_EXECUTE GROUP_EXECUTE WORLD_EXECUTE OWNER_READ GROUP_READ WORLD_READ)
-   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${build_platform_dir}/rexx.sh DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${CMAKE_PROJECT_NAME} PERMISSIONS OWNER_EXECUTE GROUP_EXECUTE WORLD_EXECUTE OWNER_READ GROUP_READ WORLD_READ)
-   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${build_platform_dir}/rexx.csh DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${CMAKE_PROJECT_NAME} PERMISSIONS OWNER_EXECUTE GROUP_EXECUTE WORLD_EXECUTE OWNER_READ GROUP_READ WORLD_READ)
-   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${build_platform_dir}/rxapid.service DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${CMAKE_PROJECT_NAME})
-   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${build_platform_dir}/50-rxapid.preset DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${CMAKE_PROJECT_NAME})
-   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${build_samples_dir}/readme DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${CMAKE_PROJECT_NAME})
+   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${build_samples_dir}/readme.txt DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${CMAKE_PROJECT_NAME})
 endif ()
 
 
@@ -1726,11 +1832,11 @@ if (WIN32 AND DOC_SOURCE_DIR)
    set(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "Open Object Rexx")
    # ask for a modify the pack dialg
    set(CPACK_NSIS_INSTALLED_ICON_NAME "rexx.exe,0")
-   set(CPACK_NSIS_URL_INFO_ABOUT "http://www.oorexx.org")
+   set(CPACK_NSIS_URL_INFO_ABOUT "https://www.oorexx.org")
    set(CPACK_NSIS_MUI_ICON ${CMAKE_CURRENT_SOURCE_DIR}/${build_platform_dir}/rexx.ico)
    set(CPACK_NSIS_MUI_UNIICON ${CMAKE_CURRENT_SOURCE_DIR}/${build_platform_dir}/install/uninstall.ico)
 
-   # Not sure why this is not working.  Claims it cannoth file the file, but it exists.
+   # Not sure why this is not working.  Claims it cannot find the file, but it exists.
    # It might need to be an installed file...not sure
    # set(CPACK_PACKAGE_ICON ${CMAKE_CURRENT_SOURCE_DIR}/${build_platform_dir}/rexx.ico)
 
@@ -1775,11 +1881,7 @@ if (WIN32 AND DOC_SOURCE_DIR)
        CONFIGURATIONS Debug RelWithDebInfo)
    install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/rexxhide.pdb COMPONENT Core DESTINATION ${INSTALL_EXECUTABLE_DIR}
        CONFIGURATIONS Debug RelWithDebInfo)
-   install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/rexximage.pdb COMPONENT Core DESTINATION ${INSTALL_EXECUTABLE_DIR}
-       CONFIGURATIONS Debug RelWithDebInfo)
    install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/rexxpaws.pdb COMPONENT Core DESTINATION ${INSTALL_EXECUTABLE_DIR}
-       CONFIGURATIONS Debug RelWithDebInfo)
-   install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/rexxutil.pdb COMPONENT Core DESTINATION ${INSTALL_EXECUTABLE_DIR}
        CONFIGURATIONS Debug RelWithDebInfo)
    install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/rxapi.pdb COMPONENT Core DESTINATION ${INSTALL_EXECUTABLE_DIR}
        CONFIGURATIONS Debug RelWithDebInfo)
@@ -1841,6 +1943,7 @@ if (WIN32 AND DOC_SOURCE_DIR)
    install(FILES ${DOC_SOURCE_DIR}/readme.pdf COMPONENT Docs DESTINATION ${INSTALL_DOC_DIR})
    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/CHANGES COMPONENT Docs DESTINATION ${INSTALL_DOC_DIR} RENAME CHANGES.txt)
    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/ReleaseNotes COMPONENT Docs DESTINATION ${INSTALL_DOC_DIR} RENAME ReleaseNotes.txt)
+   install(FILES ${DOC_SOURCE_DIR}/rexxapi.pdf COMPONENT Docs DESTINATION ${INSTALL_DOC_DIR})
    install(FILES ${DOC_SOURCE_DIR}/rexxpg.pdf COMPONENT Docs DESTINATION ${INSTALL_DOC_DIR})
    install(FILES ${DOC_SOURCE_DIR}/rexxref.pdf COMPONENT Docs DESTINATION ${INSTALL_DOC_DIR})
    install(FILES ${DOC_SOURCE_DIR}/rxmath.pdf COMPONENT Docs DESTINATION ${INSTALL_DOC_DIR})
@@ -1857,6 +1960,7 @@ if (WIN32 AND DOC_SOURCE_DIR)
    install_doc_shortcut("ooRexx CHANGES" "CHANGES.txt")
    install_doc_shortcut("ooRexx Release Notes" "ReleaseNotes.txt")
    install_doc_shortcut("ooRexx Reference" "rexxref.pdf")
+   install_doc_shortcut("ooRexx APIs (Application Programming Interfaces)" "rexxapi.pdf")
    install_doc_shortcut("ooRexx Programming Guide" "rexxpg.pdf")
    install_doc_shortcut("ooRexx Mathematical Functions Reference" "rxmath.pdf")
    install_doc_shortcut("ooRexx rxFTP Class Reference" "rxftp.pdf")
@@ -1885,8 +1989,8 @@ if (WIN32 AND DOC_SOURCE_DIR)
       file(TO_NATIVE_PATH ${DOC_SOURCE_DIR} NATIVE_DOC_DIR)
 
       # Name of the installer file we're going to create
-      set(INSTALLER_FILE "ooRexx.${ORX_VERSION_NSIS}-${NSIS_CPU}.exe")
-      set(INSTALLER_SCRIPT "ooRexx.${ORX_VERSION_NSIS}-${NSIS_CPU}.nsi")
+      set(INSTALLER_FILE "ooRexx-${ORX_VERSION_NSIS}.windows.${NSIS_CPU}.exe")
+      set(INSTALLER_SCRIPT "ooRexx-${ORX_VERSION_NSIS}.windows.${NSIS_CPU}.nsi")
 
       # create an installer file from the template
       message(STATUS "Building NSIS template ${INSTALLER_SCRIPT}")
@@ -1903,6 +2007,7 @@ if (WIN32 AND DOC_SOURCE_DIR)
 
       add_custom_target(nsis_installer
          DEPENDS ${DOC_SOURCE_DIR}/readme.pdf
+                 ${DOC_SOURCE_DIR}/rexxapi.pdf
                  ${DOC_SOURCE_DIR}/rexxpg.pdf
                  ${DOC_SOURCE_DIR}/rexxref.pdf
                  ${DOC_SOURCE_DIR}/rxmath.pdf
@@ -1999,12 +2104,13 @@ if (BUILD_RPM)
      execute_process(COMMAND ${XDG-DESKTOP-MENU_EXECUTABLE} install --novendor ${ORX_DESKTOP_DIR}/rexxtry.desktop)
      execute_process(COMMAND ${XDG-MIME_EXECUTABLE} default ${ORX_DESKTOP_DIR}/rexxtry.desktop application/x-ooRexx-item)
      ")
-   # This pevents the rpm from generating these subdirectories in the install.
+   # This prevents the rpm from generating these subdirectories in the install.
    set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION
       ${CMAKE_INSTALL_PREFIX}
       ${CMAKE_INSTALL_PREFIX}/bin
       ${CMAKE_INSTALL_PREFIX}/lib
       ${CMAKE_INSTALL_PREFIX}/lib64
+      ${CMAKE_INSTALL_PREFIX}/include
       ${CMAKE_INSTALL_PREFIX}/share
       ${CMAKE_INSTALL_PREFIX}/share/man
       ${CMAKE_INSTALL_PREFIX}/share/man/man1
@@ -2017,27 +2123,22 @@ if (BUILD_RPM)
    else ()
       set(CPACK_PACKAGE_RELEASE ${ORX_BLD_LVL})
    endif ()
-   set(CPACK_RPM_PACKAGE_LICENSE "CPL 1.0")
-   set(CPACK_RPM_PACKAGE_URL "http://www.oorexx.org/")
+
+   set(CPACK_RPM_PACKAGE_VERSION ${ORX_VERSION})
+   set(CPACK_RPM_PACKAGE_RELEASE ${CPACK_PACKAGE_RELEASE})
+   set(CPACK_RPM_PACKAGE_LICENSE "CPL")
+   set(CPACK_RPM_PACKAGE_URL "https://www.oorexx.org/")
    set(CPACK_PACKAGE_CONTACT "sahananda@users.sf.net")
-   set(CPACK_PACKAGING_INSTALL_PREXIX "${CMAKE_INSTALL_PREFIX}")
-   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/platform/unix/rpm_post.in ${CMAKE_CURRENT_SOURCE_DIR}/platform/unix/rpm_post)
-   set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE ${CMAKE_SOURCE_DIR}/platform/unix/rpm_post)
-   set(CPACK_RPM_PRE_UNINSTALL_SCRIPT_FILE ${CMAKE_SOURCE_DIR}/platform/unix/rpm_preun)
-# remove 'csh'-dependency as it doesn't seem to be required
-#  set(CPACK_RPM_PACKAGE_REQUIRES "csh")
-   if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "s390x")
-      set(orx_install_arch "s390x")
-   elseif (${INSTALL_LIB_DIR} STREQUAL ${CMAKE_INSTALL_PREFIX}/lib64)
-      set(orx_install_arch "x86_64")
-   else ()
-      set(orx_install_arch "i386")
-   endif ()
-   set(CPACK_RPM_PACKAGE_ARCHITECTURE ${orx_install_arch})
+   set(CPACK_RPM_PACKAGE_GROUP "Development/Languages")
+   set(CPACK_RPM_PACKAGE_VENDOR "Rexx Language Association")
+   set(CPACK_PACKAGING_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
+   set(CPACK_RPM_PACKAGE_SUMMARY "Open Object Rexx is an object-oriented scripting language.")
+
+   set(CPACK_RPM_PACKAGE_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR})
    if (DEFINED OS_DIST)
-      set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL}-${CPACK_PACKAGE_RELEASE}.${OS_DIST}.${orx_install_arch}")
+      set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL}-${CPACK_PACKAGE_RELEASE}.${OS_DIST}.${CMAKE_SYSTEM_PROCESSOR}")
    else ()
-      set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL}-${CPACK_PACKAGE_RELEASE}.${orx_install_arch}")
+      set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL}-${CPACK_PACKAGE_RELEASE}.${CMAKE_SYSTEM_PROCESSOR}")
    endif ()
    set(CPACK_RPM_PACKAGE_DESCRIPTION
 "Open Object Rexx is an object-oriented scripting language. The language
@@ -2049,8 +2150,8 @@ It extends the procedural way of Rexx programming with object-oriented
 features that allow you to gradually change your programming style as
 you learn more about objects.
 
-For more information on ooRexx, visit http://www.oorexx.org/
-For more information on Rexx, visit http://www.rexxla.org/")
+For more information on ooRexx, visit https://www.oorexx.org/
+For more information on Rexx, visit https://www.rexxla.org/")
 endif ()
 
 # Build a DEB
@@ -2080,66 +2181,37 @@ if (BUILD_DEB)
       set(CPACK_PACKAGE_RELEASE ${ORX_BLD_LVL})
    endif ()
    set(CPACK_DEBIAN_PACKAGE_SECTION "devel")
-   set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://www.oorexx.org/")
+   set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://www.oorexx.org/")
    set(CPACK_PACKAGE_CONTACT "sahananda@users.sf.net")
    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "sahananda@users.sf.net")
    set(CPACK_PACKAGING_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
-   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/platform/unix/debian/cmake/postinst.in ${CMAKE_CURRENT_SOURCE_DIR}/platform/unix/debian/cmake/postinst)
-# remove 'csh'-dependency as it doesn't seem to be required
-#  set(CPACK_DEBIAN_PACKAGE_DEPENDS "csh")
-   # we need to copy these files so we can change the permissions
-   file(COPY ${CMAKE_SOURCE_DIR}/platform/unix/debian/cmake/postinst
-           DESTINATION ${CMAKE_BINARY_DIR}
-           FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ
-           GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-   file(COPY ${CMAKE_SOURCE_DIR}/platform/unix/debian/cmake/prerm
-           DESTINATION ${CMAKE_BINARY_DIR}
-           FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ
-           GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-   set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
-           "${CMAKE_BINARY_DIR}/postinst;${CMAKE_BINARY_DIR}/prerm;")
-   if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "s390x")
-      set(orx_install_arch "s390x")
-   elseif (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
-      set(orx_install_arch "x86_64")
-   else ()
-      set(orx_install_arch "i386")
-   endif ()
    if (DEFINED OS_DIST)
-      set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL}-${CPACK_PACKAGE_RELEASE}.${OS_DIST}.${orx_install_arch}")
+      set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL}-${CPACK_PACKAGE_RELEASE}.${OS_DIST}.${CMAKE_SYSTEM_PROCESSOR}")
    else ()
-      set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL}-${CPACK_PACKAGE_RELEASE}.${orx_install_arch}")
+      set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL}-${CPACK_PACKAGE_RELEASE}.${CMAKE_SYSTEM_PROCESSOR}")
    endif ()
-   # Be sure to do this AFTER you set the CPACK_PACKAGE_FILE_NAME
-   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/platform/unix/debian/cmake/fixup_deb.sh.in ${CMAKE_BINARY_DIR}/fixup_deb.sh)
    # The DEB generator does not support a multi-line description.
    set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Open Object Rexx is an object-oriented scripting language.")
 endif ()
 
-if (BUILD_PKG)
-   set(CPACK_GENERATOR PKG)
-   #set (CPACK_OSX_PACKAGE_VERSION "10.10")
-   #set (CPACK_BUNDLE_PLIST xxx)
-   #set (CPACK_BUNDLE_STARTUP_COMMABD xxx)
-
+# Build for FREEBSD
+if (BUILD_FREEBSD)
+   set(CPACK_GENERATOR FREEBSD)
+   set(CPACK_FREEBSD_PACKAGE_NAME ooRexx)
    if (DEFINED PROD)
       set(CPACK_PACKAGE_RELEASE 1)
    else ()
       set(CPACK_PACKAGE_RELEASE ${ORX_BLD_LVL})
    endif ()
-   set(orx_install_arch "x86_64")
+   set(CPACK_FREEBSD_PACKAGE_MAINTAINER "sahananda@users.sf.net")
+   set(CPACK_PACKAGING_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
    if (DEFINED OS_DIST)
-      set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL}-${CPACK_PACKAGE_RELEASE}.${OS_DIST}.${orx_install_arch}")
+      set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL}-${CPACK_PACKAGE_RELEASE}.${OS_DIST}.${CMAKE_SYSTEM_PROCESSOR}")
    else ()
-      set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL}-${CPACK_PACKAGE_RELEASE}.${orx_install_arch}")
+      set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL}-${CPACK_PACKAGE_RELEASE}.${CMAKE_SYSTEM_PROCESSOR}")
    endif ()
-   #set (CPACK_BUNDLE_NAME ${CPACK_PACKAGE_FILE_NAME})
-
-   set (CPACK_PACKAGE_ICON ${ORX_PLATFORM_DIR}/oorexx.png)
-   #set (CPACK_BUNDLE_ICON ${CPACK_PACKAGE_ICON})
-
-   set(CPACK_PACKAGE_CONTACT "sahananda@users.sf.net")
-   set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
+   set(CPACK_FREEBSD_PACKAGE_LICENSE "CPL")
+   set(CPACK_FREEBSD_PACKAGE_DESCRIPTION
 "Open Object Rexx is an object-oriented scripting language. The language
 is designed for both beginners and experienced Rexx programmers. It is
 easy to learn and use, and provides an excellent vehicle to enter the
@@ -2149,14 +2221,39 @@ It extends the procedural way of Rexx programming with object-oriented
 features that allow you to gradually change your programming style as
 you learn more about objects.
 
-For more information on ooRexx, visit http://www.oorexx.org/
-For more information on Rexx, visit http://www.rexxla.org/")
+For more information on ooRexx, visit https://www.oorexx.org/
+For more information on Rexx, visit https://www.rexxla.org/")
 endif ()
 
+# Build for Apple macOS
+if (BUILD_DMG)
+# The installer is built in a post-process script build_macOS_dmg.sh.in
+# initialised from platform/unix/macos/install/build_macOS_dmg.sh.in
+# using settings from here
 
+# Always 64 bit for macOS
+   set(OS_DIST "macOS")
 
+# This is copied from DEB & RPM Installers
+   if (DEFINED PROD)
+      set(CPACK_PACKAGE_RELEASE 1)
+   else ()
+      set(CPACK_PACKAGE_RELEASE ${ORX_BLD_LVL})
+   endif ()
 
+   if (DEFINED OS_DIST)
+      set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL}-${CPACK_PACKAGE_RELEASE}.${OS_DIST}.${CMAKE_SYSTEM_PROCESSOR}")
+   else ()
+      set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL}-${CPACK_PACKAGE_RELEASE}.${CMAKE_SYSTEM_PROCESSOR}")
+   endif ()
 
+   message(STATUS "CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME}")
+
+   # Be sure to do this AFTER you set the CPACK_PACKAGE_FILE_NAME
+
+   configure_file( ${CMAKE_SOURCE_DIR}/platform/unix/macos/install/build_macOS_dmg.sh.in ${CMAKE_BINARY_DIR}/build_macOS_dmg.sh IMMEDIATE @ONLY )
+
+endif ()
 
 # Do not move the following statement!! It must be the last statement in this file.
 include(CPack)

@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -65,7 +65,7 @@ ServiceMessage::ServiceMessage()
  *
  * @param server The server stream that has already received a connection message.
  */
-void ServiceMessage::readMessage(SysServerConnection *connection)
+void ServiceMessage::readMessage(ApiConnection *connection)
 {
     size_t actual = 0;
     size_t required = sizeof(ServiceMessage);
@@ -74,7 +74,7 @@ void ServiceMessage::readMessage(SysServerConnection *connection)
     {
         if (!connection->read(((char *)this) + offset, required, &actual) || actual == 0)
         {
-            throw new ServiceException(SERVER_FAILURE, "ServiceMessage::readMessage() Failure reading service message");
+            throw new ServiceException(CONNECTION_FAILURE, "ServiceMessage::readMessage() Failure reading service message");
         }
         required -= actual;
         offset += actual;
@@ -88,7 +88,7 @@ void ServiceMessage::readMessage(SysServerConnection *connection)
         if (messageData == NULL)
         {
             // this will close this connection and raise an error back in the caller
-            throw new ServiceException(SERVER_FAILURE, "ServiceMessage::readMessage() Failure allocating message buffer");
+            throw new ServiceException(CONNECTION_FAILURE, "ServiceMessage::readMessage() Failure allocating message buffer");
         }
         required = messageDataLength;
         offset = 0;
@@ -100,7 +100,7 @@ void ServiceMessage::readMessage(SysServerConnection *connection)
                 // make sure these are cleared out
                 messageData = NULL;
                 messageDataLength = 0;
-                throw new ServiceException(SERVER_FAILURE, "ServiceMessage::readMessage() Failure reading service message");
+                throw new ServiceException(CONNECTION_FAILURE, "ServiceMessage::readMessage() Failure reading service message");
             }
             // add in the count
             required -= actual;
@@ -117,14 +117,14 @@ void ServiceMessage::readMessage(SysServerConnection *connection)
  *
  * @param server The server message stream used to receive the original message.
  */
-void ServiceMessage::writeResult(SysServerConnection *connection)
+void ServiceMessage::writeResult(ApiConnection *connection)
 {
     size_t expected = sizeof(ServiceMessage) + messageDataLength;
     size_t actual = 0;
     if (!connection->write((void *)this, sizeof(ServiceMessage), messageData, messageDataLength, &actual) || actual != expected)
     {
         freeMessageData();
-        throw new ServiceException(SERVER_FAILURE, "ServiceMessage::writeResult() Failure writing service message result");
+        throw new ServiceException(CONNECTION_FAILURE, "ServiceMessage::writeResult() Failure writing service message result");
     }
     // we might be sending a copy of data that's still resident in the connection->  If
     // we are, then don't delete the message data after doing the send.
@@ -138,14 +138,14 @@ void ServiceMessage::writeResult(SysServerConnection *connection)
  *
  * @param pipe   The pipe we've opened to write the message.
  */
-void ServiceMessage::writeMessage(SysClientStream &pipe)
+void ServiceMessage::writeMessage(ApiConnection &pipe)
 {
     size_t actual = 0;
     size_t expected = sizeof(ServiceMessage) + messageDataLength;
     if (!pipe.write((void *)this, sizeof(ServiceMessage), messageData, messageDataLength, &actual) || actual != expected)
     {
         freeMessageData();
-        throw new ServiceException(SERVER_FAILURE, "ServiceMessage::writeResult() Failure writing service message result");
+        throw new ServiceException(CONNECTION_FAILURE, "ServiceMessage::writeResult() Failure writing service message result");
     }
     // make sure we free and release any attached data before proceeding
     freeMessageData();
@@ -157,7 +157,7 @@ void ServiceMessage::writeMessage(SysClientStream &pipe)
  *
  * @param pipe   The connection used to send the original message.
  */
-void ServiceMessage::readResult(SysClientStream &pipe)
+void ServiceMessage::readResult(ApiConnection &pipe)
 {
     size_t actual = 0;
     size_t required = sizeof(ServiceMessage);
@@ -166,7 +166,7 @@ void ServiceMessage::readResult(SysClientStream &pipe)
     {
         if (!pipe.read(((char *)this) + offset, required, &actual) || actual == 0)
         {
-            throw new ServiceException(SERVER_FAILURE, "ServiceMessage::readResult() Failure reading service message");
+            throw new ServiceException(CONNECTION_FAILURE, "ServiceMessage::readResult() Failure reading service message");
         }
         required -= actual;
         offset += actual;
@@ -198,7 +198,7 @@ void ServiceMessage::readResult(SysClientStream &pipe)
             if (!pipe.read(((char *)messageData) + offset, required, &actual) || actual == 0)
             {
                 releaseResultMemory(messageData);
-                throw new ServiceException(SERVER_FAILURE, "ServiceMessage::readResult() Failure reading service message");
+                throw new ServiceException(CONNECTION_FAILURE, "ServiceMessage::readResult() Failure reading service message");
             }
             // remove the amount read
             required -= actual;

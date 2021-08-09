@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2020 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -36,7 +36,6 @@
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 /******************************************************************************/
-/* REXX Kernel                                                                */
 /*                                                                            */
 /* Setup initial class definitions during an image build                      */
 /*                                                                            */
@@ -91,6 +90,8 @@
 #include "ActivityManager.hpp"
 #include "ProgramSource.hpp"
 #include "VariableReference.hpp"
+#include "EventSemaphore.hpp"
+#include "MutexSemaphore.hpp"
 
 
 /**
@@ -104,7 +105,7 @@
  */
 void MemoryObject::defineMethod(const char *name, RexxBehaviour *behaviour, PCPPM entryPoint, size_t arguments, const char *entryPointName)
 {
-    behaviour->defineMethod(name, entryPoint, arguments, entryPointName);
+        behaviour->defineMethod(name, entryPoint, arguments, entryPointName);
 }
 
 
@@ -118,12 +119,31 @@ void MemoryObject::defineMethod(const char *name, RexxBehaviour *behaviour, PCPP
  *                   method.
  * @param arguments  The method argument style (argument count or array indicator).
  */
-void MemoryObject::defineProtectedMethod(const char *name, RexxBehaviour * behaviour, PCPPM entryPoint, size_t arguments, const char *entryPointName)
+void MemoryObject::defineProtectedMethod(const char *name, RexxBehaviour *behaviour, PCPPM entryPoint, size_t arguments, const char *entryPointName)
 {
-    MethodClass *method = behaviour->defineMethod(name, entryPoint, arguments, entryPointName);
-    // mark as protected after the fact
-    method->setProtected();
+        MethodClass *method = behaviour->defineMethod(name, entryPoint, arguments, entryPointName);
+        // mark as protected after the fact
+        method->setProtected();
 }
+
+
+/**
+ * Add a C++ method to an object's behaviour.  This method is
+ * marked as unguarded.
+ *
+ * @param name       The name of the method.
+ * @param behaviour  The target behaviour.
+ * @param entryPoint The entry point of the C++ method that implements the
+ *                   method.
+ * @param arguments  The method argument style (argument count or array indicator).
+ */
+void MemoryObject::defineUnguardedMethod(const char *name, RexxBehaviour *behaviour, PCPPM entryPoint, size_t arguments, const char *entryPointName)
+{
+        MethodClass *method = behaviour->defineMethod(name, entryPoint, arguments, entryPointName);
+        // mark as protected after the fact
+        method->setUnguarded();
+}
+
 
 
 /**
@@ -200,8 +220,11 @@ void MemoryObject::createRexxPackage()
 
 /**
  * Initialize the Rexx memory environment during an image built.
+ *
+ * @param imageTarget
+ *               The location to save the created image file.
  */
-void MemoryObject::createImage()
+void MemoryObject::createImage(const char *imageTarget)
 {
     // perform the initial memory environment setup.  We can create
     // new objects once this is done.
@@ -255,7 +278,6 @@ void MemoryObject::createImage()
     BagClass::createInstance();
     ListClass::createInstance();
     QueueClass::createInstance();
-    VariableReference::createInstance();
 
     // We keep handy references to a number of commonly used
     // integer objects.
@@ -297,6 +319,8 @@ void MemoryObject::createImage()
     StackFrameClass::createInstance();
     RexxInfo::createInstance();
     VariableReference::createInstance();
+    EventSemaphoreClass::createInstance();
+    MutexSemaphoreClass::createInstance();
 
     // build the common retrievers table.  This is needed before we can parse an
     // Rexx code.
@@ -332,6 +356,7 @@ void MemoryObject::createImage()
 #define AddClassMethod(name, entryPoint, args) defineMethod(name, currentClassBehaviour, CPPM(entryPoint), args, #entryPoint);
 #define AddClassProtectedMethod(name, entryPoint, args) defineProtectedMethod(name, currentClassBehaviour, CPPM(entryPoint), args, #entryPoint);
 #define AddClassPrivateMethod(name, entryPoint, args) definePrivateMethod(name, currentClassBehaviour, CPPM(entryPoint), args, #entryPoint);
+#define AddClassUnguardedMethod(name, entryPoint, args) defineUnguardedMethod(name, currentClassBehaviour, CPPM(entryPoint), args, #entryPoint);
 #define HideClassMethod(name) currentClassBehaviour->hideMethod(name);
 #define RemoveClassMethod(name) currentClassBehaviour->removeMethod(name);
 
@@ -342,6 +367,7 @@ void MemoryObject::createImage()
 #define AddMethod(name, entryPoint, args) defineMethod(name, currentInstanceBehaviour, CPPM(entryPoint), args, #entryPoint);
 #define AddProtectedMethod(name, entryPoint, args) defineProtectedMethod(name, currentInstanceBehaviour, CPPM(entryPoint), args, #entryPoint);
 #define AddPrivateMethod(name, entryPoint, args) definePrivateMethod(name, currentInstanceBehaviour, CPPM(entryPoint), args, #entryPoint);
+#define AddUnguardedMethod(name, entryPoint, args) defineUnguardedMethod(name, currentInstanceBehaviour, CPPM(entryPoint), args, #entryPoint);
 #define HideMethod(name) currentInstanceBehaviour->hideMethod(name);
 #define RemoveMethod(name) currentInstanceBehaviour->removeMethod(name);
 
@@ -712,7 +738,7 @@ StartClassDefinition(Array);
         AddMethod("IsEmpty", ArrayClass::isEmptyRexx, 0);
         AddMethod("Index", ArrayClass::indexRexx, 1);
         AddMethod("HasItem", ArrayClass::hasItemRexx, 1);
-        AddMethod("RemoveItem", ArrayClass::removeItem, 1);
+        AddMethod("RemoveItem", ArrayClass::removeItemRexx, 1);
         AddMethod("Insert", ArrayClass::insertRexx, 2);
         AddMethod("Delete", ArrayClass::deleteRexx, 1);
         AddMethod("Fill", ArrayClass::fillRexx, 1);
@@ -1069,6 +1095,7 @@ StartClassDefinition(Method)
         AddMethod("SetPrivate", MethodClass::setPrivateRexx, 0);
         AddMethod("IsGuarded", MethodClass::isGuardedRexx, 0);
         AddMethod("IsPrivate", MethodClass::isPrivateRexx, 0);
+        AddMethod("IsPackage", MethodClass::isPackageRexx, 0);
         AddMethod("IsProtected", MethodClass::isProtectedRexx, 0);
         AddMethod("IsAbstract", MethodClass::isAbstractRexx, 0);
         AddMethod("IsConstant", MethodClass::isConstantRexx, 0);
@@ -1208,79 +1235,126 @@ EndClassDefinition(RexxContext);
 
 StartClassDefinition(RexxInfo)
 
-        AddClassMethod("New", RexxInfo::newRexx, A_COUNT);
+AddClassMethod("New", RexxInfo::newRexx, A_COUNT);
 
-    CompleteClassMethodDefinitions();
+CompleteClassMethodDefinitions();
 
-        AddMethod("Copy", RexxInfo::copyRexx, 0);
-        AddMethod("Package", RexxInfo::getPackage, 0);
-        AddMethod("Digits", RexxInfo::getDigits, 0);
-        AddMethod("InternalDigits", RexxInfo::getInternalDigits, 0);
-        AddMethod("Form", RexxInfo::getForm, 0);
-        AddMethod("Fuzz", RexxInfo::getFuzz, 0);
-        AddMethod("LanguageLevel", RexxInfo::getLanguageLevel, 0);
-        AddMethod("Version", RexxInfo::getInterpreterVersion, 0);
-        AddMethod("Name", RexxInfo::getInterpreterName, 0);
-        AddMethod("Date", RexxInfo::getInterpreterDate, 0);
-        AddMethod("Platform", RexxInfo::getPlatform, 0);
-        AddMethod("Architecture", RexxInfo::getArchitecture, 0);
-        AddMethod("EndOfLine", RexxInfo::getFileEndOfLine, 0);
-        AddMethod("PathSeparator", RexxInfo::getPathSeparator, 0);
-        AddMethod("DirectorySeparator", RexxInfo::getDirectorySeparator, 0);
-        AddMethod("CaseSensitiveFiles", RexxInfo::getCaseSensitiveFiles, 0);
-        AddMethod("MajorVersion", RexxInfo::getMajorVersion, 0);
-        AddMethod("Release", RexxInfo::getRelease, 0);
-        AddMethod("Revision", RexxInfo::getRevision, 0);
-        AddMethod("internalMaxNumber", RexxInfo::getInternalMaxNumber, 0);
-        AddMethod("internalMinNumber", RexxInfo::getInternalMinNumber, 0);
-        AddMethod("maxExponent", RexxInfo::getMaxExponent, 0);
-        AddMethod("minExponent", RexxInfo::getMinExponent, 0);
-        AddMethod("maxPathLength", RexxInfo::getMaxPathLength, 0);
-        AddMethod("maxArraySize", RexxInfo::getMaxArraySize, 0);
+AddMethod("Copy", RexxInfo::copyRexx, 0);
+AddMethod("Package", RexxInfo::getPackage, 0);
+AddMethod("Digits", RexxInfo::getDigits, 0);
+AddMethod("InternalDigits", RexxInfo::getInternalDigits, 0);
+AddMethod("Form", RexxInfo::getForm, 0);
+AddMethod("Fuzz", RexxInfo::getFuzz, 0);
+AddMethod("LanguageLevel", RexxInfo::getLanguageLevel, 0);
+AddMethod("Version", RexxInfo::getInterpreterVersion, 0);
+AddMethod("Name", RexxInfo::getInterpreterName, 0);
+AddMethod("Date", RexxInfo::getInterpreterDate, 0);
+AddMethod("Platform", RexxInfo::getPlatform, 0);
+AddMethod("Architecture", RexxInfo::getArchitecture, 0);
+AddMethod("EndOfLine", RexxInfo::getFileEndOfLine, 0);
+AddMethod("PathSeparator", RexxInfo::getPathSeparator, 0);
+AddMethod("DirectorySeparator", RexxInfo::getDirectorySeparator, 0);
+AddMethod("CaseSensitiveFiles", RexxInfo::getCaseSensitiveFiles, 0);
+AddMethod("MajorVersion", RexxInfo::getMajorVersion, 0);
+AddMethod("Release", RexxInfo::getRelease, 0);
+AddMethod("Modification", RexxInfo::getModification, 0);
+AddMethod("Revision", RexxInfo::getRevision, 0);
+AddMethod("internalMaxNumber", RexxInfo::getInternalMaxNumber, 0);
+AddMethod("internalMinNumber", RexxInfo::getInternalMinNumber, 0);
+AddMethod("maxExponent", RexxInfo::getMaxExponent, 0);
+AddMethod("minExponent", RexxInfo::getMinExponent, 0);
+AddMethod("maxPathLength", RexxInfo::getMaxPathLength, 0);
+AddMethod("maxArraySize", RexxInfo::getMaxArraySize, 0);
+        AddMethod("executable", RexxInfo::getRexxExecutable, 0);
+        AddMethod("libraryPath", RexxInfo::getRexxLibrary, 0);
 
-    CompleteMethodDefinitions();
+CompleteMethodDefinitions();
 
-    CompleteClassDefinition(RexxInfo);
+CompleteClassDefinition(RexxInfo);
 
 EndSpecialClassDefinition(RexxInfo);
 
 
-    /***************************************************************************/
-    /*           VariableReference                                             */
-    /***************************************************************************/
+/***************************************************************************/
+/*           VariableReference                                             */
+/***************************************************************************/
 
 StartClassDefinition(VariableReference)
 
-        AddClassMethod("New", VariableReference::newRexx, A_COUNT);
+AddClassMethod("New", VariableReference::newRexx, A_COUNT);
 
-    CompleteClassMethodDefinitions();
+CompleteClassMethodDefinitions();
 
-        AddMethod("Name", VariableReference::getName, 0);
-        AddMethod("Value", VariableReference::getValue, 0);
-        AddMethod("Value=", VariableReference::setValueRexx, 1);
-        AddMethod("Unknown", VariableReference::unknownRexx, 2);
-        AddMethod("Request", VariableReference::request, 1);
+AddMethod("Name", VariableReference::getName, 0);
+AddMethod("Value", VariableReference::getValue, 0);
+AddMethod("Value=", VariableReference::setValueRexx, 1);
+AddMethod("Unknown", VariableReference::unknownRexx, 2);
+AddMethod("Request", VariableReference::request, 1);
 
-    // We want various operator methods that we inherit from the object
-    // class to be redirected to our unknown method, so we block these methods
-    // in our instance method directory.
-        HideMethod("==");
-        HideMethod("=");
-        HideMethod("\\==");
-        HideMethod("\\=");
-        HideMethod("<>");
-        HideMethod("><");
+// We want various operator methods that we inherit from the object
+// class to be redirected to our unknown method, so we block these methods
+// in our instance method directory.
+HideMethod("==");
+HideMethod("=");
+HideMethod("\\==");
+HideMethod("\\=");
+HideMethod("<>");
+HideMethod("><");
 
-    CompleteMethodDefinitions();
+CompleteMethodDefinitions();
 
-    CompleteClassDefinition(VariableReference);
+CompleteClassDefinition(VariableReference);
 
 EndClassDefinition(VariableReference);
 
 
-    /***************************************************************************/
-    /*           STEM                                                          */
-    /***************************************************************************/
+/***************************************************************************/
+/*           EventSemaphore                                                */
+/***************************************************************************/
+
+StartClassDefinition(EventSemaphore)
+
+AddClassMethod("New", EventSemaphoreClass::newRexx, A_COUNT);
+
+CompleteClassMethodDefinitions();
+
+AddMethod("Uninit", EventSemaphoreClass::close, 0);
+AddUnguardedMethod("Post", EventSemaphoreClass::post, 0);
+AddUnguardedMethod("Reset", EventSemaphoreClass::reset, 0);
+AddUnguardedMethod("Wait", EventSemaphoreClass::wait, 1);
+AddUnguardedMethod("IsPosted", EventSemaphoreClass::posted, 0);
+
+CompleteMethodDefinitions();
+
+CompleteClassDefinition(EventSemaphore);
+
+EndClassDefinition(EventSemaphore);
+
+
+/***************************************************************************/
+/*           MutexSemaphore                                                */
+/***************************************************************************/
+
+StartClassDefinition(MutexSemaphore)
+
+AddClassMethod("New", MutexSemaphoreClass::newRexx, A_COUNT);
+
+CompleteClassMethodDefinitions();
+
+AddMethod("Uninit", MutexSemaphoreClass::close, 0);
+AddUnguardedMethod("Release", MutexSemaphoreClass::release, 0);
+AddUnguardedMethod("Acquire", MutexSemaphoreClass::request, 1);
+
+CompleteMethodDefinitions();
+
+CompleteClassDefinition(MutexSemaphore);
+
+EndClassDefinition(MutexSemaphore);
+
+
+/***************************************************************************/
+/*           STEM                                                          */
+/***************************************************************************/
 
 StartClassDefinition(Stem)
 
@@ -1306,7 +1380,7 @@ StartClassDefinition(Stem)
         AddMethod("Remove", StemClass::remove, A_COUNT);
         AddMethod("Index", StemClass::index, 1);
         AddMethod("HasItem", StemClass::hasItem, 1);
-        AddMethod("RemoveItem", StemClass::removeItem, 1);
+        AddMethod("RemoveItem", StemClass::removeItemRexx, 1);
         AddMethod("ToDirectory", StemClass::toDirectory, 0);
 
     // We want various operator methods that we inherit from the object
@@ -1400,121 +1474,123 @@ EndClassDefinition(MutableBuffer);
 
 StartClassDefinition(Integer)
 
-    // NOTE that we are pointing the new method at the String version...part of the
-    // fakeout that the Integer class does.
-        AddClassMethod("New", RexxString::newRexx, A_COUNT);
+// NOTE that we are pointing the new method at the String version...part of the
+// fakeout that the Integer class does.
+AddClassMethod("New", RexxString::newRexx, A_COUNT);
 
-    CompleteClassMethodDefinitions();
+CompleteClassMethodDefinitions();
 
-        AddMethod("+", RexxInteger::plus, 1);
-        AddMethod("-", RexxInteger::minus, 1);
-        AddMethod("*", RexxInteger::multiply, 1);
-        AddMethod("**", RexxInteger::power, 1);
-        AddMethod("/", RexxInteger::divide, 1);
-        AddMethod("%", RexxInteger::integerDivide, 1);
-        AddMethod("//", RexxInteger::remainder, 1);
-        AddMethod("\\", RexxInteger::notOp, 0);
-        AddMethod("&", RexxInteger::andOp, 1);
-        AddMethod("|", RexxInteger::orOp, 1);
-        AddMethod("&&", RexxInteger::xorOp, 1);
-        AddMethod("?", RexxInteger::choiceRexx, 2);
-        AddMethod("D2C", RexxInteger::d2c, 1);
-        AddMethod("D2X", RexxInteger::d2x, 1);
-        AddMethod("Abs", RexxInteger::abs, 0);
-        AddMethod("Max", RexxInteger::Max, A_COUNT);
-        AddMethod("Min", RexxInteger::Min, A_COUNT);
-        AddMethod("Sign", RexxInteger::sign, 0);
-        AddMethod("Equal", RexxInteger::equal, 1);
-        AddMethod("\\=", RexxInteger::notEqual, 1);
-        AddMethod("<>", RexxInteger::notEqual, 1);
-        AddMethod("><", RexxInteger::notEqual, 1);
-        AddMethod(">", RexxInteger::isGreaterThan, 1);
-        AddMethod("<", RexxInteger::isLessThan, 1);
-        AddMethod(">=", RexxInteger::isGreaterOrEqual, 1);
-        AddMethod("\\<", RexxInteger::isGreaterOrEqual, 1);
-        AddMethod("<=", RexxInteger::isLessOrEqual, 1);
-        AddMethod("\\>", RexxInteger::isLessOrEqual, 1);
-        AddMethod("==", RexxInteger::strictEqual, 1);
-        AddMethod("HashCode", RexxInteger::hashCode, 0);
-        AddMethod("\\==", RexxInteger::strictNotEqual, 1);
-        AddMethod(">>", RexxInteger::strictGreaterThan, 1);
-        AddMethod("<<", RexxInteger::strictLessThan, 1);
-        AddMethod(">>=", RexxInteger::strictGreaterOrEqual, 1);
-        AddMethod("\\<<", RexxInteger::strictGreaterOrEqual, 1);
-        AddMethod("<<=", RexxInteger::strictLessOrEqual, 1);
-        AddMethod("\\>>", RexxInteger::strictLessOrEqual, 1);
-        AddMethod("MakeString", RexxObject::makeStringRexx, 0);
-        AddMethod("Format", RexxInteger::format, 4);
-        AddMethod("Trunc", RexxInteger::trunc, 1);
-        AddMethod("modulo", RexxInteger::modulo, 1);
-        AddMethod("Floor", RexxInteger::floor, 0);
-        AddMethod("Ceiling", RexxInteger::ceiling, 0);
-        AddMethod("Round", RexxInteger::round, 0);
-        AddMethod("Class", RexxInteger::classObject, 0);
+AddMethod("+", RexxInteger::plus, 1);
+AddMethod("-", RexxInteger::minus, 1);
+AddMethod("*", RexxInteger::multiply, 1);
+AddMethod("**", RexxInteger::power, 1);
+AddMethod("/", RexxInteger::divide, 1);
+AddMethod("%", RexxInteger::integerDivide, 1);
+AddMethod("//", RexxInteger::remainder, 1);
+AddMethod("\\", RexxInteger::notOp, 0);
+AddMethod("&", RexxInteger::andOp, 1);
+AddMethod("|", RexxInteger::orOp, 1);
+AddMethod("&&", RexxInteger::xorOp, 1);
+AddMethod("?", RexxInteger::choiceRexx, 2);
+AddMethod("D2C", RexxInteger::d2c, 1);
+AddMethod("D2X", RexxInteger::d2x, 1);
+AddMethod("Abs", RexxInteger::abs, 0);
+AddMethod("Max", RexxInteger::Max, A_COUNT);
+AddMethod("Min", RexxInteger::Min, A_COUNT);
+AddMethod("Sign", RexxInteger::sign, 0);
+AddMethod("Equal", RexxInteger::equal, 1);
+AddMethod("=", RexxInteger::equal, 1);
+AddMethod("\\=", RexxInteger::notEqual, 1);
+AddMethod("<>", RexxInteger::notEqual, 1);
+AddMethod("><", RexxInteger::notEqual, 1);
+AddMethod(">", RexxInteger::isGreaterThan, 1);
+AddMethod("<", RexxInteger::isLessThan, 1);
+AddMethod(">=", RexxInteger::isGreaterOrEqual, 1);
+AddMethod("\\<", RexxInteger::isGreaterOrEqual, 1);
+AddMethod("<=", RexxInteger::isLessOrEqual, 1);
+AddMethod("\\>", RexxInteger::isLessOrEqual, 1);
+AddMethod("==", RexxInteger::strictEqual, 1);
+AddMethod("HashCode", RexxInteger::hashCode, 0);
+AddMethod("\\==", RexxInteger::strictNotEqual, 1);
+AddMethod(">>", RexxInteger::strictGreaterThan, 1);
+AddMethod("<<", RexxInteger::strictLessThan, 1);
+AddMethod(">>=", RexxInteger::strictGreaterOrEqual, 1);
+AddMethod("\\<<", RexxInteger::strictGreaterOrEqual, 1);
+AddMethod("<<=", RexxInteger::strictLessOrEqual, 1);
+AddMethod("\\>>", RexxInteger::strictLessOrEqual, 1);
+AddMethod("MakeString", RexxObject::makeStringRexx, 0);
+AddMethod("Format", RexxInteger::format, 4);
+AddMethod("Trunc", RexxInteger::trunc, 1);
+AddMethod("modulo", RexxInteger::modulo, 1);
+AddMethod("Floor", RexxInteger::floor, 0);
+AddMethod("Ceiling", RexxInteger::ceiling, 0);
+AddMethod("Round", RexxInteger::round, 0);
+AddMethod("Class", RexxInteger::classObject, 0);
 
-    CompleteMethodDefinitions();
+CompleteMethodDefinitions();
 
-    CompleteClassDefinition(Integer);
+CompleteClassDefinition(Integer);
 
 EndSpecialClassDefinition(Integer);
 
 
-    /***************************************************************************/
-    /*             NUMBERSTRING                                                */
-    /***************************************************************************/
+/***************************************************************************/
+/*             NUMBERSTRING                                                */
+/***************************************************************************/
 
 StartClassDefinition(NumberString)
 
-    // NOTE that we are pointing the new method at the String version...part of the
-    // fakeout that the NumberString class does.
-        AddClassMethod("New", RexxString::newRexx, A_COUNT);
+// NOTE that we are pointing the new method at the String version...part of the
+// fakeout that the NumberString class does.
+AddClassMethod("New", RexxString::newRexx, A_COUNT);
 
-    CompleteClassMethodDefinitions();
+CompleteClassMethodDefinitions();
 
-        AddMethod("Abs", NumberString::abs, 0);
-        AddMethod("Max", NumberString::Max, A_COUNT);
-        AddMethod("Min", NumberString::Min, A_COUNT);
-        AddMethod("Sign", NumberString::Sign, 0);
-        AddMethod("D2C", NumberString::d2c, 1);
-        AddMethod("D2X", NumberString::d2x, 1);
-        AddMethod("=", NumberString::equal, 1);
-        AddMethod("\\=", NumberString::notEqual, 1);
-        AddMethod("<>", NumberString::notEqual, 1);
-        AddMethod("><", NumberString::notEqual, 1);
-        AddMethod(">", NumberString::isGreaterThan, 1);
-        AddMethod("<", NumberString::isLessThan, 1);
-        AddMethod(">=", NumberString::isGreaterOrEqual, 1);
-        AddMethod("\\<", NumberString::isGreaterOrEqual, 1);
-        AddMethod("<=", NumberString::isLessOrEqual, 1);
-        AddMethod("\\>", NumberString::isLessOrEqual, 1);
-        AddMethod("==", NumberString::strictEqual, 1);
-        AddMethod("HashCode", NumberString::hashCode, 0);
-        AddMethod("\\==", NumberString::strictNotEqual, 1);
-        AddMethod(">>", NumberString::strictGreaterThan, 1);
-        AddMethod("<<", NumberString::strictLessThan, 1);
-        AddMethod(">>=", NumberString::strictGreaterOrEqual, 1);
-        AddMethod("\\<<", NumberString::strictGreaterOrEqual, 1);
-        AddMethod("<<=", NumberString::strictLessOrEqual, 1);
-        AddMethod("\\>>", NumberString::strictLessOrEqual, 1);
-        AddMethod("+", NumberString::plus, 1);
-        AddMethod("-", NumberString::minus, 1);
-        AddMethod("*", NumberString::multiply, 1);
-        AddMethod("**", NumberString::power, 1);
-        AddMethod("/", NumberString::divide, 1);
-        AddMethod("%", NumberString::integerDivide, 1);
-        AddMethod("//", NumberString::remainder, 1);
-        AddMethod("\\", NumberString::notOp, 0);
-        AddMethod("&", NumberString::andOp, 1);
-        AddMethod("|", NumberString::orOp, 1);
-        AddMethod("&&", NumberString::xorOp, 1);
-        AddMethod("MakeString", RexxObject::makeStringRexx, 0);
-        AddMethod("Format", NumberString::formatRexx, 4);
-        AddMethod("Trunc", NumberString::trunc, 1);
-        AddMethod("modulo", NumberString::modulo, 1);
-        AddMethod("Floor", NumberString::floor, 0);
-        AddMethod("Ceiling", NumberString::ceiling, 0);
-        AddMethod("Round", NumberString::round, 0);
-        AddMethod("Class", NumberString::classObject, 0);
+AddMethod("Abs", NumberString::abs, 0);
+AddMethod("Max", NumberString::Max, A_COUNT);
+AddMethod("Min", NumberString::Min, A_COUNT);
+AddMethod("Sign", NumberString::Sign, 0);
+AddMethod("D2C", NumberString::d2c, 1);
+AddMethod("D2X", NumberString::d2x, 1);
+AddMethod("Equal", NumberString::equal, 1);
+AddMethod("=", NumberString::equal, 1);
+AddMethod("\\=", NumberString::notEqual, 1);
+AddMethod("<>", NumberString::notEqual, 1);
+AddMethod("><", NumberString::notEqual, 1);
+AddMethod(">", NumberString::isGreaterThan, 1);
+AddMethod("<", NumberString::isLessThan, 1);
+AddMethod(">=", NumberString::isGreaterOrEqual, 1);
+AddMethod("\\<", NumberString::isGreaterOrEqual, 1);
+AddMethod("<=", NumberString::isLessOrEqual, 1);
+AddMethod("\\>", NumberString::isLessOrEqual, 1);
+AddMethod("==", NumberString::strictEqual, 1);
+AddMethod("HashCode", NumberString::hashCode, 0);
+AddMethod("\\==", NumberString::strictNotEqual, 1);
+AddMethod(">>", NumberString::strictGreaterThan, 1);
+AddMethod("<<", NumberString::strictLessThan, 1);
+AddMethod(">>=", NumberString::strictGreaterOrEqual, 1);
+AddMethod("\\<<", NumberString::strictGreaterOrEqual, 1);
+AddMethod("<<=", NumberString::strictLessOrEqual, 1);
+AddMethod("\\>>", NumberString::strictLessOrEqual, 1);
+AddMethod("+", NumberString::plus, 1);
+AddMethod("-", NumberString::minus, 1);
+AddMethod("*", NumberString::multiply, 1);
+AddMethod("**", NumberString::power, 1);
+AddMethod("/", NumberString::divide, 1);
+AddMethod("%", NumberString::integerDivide, 1);
+AddMethod("//", NumberString::remainder, 1);
+AddMethod("\\", NumberString::notOp, 0);
+AddMethod("&", NumberString::andOp, 1);
+AddMethod("|", NumberString::orOp, 1);
+AddMethod("&&", NumberString::xorOp, 1);
+AddMethod("MakeString", RexxObject::makeStringRexx, 0);
+AddMethod("Format", NumberString::formatRexx, 4);
+AddMethod("Trunc", NumberString::trunc, 1);
+AddMethod("modulo", NumberString::modulo, 1);
+AddMethod("Floor", NumberString::floor, 0);
+AddMethod("Ceiling", NumberString::ceiling, 0);
+AddMethod("Round", NumberString::round, 0);
+AddMethod("Class", NumberString::classObject, 0);
 
     CompleteMethodDefinitions();
 
@@ -1685,35 +1761,35 @@ EndClassDefinition(StackFrame);
     // set up the kernel methods that will be defined on OBJECT classes in
     // CoreClasses.orx
     {
-        // create a method used to retrieve the .Local environment.  We set this on the
-        // .Environment directory.
-        Protected<MethodClass> localMethod = new MethodClass(getGlobalName("LOCAL"), CPPCode::resolveExportedMethod("Local", CPPM(ActivityManager::getLocalRexx), 0, "ActivityManager::getLocalRexx"));
+            // create a method used to retrieve the .Local environment.  We set this on the
+            // .Environment directory.
+            Protected<MethodClass> localMethod = new MethodClass(getGlobalName("LOCAL"), CPPCode::resolveExportedMethod("Local", CPPM(ActivityManager::getLocalRexx), 0, "ActivityManager::getLocalRexx"));
 
-        // add this to the environment directory.
-        TheEnvironment->setMethodRexx(getGlobalName("LOCAL"), localMethod);
+            // add this to the environment directory.
+            TheEnvironment->setMethodRexx(getGlobalName("LOCAL"), localMethod);
 
-        // CoreClasses contains additional classes written in Rexx and enhances some of the
-        // base classes with methods written in Rexx.
-        RexxString *symb = getGlobalName(BASEIMAGELOAD);
-        RexxString *programName = ActivityManager::currentActivity->resolveProgramName(symb, OREF_NULL, OREF_NULL);
-        // create a new stack frame to run under
-        ActivityManager::currentActivity->createNewActivationStack();
-        try
-        {
-            // create an executable object for this.
-            Protected<RoutineClass> loader = LanguageParser::createProgram(programName);
+            // CoreClasses contains additional classes written in Rexx and enhances some of the
+            // base classes with methods written in Rexx.
+            RexxString *symb = getGlobalName(BASEIMAGELOAD);
+            RexxString *programName = ActivityManager::currentActivity->resolveProgramName(symb, OREF_NULL, OREF_NULL, RESOLVE_DEFAULT);
+            // create a new stack frame to run under
+            ActivityManager::currentActivity->createNewActivationStack();
+            try
+            {
+                    // create an executable object for this.
+                    Protected<RoutineClass> loader = LanguageParser::createProgram(programName);
 
-            // we pass the internal Rexx package as an argument to the setup program.
-            RexxObject *args = TheRexxPackage;
-            ProtectedObject result;
-            // now create the core program objects.
-            loader->runProgram(ActivityManager::currentActivity, GlobalNames::PROGRAM, OREF_NULL, (RexxObject **)&args, 1, result);
-        }
-        catch (ActivityException )
-        {
-            ActivityManager::currentActivity->error();          /* do error cleanup                  */
-            Interpreter::logicError("Error building kernel image.  Image not saved.");
-        }
+                    // we pass the internal Rexx package as an argument to the setup program.
+                    RexxObject *args = TheRexxPackage;
+                    ProtectedObject result;
+                    // now create the core program objects.
+                    loader->runProgram(ActivityManager::currentActivity, GlobalNames::PROGRAM, OREF_NULL, (RexxObject **)&args, 1, result);
+            }
+            catch (ActivityException)
+            {
+                    ActivityManager::currentActivity->error();          /* do error cleanup                  */
+                    Interpreter::logicError("Error building kernel image.  Image not saved.");
+            }
 
     }
 
@@ -1721,7 +1797,7 @@ EndClassDefinition(StackFrame);
     TheClassClass->removeSetupMethods();
 
     // now save the image
-    memoryObject.saveImage();
+    memoryObject.saveImage(imageTarget);
     ActivityManager::returnActivity(ActivityManager::currentActivity);
     exit(0);                         // successful build
 }

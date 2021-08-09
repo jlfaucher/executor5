@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2021 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -36,13 +36,11 @@
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 /*****************************************************************************/
-/* REXX Windows Support                                                      */
 /*                                                                           */
 /* Main interpreter control.  This is the preferred location for all         */
 /* platform independent global variables.                                    */
 /* The interpreter does not instantiate an instance of this                  */
 /* class, so most variables and methods should be static.                    */
-/*                                                                           */
 /*                                                                           */
 /*****************************************************************************/
 
@@ -56,6 +54,7 @@
 #include "RexxInternalApis.h"
 #include "PackageManager.hpp"
 #include "PackageClass.hpp"
+#include "RexxInternalApis.h"
 
 #include <stdio.h>
 
@@ -72,7 +71,6 @@ RexxObject *Interpreter::localServer = OREF_NULL;
 
 // the interpreter active state flag
 bool Interpreter::active = false;
-
 
 // exit return codes.
 const int RC_OK         = 0;
@@ -144,7 +142,7 @@ void Interpreter::processShutdown()
  * @param mode   The startup mode.  This indicates whether we're saving the
  *               image or in shutdown mode.
  */
-void Interpreter::startInterpreter(InterpreterStartupMode mode)
+void Interpreter::startInterpreter(InterpreterStartupMode mode, const char *imageTarget)
 {
     ResourceSection lock;
 
@@ -154,7 +152,7 @@ void Interpreter::startInterpreter(InterpreterStartupMode mode)
         SystemInterpreter::startInterpreter();   // perform system specific initialization
         // initialize the memory manager , and restore the
         // memory image
-        memoryObject.initialize(mode == RUN_MODE);
+        memoryObject.initialize(mode == RUN_MODE, imageTarget);
         RexxCreateSessionQueue();
         // create our instances list
         interpreterInstances = new_queue();
@@ -324,7 +322,7 @@ InterpreterInstance *Interpreter::createInterpreterInstance(RexxOption *options)
         // been created yet.  Keep the lock during the entire process.
         if (interpreterInstances == OREF_NULL)
         {
-            startInterpreter(RUN_MODE);
+            startInterpreter(RUN_MODE, NULL);
         }
     }
 
@@ -648,4 +646,117 @@ wholenumber_t Interpreter::messageNumber(RexxString *errorcode)
         }
     }
     return primary + secondary;          // add two portions together, return
+}
+
+
+/**
+ * Qualify a stream name for this system.
+ *
+ * @param name   The string stream name
+ *
+ * @return A string object containing the fully qualified stream name.
+ */
+RexxString* Interpreter::qualifyFileSystemName(RexxString *name)
+{
+    QualifiedName qualifiedName(name->getStringData());
+
+    return new_string(qualifiedName);
+}
+
+// this causes the error table to be created
+#define ERROR_TABLE
+
+// define macros to build entries in the msgEntry table for msg lookup
+#define MESSAGE(code, message)   {code, message},
+
+// a define for the message table entries
+typedef struct msgEntry
+{
+     int    code;                          // symbolic code for the message
+     const char *message;                  // the error message text
+} ERROR_MESSAGE;
+
+#include "RexxErrorMessages.h"
+
+// define macros to bulid entries in the msgMap table for msg lookup */
+#define MAJOR(code)   {code, code##_msg},  // Major error codes
+#define MINOR(code)   {code, code##_msg},  // Minor error codes (sub-codes)
+
+// definition for error table mappings
+typedef struct msgMap
+{
+     int    code;                          // Symbolic code
+     int    msgid;                         // The error message number
+} ERROR_MAP;
+
+#include "RexxMessageNumbers.h"        // include  definition of errorcodes
+#include "RexxMessageTable.h"          // include actual table definition
+
+
+/**
+ * Retrieve an error message by symbolic error number mapping.
+ *
+ * @param code   The fully qualified message code.
+ *
+ * @return The character string message or NULL if not found.
+ */
+const char* REXXENTRY RexxGetErrorMessage(int code)
+{
+    for (ERROR_MESSAGE *p = Message_table;
+         p->code != 0;
+         p++)
+    {
+        // did we find the target code
+        if (p->code == code)
+        {
+            // make this into a string object
+            return p->message;
+        }
+    }
+    // no message retrieved
+    return NULL;
+}
+
+
+/**
+ * Retrieve an error message by assigned external message number. This is mapped to the appropriate Rexx error code.
+ *
+ * @param msgid   The message number
+ *
+ * @return The character string message or NULL if the message is not found.
+ */
+const char* REXXENTRY RexxGetErrorMessageByNumber(int msgid)
+{
+    for (ERROR_MAP *p = Message_map_table;
+         p->msgid != 0;
+         p++)
+    {
+        // did we find the target code
+        if (p->msgid == msgid)
+        {
+            // make this into a string object
+            return RexxGetErrorMessage(p->code);
+        }
+    }
+    // no message retrieved
+    return NULL;
+}
+
+
+/**
+ * Retrieve the message text for a give error code.
+ *
+ * @param code   The Rexx error code
+ *
+ * @return The error message associated with that code.
+ */
+RexxString* Interpreter::getMessageText(wholenumber_t code)
+{
+    const char *message = RexxGetErrorMessage((int)code);
+    if (message != NULL)
+    {
+        return new_string(message);
+    }
+    // no message retrieved
+    return OREF_NULL;
 }

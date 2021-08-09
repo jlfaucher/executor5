@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -49,6 +49,7 @@
 
 class ProtectedObject;
 class RoutineClass;
+class ProgramSource;
 
 /**
  * Base class for a code object.  Code objects can be invoked as
@@ -57,6 +58,7 @@ class RoutineClass;
 class BaseCode : public RexxInternalObject
 {
 public:
+
     virtual void run(Activity *, MethodClass *, RexxObject *, RexxString *,  RexxObject **, size_t, ProtectedObject &);
     virtual void call(Activity *, RoutineClass *, RexxString *,  RexxObject **, size_t, RexxString *, RexxString *, ActivationContext, ProtectedObject &);
     virtual void call(Activity *, RoutineClass *, RexxString *,  RexxObject **, size_t, ProtectedObject &);
@@ -67,7 +69,10 @@ public:
     virtual RexxClass *findClass(RexxString *className);
     virtual BaseCode  *setPackageObject(PackageClass *s);
     virtual PackageClass *getPackage();
-            void detachSource();
+
+    inline  bool isSamePackage(PackageClass *p) { return p == getPackage(); }
+            ProgramSource *detachSource();
+            void attachSource(ProgramSource *);
 
             PackageClass *package;             // source this is attached to
 };

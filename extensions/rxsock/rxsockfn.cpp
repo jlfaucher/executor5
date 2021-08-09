@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2021 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -139,10 +139,11 @@ RexxRoutine2(int, SockAccept, int, sock, OPTIONAL_RexxObjectPtr, stemSource)
     socklen_t    nameLen;
 
     nameLen = sizeof(addr);
-    int rc = accept(sock, (struct sockaddr *)&addr, &nameLen);
+    // (int) cast avoids C4244 on Windows 64-bit
+    int rc = (int)accept(sock, (struct sockaddr *)&addr, &nameLen);
 
     // set the errno variables
-    cleanup(context);
+    setErrno(context, rc >= 0);
 
     /*---------------------------------------------------------------
      * set addr, if asked for
@@ -189,7 +190,7 @@ RexxRoutine2(int, SockBind, int, sock, RexxObjectPtr, stemSource)
      *---------------------------------------------------------------*/
     int rc = bind(sock, (struct sockaddr *)&addr, sizeof(addr));
     // make sure the errno variables are set
-    cleanup(context);
+    setErrno(context, rc >= 0);
     return rc;
 }
 
@@ -211,7 +212,7 @@ RexxRoutine1(int, SockClose, int, sock)
     int rc = close(sock);
 #endif
     // set the errno information
-    cleanup(context);
+    setErrno(context, rc >= 0);
 
     return rc;
 }
@@ -243,7 +244,7 @@ RexxRoutine2(int, SockConnect, int, sock, RexxObjectPtr, stemSource)
      *---------------------------------------------------------------*/
     int rc = connect(sock,(struct sockaddr *)&addr, sizeof(addr));
     // set the errno information
-    cleanup(context);
+    setErrno(context, rc >= 0);
 
     return rc;
 }
@@ -278,7 +279,7 @@ RexxRoutine3(int, SockGetHostByAddr, CSTRING, addrArg, RexxObjectPtr, stemSource
      *---------------------------------------------------------------*/
     pHostEnt = gethostbyaddr((char*)&addr, sizeof(addr), domain);
     // set the errno information
-    cleanup(context);
+    setErrno(context, pHostEnt != NULL);
 
     if (!pHostEnt)
     {
@@ -312,7 +313,7 @@ RexxRoutine2(int, SockGetHostByName, CSTRING, name, RexxObjectPtr, stemSource)
      *---------------------------------------------------------------*/
     pHostEnt = gethostbyname(name);
     // set the errno information
-    cleanup(context);
+    setErrno(context, pHostEnt != NULL);
 
     if (!pHostEnt)
     {
@@ -335,23 +336,22 @@ RexxRoutine0(RexxStringObject, SockGetHostId)
 {
     in_addr ia;
 #ifdef WIN32
-    char     pszBuff[64];                    // buffer for ip address
+    char     pszBuff[256];                   // hostnames should be 255 chars or less
     PHOSTENT pHostEnt;                       // ptr to hostent structure
-    /*
-     *   Retrieve my ip address.  Assuming the hosts file in
-     *   in %systemroot%/system/drivers/etc/hosts contains my computer name.
-     */                                      //get our name
+
+    // get our local hostname
     if (gethostname(pszBuff, sizeof(pszBuff)))
     {
         // set the errno information
-        cleanup(context);
+        setErrno(context, false);
         return context->String("0.0.0.0");
     }
+    pszBuff[255] = '\0';                     // belt and braces
     pHostEnt = gethostbyname(pszBuff);       // get our ip address
     if (!pHostEnt)
     {
         // set the errno information
-        cleanup(context);
+        setErrno(context, false);
         return context->String("0.0.0.0");
     }
     ia.s_addr = (*(uint32_t *)pHostEnt->h_addr);// in network byte order already
@@ -360,21 +360,22 @@ RexxRoutine0(RexxStringObject, SockGetHostId)
 #if defined(OPSYS_AIX) || defined(OPSYS_LINUX)
 #define h_addr h_addr_list[0]
 
-    char     pszBuff[64];                    /* buffer for ip address*/
-    struct hostent * pHostEnt;               /* ptr to hostent structure*/
+    char   pszBuff[256];                     // hostnames should be 255 chars or less
+    struct hostent *pHostEnt;                // ptr to hostent structure
 
-    /*get our name*/
+    // get our local hostname
     if (gethostname(pszBuff, sizeof(pszBuff)))
     {
         // set the errno information
-        cleanup(context);
+        setErrno(context, false);
         return context->String("0.0.0.0");
     }
-    pHostEnt = gethostbyname(pszBuff);     /* get our ip address */
+    pszBuff[255] = '\0';                     // belt and braces
+    pHostEnt = gethostbyname(pszBuff);       // get our ip address
     // set the errno information
-    cleanup(context);
     if (!pHostEnt)
     {
+        setErrno(context, false);
         return context->String("0.0.0.0");
     }
     ia.s_addr = (*(uint32_t *)pHostEnt->h_addr);// in network byte order already
@@ -382,7 +383,7 @@ RexxRoutine0(RexxStringObject, SockGetHostId)
 #else
     ia.s_addr = htonl(gethostid());
     // set the errno information
-    cleanup(context);
+    setErrno(context, true);
     return context->String(inet_ntoa(ia));
 #endif
 #endif
@@ -396,17 +397,14 @@ RexxRoutine0(RexxStringObject, SockGetHostId)
  *------------------------------------------------------------------*/
 RexxRoutine0(RexxStringObject, SockGetHostName)
 {
-    char pszBuff[256];             /* host names are limited to 255 bytes */
+    char pszBuff[256];             // host names should be 255 chars or less
     *pszBuff = '\0';
 
-    /*
-     *   Assuming the hosts file in
-     *   in %systemroot%/system/drivers/etc/hosts contains my computer name.
-     */
     int rc = gethostname(pszBuff, sizeof(pszBuff));
+    pszBuff[255] = '\0';           // belt and braces
 
     // set the errno information
-    cleanup(context);
+    setErrno(context, rc >= 0);
 
     return context->String(pszBuff);
 }
@@ -435,7 +433,7 @@ RexxRoutine2(int, SockGetPeerName, int, sock, RexxObjectPtr, stemSource)
     int rc = getpeername(sock,(struct sockaddr *)&addr,&nameLen);
 
     // set the errno information
-    cleanup(context);
+    setErrno(context, rc >= 0);
 
     /*---------------------------------------------------------------
      * write address to stem
@@ -471,7 +469,7 @@ RexxRoutine2(int, SockGetSockName, int, sock, RexxObjectPtr, stemSource)
     nameLen = sizeof(addr);
     int rc = getsockname(sock,(struct sockaddr *)&addr,&nameLen);
     // set the errno information
-    cleanup(context);
+    setErrno(context, rc >= 0);
 
     /*---------------------------------------------------------------
      * write address to stem
@@ -496,6 +494,9 @@ RexxRoutine4(int, SockGetSockOpt, int, sock, CSTRING, level, CSTRING, option, CS
     socklen_t      len;
     void          *ptr;
     char           buffer[30];
+#ifndef WIN32
+    struct timeval tv;
+#endif
 
 
     if (caselessCompare("SOL_SOCKET", level) != 0)
@@ -521,6 +522,16 @@ RexxRoutine4(int, SockGetSockOpt, int, sock, CSTRING, level, CSTRING, option, CS
             len = sizeof(lingStruct);
             break;
 
+#ifndef WIN32
+        // on Windows SO_RCVTIMEO and SO_SNDTIMEO expect a milliseconds
+        // DWORD argument, whereas on Unix a struct timeval is expected
+        case SO_RCVTIMEO:
+        case SO_SNDTIMEO:
+            ptr = &tv;
+            len = sizeof(tv);
+            break;
+#endif
+
         default:
             ptr = &intVal;
             len = sizeof(int);
@@ -532,7 +543,7 @@ RexxRoutine4(int, SockGetSockOpt, int, sock, CSTRING, level, CSTRING, option, CS
     int rc = getsockopt(sock,SOL_SOCKET,opt,(char *)ptr,&len);
 
     // set the errno information
-    cleanup(context);
+    setErrno(context, rc >= 0);
 
     /*---------------------------------------------------------------
      * set return value
@@ -552,6 +563,15 @@ RexxRoutine4(int, SockGetSockOpt, int, sock, CSTRING, level, CSTRING, option, CS
                 default:          strcpy(buffer,"UNKNOWN");
             }
             break;
+
+#ifndef WIN32
+        // on Windows SO_RCVTIMEO and SO_SNDTIMEO expect a milliseconds
+        // DWORD argument, whereas on Unix a struct timeval is expected
+        case SO_RCVTIMEO:
+        case SO_SNDTIMEO:
+            sprintf(buffer, "%d", (int)(tv.tv_sec * 1000 + tv.tv_usec / 1000));
+            break;
+#endif
 
         default:
             sprintf(buffer,"%d", intVal);
@@ -611,7 +631,7 @@ RexxRoutine3(int, SockIoctl, int, sock, CSTRING, command, RexxObjectPtr, var)
 #endif
 
     // set the errno information
-    cleanup(context);
+    setErrno(context, rc >= 0);
 
     /*---------------------------------------------------------------
      * set output for FIONREAD
@@ -638,7 +658,7 @@ RexxRoutine2(int, SockListen, int, sock, int, backlog)
     int rc = listen(sock, backlog);
 
     // set the errno information
-    cleanup(context);
+    setErrno(context, rc >= 0);
     return rc;
 }
 
@@ -692,7 +712,7 @@ RexxRoutine4(int, SockRecv, int, sock, CSTRING, var, int, dataLen, OPTIONAL_CSTR
     rc = recv(sock, pBuffer, dataLen, flags);
 
     // set the errno information
-    cleanup(context);
+    setErrno(context, rc >= 0);
 
     if (-1 == rc)
     {
@@ -784,7 +804,7 @@ RexxRoutine5(int, SockRecvFrom, int, sock, CSTRING, var, int, dataLen, RexxObjec
     int rc = recvfrom(sock,pBuffer,dataLen,flags,(struct sockaddr *)&addr,&addr_size);
 
     // set the errno information
-    cleanup(context);
+    setErrno(context, rc >= 0);
 
     if (-1 == rc)
     {
@@ -921,7 +941,7 @@ RexxRoutine4(int, SockSelect, OPTIONAL_RexxObjectPtr, array1, OPTIONAL_RexxObjec
     rc = select(max+1,rSet,wSet,eSet,timeOutP);
 
     // set the errno information
-    cleanup(context);
+    setErrno(context, rc >= 0);
 
     /*---------------------------------------------------------------
      * fix up the socket arrays
@@ -1048,10 +1068,11 @@ RexxRoutine3(int, SockSend, int, sock, RexxStringObject, dataObj, OPTIONAL_CSTRI
     /*---------------------------------------------------------------
      * call function
      *---------------------------------------------------------------*/
-    int rc = send(sock,data,dataLen,flags);
+    // (int) cast avoids C4267 on Windows 64-bit, but potential issue
+    int rc = send(sock, data, (int)dataLen, flags);
 
     // set the errno information
-    cleanup(context);
+    setErrno(context, rc >= 0);
 
     /*---------------------------------------------------------------
      * set return code
@@ -1074,7 +1095,7 @@ RexxRoutine4(int, SockSendTo, int, sock, RexxStringObject, dataObj, RexxObjectPt
     /*---------------------------------------------------------------
      * get data length
      *---------------------------------------------------------------*/
-    int dataLen = context->StringLength(dataObj);
+    size_t dataLen = context->StringLength(dataObj);
     const char *data    = context->StringData(dataObj);
 
     /*---------------------------------------------------------------
@@ -1119,10 +1140,11 @@ RexxRoutine4(int, SockSendTo, int, sock, RexxStringObject, dataObj, RexxObjectPt
     /*---------------------------------------------------------------
      * call function
      *---------------------------------------------------------------*/
-    int rc = sendto(sock,data,dataLen,flags,(struct sockaddr *)&addr,sizeof(addr));
+    // (int) cast avoids C4267 on Windows 64-bit, but potential issue
+    int rc = sendto(sock, data, (int)dataLen, flags, (struct sockaddr *)&addr, sizeof(addr));
 
     // set the errno information
-    cleanup(context);
+    setErrno(context, rc >= 0);
 
     /*---------------------------------------------------------------
      * set return code
@@ -1143,6 +1165,9 @@ RexxRoutine4(int, SockSetSockOpt, int, sock, CSTRING, target, CSTRING, option, C
     socklen_t      lenVal;
     int            len;
     void          *ptr;
+#ifndef WIN32
+    struct timeval tv;
+#endif
 
 
     if (caselessCompare("SOL_SOCKET", target))
@@ -1185,6 +1210,19 @@ RexxRoutine4(int, SockSetSockOpt, int, sock, CSTRING, target, CSTRING, option, C
             sscanf(arg, "%d", &lenVal);
             break;
 
+#ifndef WIN32
+        // on Windows SO_RCVTIMEO and SO_SNDTIMEO expect a milliseconds
+        // DWORD argument, whereas on Unix a struct timeval is expected
+        case SO_RCVTIMEO:
+        case SO_SNDTIMEO:
+            ptr = &tv;
+            len = sizeof(tv);
+            sscanf(arg, "%d", &intVal);
+            tv.tv_sec = intVal / 1000;
+            tv.tv_usec = (intVal - tv.tv_sec * 1000) * 1000 + 333;
+            break;
+#endif
+
         case SO_ERROR:
         case SO_TYPE:
             return -1;
@@ -1196,7 +1234,7 @@ RexxRoutine4(int, SockSetSockOpt, int, sock, CSTRING, target, CSTRING, option, C
     int rc = setsockopt(sock,SOL_SOCKET,opt,(const char *)ptr,len);
 
     // set the errno information
-    cleanup(context);
+    setErrno(context, rc >= 0);
 
     /*---------------------------------------------------------------
      * set return code
@@ -1218,7 +1256,7 @@ RexxRoutine2(int, SockShutDown, int, sock, int, how)
     int rc = shutdown(sock, how);
 
     // set the errno information
-    cleanup(context);
+    setErrno(context, rc >= 0);
 
     /*---------------------------------------------------------------
      * set return code
@@ -1243,7 +1281,7 @@ RexxRoutine0(int, SockInit)
     int rc = 0;
 #endif
     // set the errno information
-    cleanup(context);
+    setErrno(context, rc == 0);
 
     /*---------------------------------------------------------------
      * set return code
@@ -1311,34 +1349,13 @@ RexxRoutine3(int, SockSocket, CSTRING, domainArg, CSTRING, typeArg, CSTRING, pro
     /*---------------------------------------------------------------
      * call function
      *---------------------------------------------------------------*/
-    int rc = socket(domain,type,protocol);
+    // (int) cast avoids C4244 on Windows 64-bit
+    int rc = (int)socket(domain, type, protocol);
     // set the errno information
-    cleanup(context);
+    setErrno(context, rc >= 0);
 
     /*---------------------------------------------------------------
      * set return code
      *---------------------------------------------------------------*/
     return rc;
 }
-
-/*-/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\-*/
-/*-\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/-*/
-
-/*------------------------------------------------------------------
- * soclose()
- *------------------------------------------------------------------*/
-RexxRoutine1(int, SockSoClose, int, sock)
-{
-    /*---------------------------------------------------------------
-     * call function
-     *---------------------------------------------------------------*/
-#if defined(WIN32)
-    int rc = closesocket(sock);
-#else
-    int rc = close(sock);
-#endif
-    // set the errno information
-    cleanup(context);
-    return rc;
-}
-

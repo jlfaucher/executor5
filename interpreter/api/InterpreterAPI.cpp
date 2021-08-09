@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -76,7 +76,7 @@ int REXXENTRY RexxInitialize ()
 /******************************************************************************/
 {
     // start this up for normal execution
-    Interpreter::startInterpreter(Interpreter::RUN_MODE);
+    Interpreter::startInterpreter(Interpreter::RUN_MODE, NULL);
     // this always returns true
     return true;
 }
@@ -87,10 +87,10 @@ int REXXENTRY RexxInitialize ()
  *
  * @return Nothing
  */
-void REXXENTRY RexxCreateInterpreterImage()
+void REXXENTRY RexxCreateInterpreterImage(const char *target)
 {
     // start this up and save the image.  This never returns to here
-    Interpreter::startInterpreter(Interpreter::SAVE_IMAGE_MODE);
+    Interpreter::startInterpreter(Interpreter::SAVE_IMAGE_MODE, target);
 }
 
 
@@ -114,15 +114,15 @@ void REXXENTRY RexxCreateInterpreterImage()
 /*                                                                            */
 /******************************************************************************/
 int REXXENTRY RexxStart(
-  size_t argcount,                     /* Number of args in arglist         */
-  PCONSTRXSTRING arglist,              /* Array of args                     */
-  const char *programname,             /* REXX program to run               */
-  PRXSTRING instore,                   /* Instore array                     */
-  const char *envname,                 /* Initial cmd environment           */
-  int   calltype,                      /* How the program is called         */
-  PRXSYSEXIT exits,                    /* Array of system exit names        */
-  short * retcode,                     /* Integer form of result            */
-  PRXSTRING result)                    /* Result returned from program      */
+    size_t argcount,                     /* Number of args in arglist         */
+    PCONSTRXSTRING arglist,              /* Array of args                     */
+    const char *programname,             /* REXX program to run               */
+    PRXSTRING instore,                   /* Instore array                     */
+    const char *envname,                 /* Initial cmd environment           */
+    int   calltype,                      /* How the program is called         */
+    PRXSYSEXIT exits,                    /* Array of system exit names        */
+    short *retcode,                     /* Integer form of result            */
+    PRXSTRING result)                    /* Result returned from program      */
 {
     if (calltype == RXCOMMAND && argcount == 1 && arglist[0].strptr != NULL && arglist[0].strlength > 0 &&
         StringUtil::caselessCompare(arglist[0].strptr, "//T", arglist[0].strlength) == 0)
@@ -133,6 +133,7 @@ int REXXENTRY RexxStart(
         // this just translates and gives the error, potentially returning
         // the instore image
         arguments.outputName = NULL;
+        arguments.encode = false;
         // go run this program
         arguments.invoke(exits, envname);
 
@@ -144,11 +145,11 @@ int REXXENTRY RexxStart(
     // interpreter call.  This gets all of the RexxStart arguments, then
     // gets dispatched on the other side of the interpreter boundary
     RexxStartDispatcher arguments;
-                                       /* copy all of the arguments into    */
-                                       /* the info control block, which is  */
-                                       /* passed across the kernel boundary */
-                                       /* into the real RexxStart method    */
-                                       /* this is a real execution          */
+    /* copy all of the arguments into    */
+    /* the info control block, which is  */
+    /* passed across the kernel boundary */
+    /* into the real RexxStart method    */
+    /* this is a real execution          */
     arguments.argcount = argcount;
     arguments.arglist = arglist;
     arguments.programName = programname;
@@ -179,15 +180,16 @@ int REXXENTRY RexxStart(
  *
  * @return The error return code (if any).
  */
-RexxReturnCode REXXENTRY RexxTranslateProgram(const char *inFile, const char *outFile, PRXSYSEXIT exits)
+RexxReturnCode REXXENTRY RexxCompileProgram(const char *inFile, const char *outFile, PRXSYSEXIT exits, bool encode)
 {
     TranslateDispatcher arguments;
     // this gets processed from disk, always.
     arguments.programName = inFile;
     arguments.instore = NULL;
-    // this just translates and gives the error, potentially returning
-    // the instore image
+    // this saves to a file, possible base65 encoded
     arguments.outputName = outFile;
+    arguments.encode = encode;
+
     // go run this program
     arguments.invoke(exits, NULL);
 
@@ -196,6 +198,22 @@ RexxReturnCode REXXENTRY RexxTranslateProgram(const char *inFile, const char *ou
     Interpreter::terminateInterpreter();
 
     return (RexxReturnCode)arguments.rc;       /* return the error code (negated)   */
+}
+
+
+/**
+ * Translate a program and store the translated results in an
+ * external file.
+ *
+ * @param inFile  The input source file.
+ * @param outFile The output source.
+ * @param exits   The exits to use during the translation process.
+ *
+ * @return The error return code (if any).
+ */
+RexxReturnCode REXXENTRY RexxTranslateProgram(const char *inFile, const char *outFile, PRXSYSEXIT exits)
+{
+    return RexxCompileProgram(inFile, outFile, exits, false);
 }
 
 
@@ -230,7 +248,7 @@ RexxReturnCode REXXENTRY RexxTranslateInstoreProgram(const char *inFile, CONSTRX
 char *REXXENTRY RexxGetVersionInformation()
 {
     char ver[100];
-    sprintf( ver, " %d.%d.%d", ORX_VER, ORX_REL, ORX_MOD );
+    sprintf( ver, " %d.%d.%d r%d", ORX_VER, ORX_REL, ORX_MOD, ORX_BLD);
     char header[] = "Open Object Rexx Version";
   #ifdef _DEBUG
     char build[] = " - Internal Test Version\nBuild date: ";
@@ -246,7 +264,7 @@ char *REXXENTRY RexxGetVersionInformation()
     char copy2[] = "\nCopyright (c) " OOREXX_COPY_YEAR " Rexx Language Association. All rights reserved.";
     char copy3[] = "\nThis program and the accompanying materials are made available under the terms";
     char copy4[] = "\nof the Common Public License v1.0 which accompanies this distribution or at";
-    char copy5[] = "\nhttp://www.oorexx.org/license.html";
+    char copy5[] = "\nhttps://www.oorexx.org/license.html";
     char *ptr = (char *)SystemInterpreter::allocateResultMemory(strlen(header) + strlen(ver) + strlen(build) + strlen(__DATE__) +
         strlen(mode) + strlen(copy1) + strlen(copy2) + strlen(copy3) + strlen(copy4) + strlen(copy5) + 1);
     if (ptr != NULL)
@@ -404,12 +422,12 @@ RexxReturnCode RexxEntry RexxVariablePool(PSHVBLOCK pshvblock)
  *
  * @return The sort return code result.
  */
-RexxReturnCode RexxEntry RexxStemSort(const char *stemname, int order, int type,
-    size_t start, size_t end, size_t firstcol, size_t lastcol)
+RexxReturnCode RexxEntry RexxStemSort(RexxStemObject stem, const char *tailExtension, int order, int type,
+    wholenumber_t start, wholenumber_t end, wholenumber_t firstcol, wholenumber_t lastcol)
 {
     NativeContextBlock context;
     // the variable pool interface handles its own try/catches.
-    return context.self->stemSort(stemname, order, type, start, end, firstcol, lastcol);
+    return context.self->stemSort((StemClass *)stem, tailExtension, order, type, start, end, firstcol, lastcol);
 }
 
 /**

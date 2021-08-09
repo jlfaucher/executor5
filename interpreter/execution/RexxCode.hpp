@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2020 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -68,16 +68,16 @@ class RexxCode : public BaseCode
    RexxCode(PackageClass *s, SourceLocation &loc, RexxInstruction *i, StringTable *l = OREF_NULL, size_t f = 0, size_t v = RexxLocalVariables::FIRST_VARIABLE_INDEX);
    inline RexxCode(RESTORETYPE restoreType) { ; };
 
-   virtual void live(size_t);
-   virtual void liveGeneral(MarkReason reason);
-   virtual void flatten(Envelope *);
+   void live(size_t) override;
+   void liveGeneral(MarkReason reason) override;
+   void flatten(Envelope *) override;
 
    // overrides for BaseCode methods
-   virtual void run(Activity *, MethodClass *, RexxObject *, RexxString *, RexxObject **,  size_t, ProtectedObject &);
-   virtual void call(Activity *, RoutineClass *, RexxString *,  RexxObject **, size_t, RexxString *, RexxString *, ActivationContext, ProtectedObject &);
-   virtual void call(Activity *, RoutineClass *, RexxString *,  RexxObject **, size_t, ProtectedObject &);
-   virtual ArrayClass *getSource();
-   virtual RexxObject *setSecurityManager(RexxObject *);
+   void run(Activity *, MethodClass *, RexxObject *, RexxString *, RexxObject **,  size_t, ProtectedObject &) override;
+   void call(Activity *, RoutineClass *, RexxString *,  RexxObject **, size_t, RexxString *, RexxString *, ActivationContext, ProtectedObject &) override;
+   void call(Activity *, RoutineClass *, RexxString *,  RexxObject **, size_t, ProtectedObject &) override;
+   ArrayClass *getSource() override;
+   RexxObject *setSecurityManager(RexxObject *) override;
 
    RexxString      *getProgramName();
 
@@ -95,9 +95,10 @@ class RexxCode : public BaseCode
    inline StringTable *getMethods() { return package->getMethods(); };
    inline StringTable *getRoutines() { return package->getRoutines(); };
    inline RoutineClass *findRoutine(RexxString *n) { return package->findRoutine(n); }
-   inline RexxString *resolveProgramName(Activity *activity, RexxString *name) { return package->resolveProgramName(activity, name); }
+   inline RexxString *resolveProgramName(Activity *activity, RexxString *name, ResolveType type) { return package->resolveProgramName(activity, name, type); }
    inline void        mergeRequired(PackageClass *s) { package->mergeRequired(s); }
           RexxCode *interpret(RexxString *source, size_t lineNumber);
+          void addInstruction(RexxInstruction *i, size_t m, size_t v);
 
 
 protected:

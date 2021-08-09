@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -274,7 +274,7 @@ RexxObject *StemClass::unknownRexx(RexxString *message, ArrayClass *arguments)
  * @param count     The count of arguments.
  * @param result    The return result protected object.
  */
-void StemClass::processUnknown(RexxString *messageName, RexxObject **arguments, size_t count, ProtectedObject &result)
+void StemClass::processUnknown(RexxErrorCodes error, RexxString *messageName, RexxObject **arguments, size_t count, ProtectedObject &result)
 {
     // just send this as a message directly to the string object.
     value->messageSend(messageName, arguments, count, result);
@@ -381,13 +381,28 @@ RexxObject *StemClass::hasItem(RexxInternalObject *target)
 }
 
 
+/**
+ * Remove the target object from the stem.
+ *
+ * @param target The target object.
+ *
+ * @return The removed object (same as target).
+ */
+RexxInternalObject *StemClass::removeItemRexx(RexxObject *target)
+{
+    // we require the index to be there.
+    requiredArgument(target, ARG_ONE);
+    // do the removal
+    return removeItem(target);
+}
+
 
 /**
- * Remove an item from the collection.
+ * Remove the target object from the stem.
  *
- * @param target The object of interest.
+ * @param target The target object.
  *
- * @return .true if the object is in the collection, .false otherwise.
+ * @return The removed object (same as target).
  */
 RexxInternalObject *StemClass::removeItem(RexxInternalObject *target)
 {
@@ -1587,11 +1602,13 @@ bool StemClass::sort(RexxString *prefix, int order, int type, size_t _first, siz
     CompoundTableElement *size_element = findCompoundVariable(stem_size);
     if (size_element == OREF_NULL)
     {
+        reportException(Error_Incorrect_call_stem_size);
         return false;
     }
     RexxInternalObject *size_value = size_element->getVariableValue();
     if (size_value == OREF_NULL)
     {
+        reportException(Error_Incorrect_call_stem_size);
         return false;
     }
 
@@ -1599,6 +1616,7 @@ bool StemClass::sort(RexxString *prefix, int order, int type, size_t _first, siz
     // get the integer value of this.  It must be a valid numeric value.
     if (!size_value->unsignedNumberValue(count, Numerics::DEFAULT_DIGITS))
     {
+        reportException(Error_Incorrect_call_stem_size);
         return false;
     }
     if (count == 0)         // if the count is zero, sorting is easy!
@@ -1607,7 +1625,7 @@ bool StemClass::sort(RexxString *prefix, int order, int type, size_t _first, siz
     }
 
     // if this is not specified, sort to the end
-    if (last == SIZE_MAX)
+    if (last == (size_t)Numerics::MAX_WHOLENUMBER)
     {
         last = count;
     }
@@ -1615,6 +1633,7 @@ bool StemClass::sort(RexxString *prefix, int order, int type, size_t _first, siz
     // verify we're fully within the bounds
     if (_first > count || last > count)
     {
+        reportException(Error_Incorrect_call_stem_range, count);
         return false;
     }
     size_t bounds = last - _first + 1;
@@ -1631,13 +1650,16 @@ bool StemClass::sort(RexxString *prefix, int order, int type, size_t _first, siz
         CompoundVariableTail nextStem(prefix, (size_t)i);
         CompoundTableElement *next_element = findCompoundVariable(nextStem);
 
-        if (next_element == OREF_NULL) {
+        if (next_element == OREF_NULL)
+        {
+            reportException(Error_Incorrect_call_stem_sparse_array, i);
             return false;
         }
 
         RexxInternalObject *nextValue = next_element->getVariableValue();
         if (nextValue == OREF_NULL)
         {
+            reportException(Error_Incorrect_call_stem_sparse_array, i);
             return false;
         }
         // force this to a string value.
@@ -1658,7 +1680,7 @@ bool StemClass::sort(RexxString *prefix, int order, int type, size_t _first, siz
         // All the rest of the operations are thread safe.
         UnsafeBlock block;
 
-        if ((firstcol == 0) && (lastcol == SIZE_MAX))
+        if ((firstcol == 1) && (lastcol == (size_t)Numerics::MAX_WHOLENUMBER))
         {
             /* no special columns to check */
             switch (type)
@@ -1676,7 +1698,7 @@ bool StemClass::sort(RexxString *prefix, int order, int type, size_t _first, siz
         else
         {
             /* set columns to sort */
-            sd.startColumn = firstcol;
+            sd.startColumn = firstcol - 1;   // zero base for the sort compare
             sd.columnLength = lastcol - firstcol + 1;
 
             switch (type)

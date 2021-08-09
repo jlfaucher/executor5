@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -58,13 +58,13 @@ class ListClass : public RexxObject
     ListClass(size_t capacity = DefaultListSize);
     ListClass(bool fromRexx) { }
 
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
-    virtual void flatten(Envelope *);
+    void live(size_t) override;
+    void liveGeneral(MarkReason reason) override;
+    void flatten(Envelope *) override;
 
-    virtual RexxInternalObject *copy();
-    virtual ArrayClass *makeArray();
-    virtual ArrayClass *requestArray();
+    RexxInternalObject *copy() override;
+    ArrayClass *makeArray() override;
+    ArrayClass *requestArray() override;
 
     // APIS for use from other parts of the interpreter
     void put(RexxInternalObject *value, size_t index);
@@ -124,7 +124,7 @@ class ListClass : public RexxObject
     static RexxClass *classInstance;
 
     // the default size of a list (and also the minimum size we'll create)
-    static const size_t DefaultListSize = 8;
+    static const size_t DefaultListSize;
     // for small Lists, we expand by doubling the current size, however
     // for Lists larger than this limit, we just extend by half the current size
     static const size_t ExpansionDoubleLimit = 2000;

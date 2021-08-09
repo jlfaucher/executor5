@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -58,6 +58,8 @@
 #include "SysInterpreterInstance.hpp"
 #include "CommandHandler.hpp"
 #include "SysThread.hpp"
+
+#include <ctype.h>
 
 #define CMDBUFSIZE 8092                // maximum commandline length
 #define CMDDEFNAME "CMD.EXE"           // default Windows cmomand handler
@@ -183,17 +185,16 @@ public:
 
 
 /**
- * Raises syntax error 98.896 Address command redirection failed.
+ * Raises syntax error 98.923 Address command redirection failed.
  *
  * @param context    The Exit context.
  * @param errCode    The operating system error code.
  */
-RexxObjectPtr ErrorRedirection(RexxExitContext *context, int errCode)
+void ErrorRedirection(RexxExitContext *context, int errCode)
 {
-    // raise 98.896 Address command redirection failed
+    // raise 98.923 Address command redirection failed
     context->RaiseException1(Error_Execution_address_redirection_failed,
       context->Int32ToObject(errCode));
-    return NULLOBJECT;
 }
 
 
@@ -303,14 +304,13 @@ bool sys_process_cd(RexxExitContext *context, const char *command, const char * 
     }
     else
     {
-        char *unquoted = unquote(st);
+        AutoFree unquoted = unquote(st);
         if (unquoted == NULL)
         {
             return false;
         }
         rc = _chdir(unquoted);
         error = GetLastError();
-        free(unquoted);
     }
     if (rc != 0)
     {
@@ -537,7 +537,8 @@ bool sysCommandNT(RexxExitContext *context,
                 // the INPUT thread may have encountered an error .. raise it now
                 if (inputThread.error != 0)
                 {
-                    return ErrorRedirection(context, inputThread.error);
+                    ErrorRedirection(context, inputThread.error);
+                    return false;
                 }
             }
 
@@ -554,7 +555,8 @@ bool sysCommandNT(RexxExitContext *context,
                 // the OUTPUT thread may have encountered an error .. raise it now
                 if (outputThread.error != 0)
                 {
-                    return ErrorRedirection(context, errorThread.error);
+                    ErrorRedirection(context, errorThread.error);
+                    return false;
                 }
             }
 
@@ -571,7 +573,8 @@ bool sysCommandNT(RexxExitContext *context,
                 // the ERROR thread may have encountered an error .. raise it now
                 if (errorThread.error != 0)
                 {
-                    return ErrorRedirection(context, errorThread.error);
+                    ErrorRedirection(context, errorThread.error);
+                    return false;
                 }
             }
         }
@@ -640,6 +643,21 @@ RexxObjectPtr RexxEntry systemCommandHandler(RexxExitContext *context,
     const char *cmd = context->StringData(command);
     const char *cl_opt = " /c "; // The "/c" opt for system commandd handler
     const char *interncmd;
+    RexxObjectPtr result = NULLOBJECT;
+
+    // is this directed to the no-shell "path" environment?
+    if (stricmp(context->StringData(address), "path") == 0)
+    {
+        if (!sysCommandNT(context, cmd, cmd, true, result, ioContext))
+        {
+            // rc from GetLastError() would be 2, ERROR_FILE_NOT_FOUND
+            // but for consistency with cmd.exe rc for an unknown command
+            // we always set this to 1
+            context->RaiseCondition("FAILURE", context->String(cmd), NULLOBJECT, context->WholeNumberToObject(1));
+            return NULLOBJECT;
+        }
+        return result;
+    }
 
     // Remove the "quiet sign" if present
     if (cmd[0] == '@')
@@ -693,8 +711,6 @@ RexxObjectPtr RexxEntry systemCommandHandler(RexxExitContext *context,
     {
         j++;
     }
-
-    RexxObjectPtr result = NULLOBJECT;
 
     if (!noDirectInvoc)
     {
@@ -936,9 +952,15 @@ RexxObjectPtr RexxEntry systemCommandHandler(RexxExitContext *context,
  */
 void SysInterpreterInstance::registerCommandHandlers(InterpreterInstance *instance)
 {
-    // Windows only has the single command environment, we also register this
-    // under "" for the default handler
-    instance->addCommandHandler("CMD", (REXXPFN)systemCommandHandler, HandlerType::REDIRECTING);
+    // The default command handler on Windows is "CMD"
+    // It comes with three aliases named "", "COMMAND", and "SYSTEM"
+    // "SYSTEM" is compatible with Regina
+    instance->addCommandHandler("CMD",     (REXXPFN)systemCommandHandler, HandlerType::REDIRECTING);
+    instance->addCommandHandler("",        (REXXPFN)systemCommandHandler, HandlerType::REDIRECTING);
     instance->addCommandHandler("COMMAND", (REXXPFN)systemCommandHandler, HandlerType::REDIRECTING);
-    instance->addCommandHandler("", (REXXPFN)systemCommandHandler, HandlerType::REDIRECTING);
+    instance->addCommandHandler("SYSTEM",  (REXXPFN)systemCommandHandler, HandlerType::REDIRECTING);
+
+    // This is a no-shell environment that searches PATH.  It is named "PATH"
+    // which happens to be compatible with Regina.
+    instance->addCommandHandler("PATH",    (REXXPFN)systemCommandHandler, HandlerType::REDIRECTING);
 }

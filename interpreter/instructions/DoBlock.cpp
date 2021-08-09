@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -45,8 +45,7 @@
 #include "DoInstruction.hpp"
 #include "DoBlock.hpp"
 #include "RexxActivation.hpp"
-
-
+#include "Numerics.hpp"
 
 /**
  * Allocate a new DoBlock object.
@@ -67,10 +66,18 @@ void * DoBlock::operator new(size_t size)
  * @param _parent The instruction this represents.
  * @param _indent The current trace indentation level.
  */
-DoBlock::DoBlock(RexxBlockInstruction* _parent, size_t  _indent )
+DoBlock::DoBlock(RexxActivation *context, RexxBlockInstruction *_parent)
 {
     parent = _parent;
-    indent = _indent;
+    indent = context->getIndent();
+    countVariable = parent->getCountVariable();
+    // if we have a count variable, then we need to set the initial value
+    // to zero before we do the loop termination tests.
+    if (countVariable != OREF_NULL)
+    {
+        countVariable->assign(context, IntegerZero);
+        context->traceKeywordResult(GlobalNames::COUNTER, IntegerZero);
+    }
 }
 
 
@@ -86,6 +93,7 @@ void DoBlock::live(size_t liveMark)
     memory_mark(control);
     memory_mark(to);
     memory_mark(by);
+    memory_mark(countVariable);
 }
 
 
@@ -103,6 +111,25 @@ void DoBlock::liveGeneral(MarkReason reason)
     memory_mark_general(control);
     memory_mark_general(to);
     memory_mark_general(by);
+    memory_mark_general(countVariable);
+}
+
+
+/**
+ * Handle a new iteration of a loop, with setting of the counter variable, if required.
+ *
+ * @param context The current execution context,
+ * @param v       The counter variable (if any) to set.
+ */
+void DoBlock::setCounter(RexxActivation *context)
+{
+    if (countVariable != OREF_NULL)
+    {
+        // assign the control variable and trace this result
+        Protected<RexxObject> c =  Numerics::uint64ToObject(counter);
+        countVariable->assign(context, c);
+        context->traceKeywordResult(GlobalNames::COUNTER, c);
+    }
 }
 
 
@@ -137,7 +164,6 @@ bool DoBlock::checkOver(RexxActivation *context, ExpressionStack *stack)
 
     // assign the control variable and trace this result
     control->assign(context, result);
-    context->traceResult(result);
     overIndex++;
     return true;
 }
@@ -155,23 +181,31 @@ bool DoBlock::checkOver(RexxActivation *context, ExpressionStack *stack)
  * @return True if the loop should continue, false if we've hit
  *         a termination condition.
  */
-bool DoBlock::checkControl(RexxActivation *context, ExpressionStack *stack, bool increment )
+bool DoBlock::checkControl(RexxActivation *context, ExpressionStack *stack, bool increment)
 {
-    // get the control variable value and trace
-    RexxObject *result = control->getValue(context);
-    context->traceResult(result);
+    RexxObject *result = OREF_NULL;
 
     // if this is time to increment the value, perform the plus operation
     // to add in the BY increment.
     if (increment)
     {
+        // get the control variable value and trace
+        result = control->evaluate(context, stack);
+        // increment using the plus operator
         result = result->callOperatorMethod(OPERATOR_PLUS, by);
 
-        // the control variable gets set immediately, and we trace this
+        // the control variable gets set immediately, and and the assignment will also get traced
         // increment result
-        control->set(context, result);
-        context->traceResult(result);
+        control->assign(context, result);
     }
+    else
+    {
+        // get the control variable value without tracing. We've
+        // already traced the initial assignment as part of the setup. This
+        // prevents getting an extra add looking item traced.
+        result = control->getValue(context);
+    }
+
 
     // if we have a termination condition, do the compare now by calling the operator method.
     if (to != OREF_NULL)

@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2021 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -112,6 +112,33 @@ void SystemInterpreter::getCurrentTime(RexxDateTime *Date )
     Date->day = localTime.wDay;
     Date->month = localTime.wMonth;
     Date->year = localTime.wYear;
+}
+
+
+/**
+ * Returns a high-resolution ticks value in nanoseconds well suited for
+ * execution speed measurements.  It is neither guaranteed to be the
+ * current time (it isn't), nor that the actual resolution is nanoseconds
+ * (on Intel or AMD chips with invariant TSC support it is in the 100 ns range).
+ *
+ * @return The ticks value.
+ */
+int64_t SystemInterpreter::getNanosecondTicks()
+{
+    static LONGLONG frequency = -1;
+    LARGE_INTEGER f, time;
+
+    // we query the ticks frequency on our first call only
+    if (frequency == -1)
+    {
+        QueryPerformanceFrequency(&f);
+        // 10 mio., i. e. 100 ns on an Intel i5 1.9 GHz
+        frequency = f.QuadPart;
+    }
+    // the call itself takes approx. 30 ns
+    QueryPerformanceCounter(&time);
+    // convert ticks to nanoseconds and return
+    return time.QuadPart * 1000000000 / frequency;
 }
 
 
@@ -273,7 +300,6 @@ RexxMethod1(int, alarm_stopTimer, POINTER, eventSemHandle)
  */
 RexxMethod3(int, ticker_waitTimer, POINTER, eventSemHandle, wholenumber_t, numdays, wholenumber_t, alarmtime)
 {
-    bool fState = false;                 /* Initial state of semaphore        */
     unsigned int msecInADay = 86400000;  /* number of milliseconds in a day   */
     UINT_PTR TimerHandle = 0;            /* Timer handle                      */
     HANDLE SemHandle = (HANDLE)eventSemHandle;
@@ -294,15 +320,15 @@ RexxMethod3(int, ticker_waitTimer, POINTER, eventSemHandle, wholenumber_t, numda
 
         while ( numdays > 0 )
         {
-            /* Wait for the WM_TIMER message or for the alarm to be canceled. */
+            // Wait for the WM_TIMER message or for the Ticker to be canceled.
             waitTimerOrEvent(SemHandle);
 
-            /* Check if the alarm is canceled. */
+            // Check if the Ticker was canceled.
             RexxObjectPtr cancelObj = context->GetObjectVariable("CANCELED");
 
             if (cancelObj == context->True())
             {
-                /* Alarm is canceled, delete timer, close semaphore, return. */
+                // Ticker was canceled, delete timer, close semaphore, return
                 KillTimer(NULL, TimerHandle);
                 CloseHandle(SemHandle);
                 return 0;
@@ -328,6 +354,13 @@ RexxMethod3(int, ticker_waitTimer, POINTER, eventSemHandle, wholenumber_t, numda
         // wait for the timer to pop or the timer to be canceled.
         waitTimerOrEvent(SemHandle);
         KillTimer(NULL, TimerHandle);
+
+        // Check if the Ticker was canceled.
+        if (context->GetObjectVariable("CANCELED") == context->True())
+        {
+            // Ticker was canceled, close semaphore
+            CloseHandle(SemHandle);
+        }
     }
 
     return 0;

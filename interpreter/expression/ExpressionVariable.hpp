@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -55,31 +55,33 @@ class RexxSimpleVariable : public RexxVariableBase
     inline RexxSimpleVariable(RESTORETYPE restoreType) { ; };
     RexxSimpleVariable(RexxString *, size_t);
 
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
-    virtual void flatten(Envelope *);
+    void live(size_t) override;
+    void liveGeneral(MarkReason reason) override;
+    void flatten(Envelope *) override;
 
     // RexxInternalObject evaluation methods
-    virtual RexxObject *evaluate(RexxActivation *, ExpressionStack *);
-    virtual RexxObject *getValue(VariableDictionary *);
-    virtual RexxObject *getValue(RexxActivation *);
-    virtual RexxObject *getRealValue(VariableDictionary *);
-    virtual RexxObject *getRealValue(RexxActivation *);
-    virtual VariableReference *getVariableReference(VariableDictionary *);
-    virtual VariableReference *getVariableReference(RexxActivation *);
+    RexxObject *evaluate(RexxActivation *, ExpressionStack *) override;
+    RexxObject *getValue(VariableDictionary *) override;
+    RexxObject *getValue(RexxActivation *) override;
+    RexxObject *getRealValue(VariableDictionary *) override;
+    RexxObject *getRealValue(RexxActivation *) override;
+    VariableReference *getVariableReference(VariableDictionary *) override;
+    VariableReference *getVariableReference(RexxActivation *) override;
 
     // RexxVariableBase variable methods
-    virtual bool exists(RexxActivation *);
-    virtual void set(RexxActivation *, RexxObject *) ;
-    virtual void set(VariableDictionary *, RexxObject *) ;
-    virtual void assign(RexxActivation *, RexxObject *);
-    virtual void drop(RexxActivation *);
-    virtual void drop(VariableDictionary *);
-    virtual void setGuard(RexxActivation *);
-    virtual void clearGuard(RexxActivation *);
-    virtual void expose(RexxActivation *, VariableDictionary *);
-    virtual void procedureExpose(RexxActivation *, RexxActivation *);
-    virtual void alias(RexxActivation *, RexxVariable *);
+    bool exists(RexxActivation *) override;
+    void set(RexxActivation *, RexxObject *)  override;
+    void set(VariableDictionary *, RexxObject *)  override;
+    void assign(RexxActivation *, RexxObject *) override;
+    void drop(RexxActivation *) override;
+    void drop(VariableDictionary *) override;
+    void setGuard(RexxActivation *) override;
+    void clearGuard(RexxActivation *) override;
+    void setGuard(VariableDictionary *) override;
+    void clearGuard(VariableDictionary *) override;
+    void expose(RexxActivation *, VariableDictionary *) override;
+    void procedureExpose(RexxActivation *, RexxActivation *) override;
+    void alias(RexxActivation *, RexxVariable *) override;
 
     RexxString *getName();
 

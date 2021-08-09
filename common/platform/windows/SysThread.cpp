@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -64,9 +64,31 @@ DWORD WINAPI call_thread_function(void * arguments)
  */
 void SysThread::createThread()
 {
-    _threadHandle = CreateThread(NULL, THREAD_STACK_SIZE, call_thread_function, this, 0, &_threadID);
+
+    createThread(_threadHandle, _threadID, THREAD_STACK_SIZE, call_thread_function, (void *)this);
     // we created this one
     attached = false;
+}
+
+
+/**
+ * Create a new thread.
+ *
+ * @param threadHandle
+ *                  The handle of the created thread
+ * @param threadId  The id of the created thread
+ * @param stackSize The required stack size
+ * @param startRoutine
+ *                  The thread startup routine.
+ * @param startArgument
+ *                  The typeless argument passed to the startup routine.
+ *
+ * @return The success/failure return code.
+ */
+int SysThread::createThread(HANDLE &threadHandle, DWORD &threadId, size_t stackSize, LPTHREAD_START_ROUTINE startRoutine, void *startArgument)
+{
+    threadHandle = CreateThread(NULL, stackSize, startRoutine, startArgument, 0, &threadId);
+    return threadHandle == INVALID_HANDLE_VALUE;
 }
 
 /**
@@ -87,52 +109,6 @@ void SysThread::attachThread()
     _threadID = GetCurrentThreadId();
     _threadHandle = GetCurrentThread();
     attached = true;           // we don't own this one (and don't terminate it)
-}
-
-/**
- * Set the thread priority.
- *
- * @param priority The thread priority value.
- */
-void SysThread::setPriority(ThreadPriority priority)
-{
-    int pri = THREAD_PRIORITY_NORMAL;
-                                         /* critical priority?                */
-    switch (priority)
-    {
-        case HIGH_PRIORITY:       // critical priority
-            pri= THREAD_PRIORITY_ABOVE_NORMAL+1; /* the class is regular, but move    */
-                                                 /* to the head of the class          */
-                                                 /* medium priority                   */
-            break;
-
-        case GUARDED_PRIORITY:
-            pri = THREAD_PRIORITY_NORMAL+1;    /* guard priority is just above normal*/
-            break;
-
-        case MEDIUM_PRIORITY:
-            pri = THREAD_PRIORITY_NORMAL;      /* normal class,                     */
-                                               /* dead in the middle of it all      */
-            break;
-
-        case LOW_PRIORITY:
-            pri = THREAD_PRIORITY_IDLE +1;     /* give us idle only, but make it    */
-            break;
-                                               /* important idle time only          */
-    }
-    SetThreadPriority(_threadHandle, pri);
-}
-
-
-/**
- * Return a pointer to the current stack base.
- *
- * @return A pointer to the current stack position
- */
-char *SysThread::getStackBase()
-{
-   int32_t temp;
-   return ((char *)(&temp)) - THREAD_STACK_SIZE;
 }
 
 
@@ -201,3 +177,74 @@ void SysThread::waitForTermination()
         _threadID = 0;
     }
 }
+
+
+/**
+ * Platform wrapper around a simple sleep function.
+ *
+ * @param msecs  The number of milliseconds to sleep.
+ */
+void SysThread::sleep(int msecs)
+{
+    Sleep(msecs);
+}
+
+
+#define OM_WAKEUP (WM_USER+10)
+
+/**
+ * callback routine for SetTimer set in longSleep
+ *
+ * @param hwnd    The window handle
+ * @param uMsg    the message parameter
+ * @param idEvent the event id
+ * @param dwTime  the time
+ */
+VOID CALLBACK SleepTimerProc(HWND hwnd, UINT uMsg, UINT idEvent, DWORD dwTime)
+{
+    DWORD ThreadId;
+    KillTimer(NULL, idEvent);       /* kill the timer that just ended */
+    ThreadId = GetCurrentThreadId();
+    PostThreadMessage(ThreadId, OM_WAKEUP, 0, 0L); /* send ourself the wakeup message*/
+}
+
+
+/**
+ * Platform wrapper around a sleep function that can sleep for long periods of time. .
+ *
+ * @param microseconds
+ *               The number of microseconds to delay.
+ */
+void SysThread::longSleep(uint64_t microseconds)
+{
+
+    // convert to milliseconds, no overflow possible
+    long milliseconds = (long)(microseconds / 1000);
+
+    /** Using Sleep with a long timeout risks sleeping on a thread with a message
+     *  queue, which can make the system sluggish, or possibly deadlocked.  If the
+     *  sleep is longer than 333 milliseconds use a window timer to avoid this
+     *  risk.
+     */
+    if (milliseconds > 333)
+    {
+        if (!(SetTimer(NULL, 0, milliseconds, (TIMERPROC)SleepTimerProc)))
+        {
+            return;
+        }
+
+        MSG msg;
+        while (GetMessage(&msg, NULL, 0, 0))
+        {
+            if (msg.message == OM_WAKEUP)  /* If our message, exit loop       */
+                break;
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+    }
+    else
+    {
+        Sleep(milliseconds);
+    }
+}
+

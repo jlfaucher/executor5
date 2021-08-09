@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -69,6 +69,7 @@ class GlobalProtectedObject;
 class MapTable;
 class BufferClass;
 class StringTable;
+class FileNameBuffer;
 
 #ifdef _DEBUG
 class MemoryObject;
@@ -100,10 +101,10 @@ class MemoryObject : public RexxInternalObject
     inline operator RexxObject*() { return (RexxObject *)this; };
     inline RexxObject *operator=(DeadObject *d) { return (RexxObject *)this; };
 
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
+    void live(size_t) override;
+    void liveGeneral(MarkReason reason) override;
 
-    void        initialize(bool restoringImage);
+    void        initialize(bool restoringImage, const char *imageTarget);
     MemorySegment *newSegment(size_t requestLength);
     MemorySegment *newSegment(size_t requestLength, size_t minLength);
     MemorySegment *newLargeSegment(size_t requestLength, size_t minLength);
@@ -120,7 +121,7 @@ class MemoryObject : public RexxInternalObject
     void        removeUninitObject(RexxInternalObject *obj);
     void        addUninitObject(RexxInternalObject *obj);
     inline void checkUninitQueue() { if (pendingUninits > 0) runUninits(); }
-    RexxInternalObject *unflattenObjectBuffer(BufferClass *sourceBuffer, char *startPointer, size_t dataLength);
+    RexxInternalObject *unflattenObjectBuffer(Envelope *envelope, BufferClass *sourceBuffer, char *startPointer, size_t dataLength);
     void        unflattenProxyObjects(Envelope *envelope, RexxInternalObject *firstObject, RexxInternalObject *endObject);
 
     void        markObjects();
@@ -131,7 +132,7 @@ class MemoryObject : public RexxInternalObject
     void        collect();
     inline void removeHold(RexxInternalObject *obj) { saveStack->remove(obj); }
     RexxInternalObject *holdObject(RexxInternalObject *obj);
-    void        saveImage();
+    void        saveImage(const char *imageTarget);
     void        setOref(RexxInternalObject *variable, RexxInternalObject *value);
     void        shutdown();
     void        liveStackFull();
@@ -203,7 +204,7 @@ class MemoryObject : public RexxInternalObject
     void restore();
     void buildVirtualFunctionTable();
     void create();
-    void createImage();
+    void createImage(const char *imageTarget);
     RexxString *getGlobalName(const char *value);
     RexxString *getUpperGlobalName(const char *value);
     void createStrings();
@@ -264,13 +265,16 @@ private:
 
 
     void restoreImage();
+    void loadImage(char *&imageBuffer, size_t &imageSize);
+    bool loadImage(char *&imageBuffer, size_t &imageSize, FileNameBuffer &imageFile);
 
     void setMarkHandler(MarkHandler *h) { currentMarkHandler = h; }
     void resetMarkHandler() { currentMarkHandler = &defaultMarkHandler; }
 
     void defineMethod(const char *name, RexxBehaviour * behaviour, PCPPM entryPoint, size_t arguments, const char *entryPointName);
     void defineProtectedMethod(const char *name, RexxBehaviour * behaviour, PCPPM entryPoint, size_t arguments, const char *entryPointName);
-    void definePrivateMethod(const char *name, RexxBehaviour * behaviour, PCPPM entryPoint, size_t arguments, const char *entryPointName);
+    void definePrivateMethod(const char *name, RexxBehaviour *behaviour, PCPPM entryPoint, size_t arguments, const char *entryPointName);
+    void defineUnguardedMethod(const char *name, RexxBehaviour *behaviour, PCPPM entryPoint, size_t arguments, const char *entryPointName);
     void addToEnvironment(const char *name, RexxInternalObject *value);
     void addToSystem(const char *name, RexxInternalObject *value);
     void completeSystemClass(const char *name, RexxClass *classObj);
@@ -317,7 +321,7 @@ public:
     ImageRestoreMarkHandler(char *r) : relocation(r) { }
 
     // pure virtual method for handling the mark operation.
-    virtual void mark(RexxInternalObject **field, RexxInternalObject *object)
+    void mark(RexxInternalObject **field, RexxInternalObject *object) override
     {
         // the object reference is an offset.  Add in the address
         // of the buffer start
@@ -339,7 +343,7 @@ public:
     UnflatteningMarkHandler(char *r, size_t m) : relocation(r), markWord(m) { }
 
     // pure virtual method for handling the mark operation.
-    virtual void mark(RexxInternalObject **field, RexxInternalObject *object)
+    void mark(RexxInternalObject **field, RexxInternalObject *object) override
     {
         // At this point, the object pointer is actually an offset and
         // the base buffer pointer is our location value
@@ -365,7 +369,7 @@ public:
     EnvelopeMarkHandler(Envelope *e) : envelope(e) { }
 
     // pure virtual method for handling the mark operation.
-    virtual void mark(RexxInternalObject **field, RexxInternalObject *object)
+    void mark(RexxInternalObject **field, RexxInternalObject *object) override
     {
         // do the unflatten operation
         *field = object->unflatten(envelope);
@@ -384,8 +388,7 @@ public:
     ImageSaveMarkHandler(MemoryObject *m, size_t mw, char *b, size_t o) : memory(m), markWord(mw), imageBuffer(b), imageOffset(o) { }
 
     // pure virtual method for handling the mark operation.
-    virtual void mark(RexxInternalObject **pMarkObject, RexxInternalObject *markObject);
-
+    void mark(RexxInternalObject **pMarkObject, RexxInternalObject *markObject) override;
 
     MemoryObject *memory;    // the memory object
     size_t markWord;         // the current mark word
@@ -403,7 +406,7 @@ public:
     TracingMarkHandler(MemoryObject *m, size_t mw) : memory(m), markWord(mw) { }
 
     // pure virtual method for handling the mark operation.
-    virtual void mark(RexxInternalObject **pMarkObject, RexxInternalObject *markObject)
+    void mark(RexxInternalObject **pMarkObject, RexxInternalObject *markObject) override
     {
         // Save image processing.  We only handle this if the object has not
         // already been marked.

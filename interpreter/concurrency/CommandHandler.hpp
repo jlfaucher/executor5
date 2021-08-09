@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -90,7 +90,7 @@ public:
     CommandHandlerDispatcher(Activity * a, REXXPFN e, RexxString *c);
     virtual ~CommandHandlerDispatcher() { ; }
 
-    virtual void run();
+    void run() override;
     void complete(RexxString *command, ProtectedObject &result, ProtectedObject &condition);
 
     Activity *activity;                   // the activity we're dispatching on
@@ -110,8 +110,8 @@ public:
         entryPoint(e), address(a), command(c), result(r), condition(co) { }
     virtual ~ContextCommandHandlerDispatcher() { ; }
 
-    virtual void run();
-    virtual void handleError(DirectoryClass *);
+    void run() override;
+    void handleError(DirectoryClass *) override;
 
     REXXPFN   entryPoint;                 // the installed command handler
     RexxString *address;                  // the address environment
@@ -128,7 +128,7 @@ public:
         ioContext(io), ContextCommandHandlerDispatcher(e, a, c, r, co) { }
     virtual ~RedirectingCommandHandlerDispatcher() { ; }
 
-    virtual void run();
+    void run() override;
 
     CommandIOContext *ioContext;          // the context of the i/o traps (can be null)
 };

@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -60,15 +60,15 @@ class RexxInstructionCaseWhen : public RexxInstructionSet
     RexxInstructionCaseWhen(size_t, QueueClass *, RexxToken *);
     inline RexxInstructionCaseWhen(RESTORETYPE restoreType) { ; };
 
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
-    virtual void flatten(Envelope*);
+    void live(size_t) override;
+    void liveGeneral(MarkReason reason) override;
+    void flatten(Envelope*) override;
 
-    virtual void execute(RexxActivation *, ExpressionStack *);
+    void execute(RexxActivation *, ExpressionStack *) override;
 
-    virtual bool isControl() { return isType(KEYWORD_IF) ; }
+    bool isControl() override { return isType(KEYWORD_IF) ; }
 
-    void setEndInstruction(RexxInstructionEndIf *);
+    void setEndInstruction(RexxInstructionEndIf *) override;
     inline void fixWhen(RexxInstructionEndIf *partner) { else_location->setEndInstruction(partner); };
 
  protected:

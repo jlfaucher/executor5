@@ -1,11 +1,11 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
-/* Copyright (c) 2008 Rexx Language Association. All rights reserved.         */
+/* Copyright (c) 2008-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -36,6 +36,7 @@
 /*----------------------------------------------------------------------------*/
 
 #include <oorexxapi.h>
+#include <string.h>
 
 RexxRoutine0(int,                       // Return type
             TestZeroIntArgs)            // Object_method name
@@ -236,18 +237,26 @@ RexxRoutine1(uintptr_t,                 // Return type
 }
 
 RexxRoutine1(wholenumber_t,             // Return type
-            TestWholeNumberArg,         // Function routine name
-            wholenumber_t, arg1)       // Argument
+             TestWholeNumberArg,         // Function routine name
+             wholenumber_t, arg1)       // Argument
 {
     return arg1;
 }
 
 RexxRoutine1(positive_wholenumber_t,             // Return type
-            TestPositiveWholeNumberArg,         // Function routine name
-            positive_wholenumber_t, arg1)       // Argument
+             TestPositiveWholeNumberArg,         // Function routine name
+             positive_wholenumber_t, arg1)       // Argument
 {
     return arg1;
 }
+
+RexxRoutine1(wholenumber_t,                      // Return type
+             TestNonnegativeWholeNumberArg,      // Function routine name
+             nonnegative_wholenumber_t, arg1)    // Argument
+{
+    return arg1;
+}
+
 
 RexxRoutine1(stringsize_t,              // Return type
             TestStringSizeArg,          // Function routine name
@@ -295,6 +304,32 @@ RexxRoutine1(CSTRING,                   // Return type
             TestCstringArg,             // Function routine name
             CSTRING, arg1)             // Argument
 {
+    return arg1;
+}
+
+RexxRoutine1(CSTRING, TestOptionalCstringArg,
+             OPTIONAL_CSTRING, arg1)
+{
+    if (argumentOmitted(1))
+    {
+        return "OMITTED";
+    }
+    return arg1;
+}
+
+RexxRoutine1(RexxStringObject, TestStringArg,
+            RexxStringObject, arg1)
+{
+    return arg1;
+}
+
+RexxRoutine1(RexxStringObject, TestOptionalStringArg,
+             OPTIONAL_RexxStringObject, arg1)
+{
+    if (argumentOmitted(1))
+    {
+        return context->String("OMITTED");
+    }
     return arg1;
 }
 
@@ -490,6 +525,252 @@ RexxRoutine1(RexxClassObject,
     return value;
 }
 
+// test DIRECT command handler for TestAddCommandEnvironment
+// always returns -1
+RexxObjectPtr RexxEntry dHandler(RexxExitContext *context,
+                                 RexxStringObject address,
+                                 RexxStringObject command)
+{
+    return context->WholeNumberToObject(-1);
+}
+
+
+// test REDIRECTING command handler for TestAddCommandEnvironment
+// just sets a return code identifying various I/O context functions
+RexxObjectPtr RexxEntry rHandler(RexxExitContext *context,
+                                 RexxStringObject address,
+                                 RexxStringObject command,
+                                 RexxIORedirectorContext *ioContext)
+{
+    size_t rc = 0;
+    // we don't do actual redirection, but we want to return a five-digit
+    // number with each digit in sequence representing the status of:
+    // - IsRedirectionRequested()
+    // - IsInputRedirected()
+    // - IsOutputRedirected()
+    // - IsErrorRedirected()
+    // - AreOutputAndErrorSameTarget()
+    rc = rc * 10 + ioContext->IsRedirectionRequested();
+    rc = rc * 10 + ioContext->IsInputRedirected();
+    rc = rc * 10 + ioContext->IsOutputRedirected();
+    rc = rc * 10 + ioContext->IsErrorRedirected();
+    rc = rc * 10 + ioContext->AreOutputAndErrorSameTarget();
+
+    return context->WholeNumberToObject(rc);
+}
+
+
+// test command handler for the I/O redirection APIs
+RexxObjectPtr RexxEntry ioHandler(RexxExitContext *context, RexxStringObject address, RexxStringObject command, RexxIORedirectorContext *ioContext)
+{
+    CSTRING commandString = context->CString(command);
+
+    if (strcmp(commandString, "INPUTOUTPUT") == 0)
+    {
+        CSTRING data;
+        size_t length;
+        size_t count = 0;
+
+        ioContext->ReadInput(&data, &length);
+        while (data != NULL)
+        {
+            count++;
+            ioContext->WriteOutput(data, length);
+            ioContext->ReadInput(&data, &length);
+        }
+
+        return context->StringSizeToObject(count);
+    }
+
+    if (strcmp(commandString, "INPUTERROR") == 0)
+    {
+        CSTRING data;
+        size_t length;
+        size_t count = 0;
+
+        ioContext->ReadInput(&data, &length);
+        while (data != NULL)
+        {
+            count++;
+            ioContext->WriteError(data, length);
+            ioContext->ReadInput(&data, &length);
+        }
+
+        return context->StringSizeToObject(count);
+    }
+
+    if (strcmp(commandString, "INPUTBOTH") == 0)
+    {
+        CSTRING data;
+        size_t length;
+        bool useError = false;
+        size_t count = 0;
+
+        ioContext->ReadInput(&data, &length);
+        while (data != NULL)
+        {
+            count++;
+            if (useError)
+            {
+                ioContext->WriteError(data, length);
+            }
+            else
+            {
+                ioContext->WriteOutput(data, length);
+            }
+            useError = !useError;
+            ioContext->ReadInput(&data, &length);
+        }
+
+        return context->StringSizeToObject(count);
+    }
+
+
+    if (strcmp(commandString, "NOBLANKOUTPUT") == 0)
+    {
+        CSTRING data;
+        size_t length;
+        size_t count = 0;
+
+        ioContext->ReadInput(&data, &length);
+        while (data != NULL)
+        {
+            count++;
+            // only write non blank lines
+            if (length > 0)
+            {
+                ioContext->WriteOutput(data, length);
+            }
+            ioContext->ReadInput(&data, &length);
+        }
+
+        return context->StringSizeToObject(count);
+    }
+
+
+    if (strcmp(commandString, "NOBLANKERROR") == 0)
+    {
+        CSTRING data;
+        size_t length;
+        size_t count = 0;
+
+        ioContext->ReadInput(&data, &length);
+        while (data != NULL)
+        {
+            count++;
+            // only write non blank lines
+            if (length > 0)
+            {
+                ioContext->WriteError(data, length);
+            }
+            ioContext->ReadInput(&data, &length);
+        }
+
+        return context->StringSizeToObject(count);
+    }
+
+    if (strcmp(commandString, "BUFFEROUTPUT") == 0)
+    {
+        CSTRING data;
+        size_t length;
+        size_t count = 0;
+
+        ioContext->ReadInput(&data, &length);
+        while (data != NULL)
+        {
+            count++;
+            ioContext->WriteOutputBuffer(data, length);
+            ioContext->ReadInput(&data, &length);
+        }
+
+        return context->StringSizeToObject(count);
+    }
+
+    if (strcmp(commandString, "BUFFERERROR") == 0)
+    {
+        CSTRING data;
+        size_t length;
+        size_t count = 0;
+
+        ioContext->ReadInput(&data, &length);
+        while (data != NULL)
+        {
+            count++;
+            ioContext->WriteErrorBuffer(data, length);
+            ioContext->ReadInput(&data, &length);
+        }
+
+        return context->StringSizeToObject(count);
+    }
+
+    if (strcmp(commandString, "BUFFERINPUT") == 0)
+    {
+        CSTRING data;
+        size_t length;
+
+        ioContext->ReadInputBuffer(&data, &length);
+        if (data != NULL)
+        {
+            ioContext->WriteOutputBuffer(data, length);
+        }
+
+        return context->StringSizeToObject(length);
+    }
+
+    if (strcmp(commandString, "INPUTREDIRECTED") == 0)
+    {
+        return ioContext->IsInputRedirected() ? context->True() : context->False();
+    }
+
+    if (strcmp(commandString, "OUTPUTREDIRECTED") == 0)
+    {
+        return ioContext->IsOutputRedirected() ? context->True() : context->False();
+    }
+
+    if (strcmp(commandString, "ERRORREDIRECTED") == 0)
+    {
+        return ioContext->IsErrorRedirected() ? context->True() : context->False();
+    }
+
+    if (strcmp(commandString, "AREOUTPUTERRORTHESAME") == 0)
+    {
+        return ioContext->AreOutputAndErrorSameTarget() ? context->True() : context->False();
+    }
+
+    if (strcmp(commandString, "ISREDIRECTIONREQUESTED") == 0)
+    {
+        return ioContext->IsRedirectionRequested() ? context->True() : context->False();
+    }
+
+    return context->True();
+}
+
+
+// install 'ioHandler', 'rHandler', or 'dHandler'
+RexxRoutine2(RexxObjectPtr,
+             TestAddCommandEnvironment,
+             CSTRING, name,
+             CSTRING, type)
+{
+    if (type[0] == 'r' || type[0] == 'R')
+    {   // redirecting command handler
+        if (strcmp(name, "io") == 0)
+        {
+            context->AddCommandEnvironment(name, (REXXPFN)ioHandler, REDIRECTING_COMMAND_ENVIRONMENT);
+        }
+        else
+        {
+            context->AddCommandEnvironment(name, (REXXPFN)rHandler, REDIRECTING_COMMAND_ENVIRONMENT);
+        }
+    }
+    else
+    {   // direct command handler
+        context->AddCommandEnvironment(name, (REXXPFN)dHandler, DIRECT_COMMAND_ENVIRONMENT);
+    }
+    return NULLOBJECT;
+}
+
+
 
 RexxRoutineEntry orxtest_funcs[] = {
     REXX_TYPED_ROUTINE(TestZeroIntArgs,       TestZeroIntArgs),
@@ -516,6 +797,7 @@ RexxRoutineEntry orxtest_funcs[] = {
     REXX_TYPED_ROUTINE(TestUintPtrArg,        TestUintPtrArg),
     REXX_TYPED_ROUTINE(TestWholeNumberArg,    TestWholeNumberArg),
     REXX_TYPED_ROUTINE(TestPositiveWholeNumberArg,    TestPositiveWholeNumberArg),
+    REXX_TYPED_ROUTINE(TestNonnegativeWholeNumberArg, TestNonnegativeWholeNumberArg),
     REXX_TYPED_ROUTINE(TestStringSizeArg,     TestStringSizeArg),
     REXX_TYPED_ROUTINE(TestSizeArg,           TestSizeArg),
     REXX_TYPED_ROUTINE(TestSSizeArg,          TestSSizeArg),
@@ -523,6 +805,9 @@ RexxRoutineEntry orxtest_funcs[] = {
     REXX_TYPED_ROUTINE(TestFloatArg,          TestFloatArg),
     REXX_TYPED_ROUTINE(TestDoubleArg,         TestDoubleArg),
     REXX_TYPED_ROUTINE(TestCstringArg,        TestCstringArg),
+    REXX_TYPED_ROUTINE(TestOptionalCstringArg, TestOptionalCstringArg),
+    REXX_TYPED_ROUTINE(TestStringArg,         TestStringArg),
+    REXX_TYPED_ROUTINE(TestOptionalStringArg, TestOptionalStringArg),
     REXX_TYPED_ROUTINE(TestPointerValue,      TestPointerValue),
     REXX_TYPED_ROUTINE(TestPointerArg,        TestPointerArg),
     REXX_TYPED_ROUTINE(TestNullPointerValue,  TestNullPointerValue),
@@ -546,6 +831,7 @@ RexxRoutineEntry orxtest_funcs[] = {
     REXX_TYPED_ROUTINE(TestGetContextDigits,  TestGetContextDigits),
     REXX_TYPED_ROUTINE(TestResolveStemVariable, TestResolveStemVariable),
     REXX_TYPED_ROUTINE(TestFindContextClass,  TestFindContextClass),
+    REXX_TYPED_ROUTINE(TestAddCommandEnvironment, TestAddCommandEnvironment),
     REXX_LAST_ROUTINE()
 };
 

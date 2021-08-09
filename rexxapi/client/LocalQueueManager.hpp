@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -62,9 +62,10 @@ public:
         return name == NULL || Utilities::strCaselessCompare(name, "SESSION") == 0;
     }
 
-    bool validateQueueName(const char *username);
-    void initializeLocal(LocalAPIManager *a);
-    virtual void terminateProcess();
+    bool validateQueueName(const char *username, bool &isSession);
+    void initializeLocal(LocalAPIManager *a) override;
+
+    void terminateProcess() override;
     QueueHandle initializeSessionQueue(SessionID s);
     QueueHandle createSessionQueue(SessionID session);
     RexxReturnCode createNamedQueue(const char *name, size_t size, char *createdName, size_t *dup);
@@ -80,7 +81,7 @@ public:
     RexxReturnCode addToSessionQueue(CONSTRXSTRING &data, size_t lifoFifo);
     RexxReturnCode pullFromQueue(const char *name, RXSTRING &data, size_t waitFlag, RexxQueueTime *timeStamp);
     QueueHandle nestSessionQueue(SessionID s, QueueHandle q);
-    virtual RexxReturnCode processServiceException(ServiceException *e);
+    RexxReturnCode processServiceException(ServiceException *e) override;
     RexxReturnCode mapReturnResult(ServiceMessage &m);
 
 protected:

@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2021 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -35,16 +35,22 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.               */
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
-/******************************************************************************/
-/* REXX Macros                                                                */
-/*                                                                            */
-/* Create the Rexx base (Object/Class) classes.                               */
-/*                                                                            */
-/******************************************************************************/
 
 use arg rexxPackage
+-- IMPORTANT NOTE: All classes contained in this package must be added to the
+-- rexxPackage using either addClass or addPublicClass. In general, all that is
+-- needed is to ensure the PUBLIC keyword is specified on the ::CLASS directive
+-- for any classes intended to be visible at the user level.
+
+
 -- add the local server class to the Rexx package as a non public class
 rexxPackage~addClass('LOCALSERVER', .LocalServer)
+-- these only exist as internal classes, but they need to be protected
+rexxPackage~addClass('SUPPLIERMIXIN', .SupplierMixin)
+rexxPackage~addClass('ManyItemMixin', .ManyItemMixin)
+rexxPackage~addClass('SetMixin', .SetMixin)
+rexxPackage~addClass('BagMixin', .BagMixin)
+
 
 .environment~objectname = "The Environment Directory"
 rexxPackage~objectname = "The REXX Package"
@@ -2134,38 +2140,17 @@ Output:
      FORWARD class (super) array ()-- forward to superclass, remove possible argument
   end
 
--- override for the makestring method
-::method makestring
-  forward to (self~string)
+::method makeString
+  forward message "STRING"
 
 ::method string               -- create a string representation, using the optional delimiter
   expose size
+  use strict arg delimiter = ",", order = "F"
 
-  use strict arg delimiter=",", order = "F"
-
-  order = order~upper~left(1)
-  if self~items=0 then        -- return empty strings, if no elements
-     return ""
-
-  order = order~upper~left(1)
-  if pos(order, "FL")=0 then  -- oops: not a valid argument!
+  if \order~caselessStartsWith("F"), \order~caselessStartsWith("L") then
      raise syntax 93.914 array (2, '"F" (FIFO) or "L" (LIFO)', arg(2))
 
-  mb=.MutableBuffer~new       -- use a MutableBuffer for the string chunks
-                              -- use MAKEARRAY for a snapshot in the desired order
-  array=self~makearray(order) -- use supplied order
-
-  k=.false                    -- append supplied delimiter?
-  do i=1 to array~items
-     if k then                -- at least one item already there, hence use delimiter
-        mb~append(delimiter)
-     else                     -- first iteration
-        k=.true
-
-     mb~append(array[i]~string) -- get element from array, get its string value
-  end
-
-  return mb~string            -- now turn MutableBuffer object into a plain string
+  return self~makeArray(order)~toString(, delimiter)
 
 /*****************************************/
 /* UNION         method                  */
@@ -2546,9 +2531,8 @@ nomethod:
 
 -- Create a DateTime object from a UTC ISO date/time string.
 ::METHOD fromUtcIsoDate class
-  use strict arg time
-  parse var time date 'T' time
-  numeric digits 18
+  use strict arg basetime
+  parse var basetime date 'T' time
 
   signal on syntax
   if time~right(1) == 'Z' then do
@@ -2556,12 +2540,12 @@ nomethod:
       time = time~left(time~length - 1)
   end
   else if time~pos('+') > 0 then do
-      parse var time time '+' tz
-      offset = tz~left(2) * 60 + tz~right(2)
+      parse var time time '+' hours ":" minutes
+      offset = hours * 60 + minutes
   end
   else if time~pos('-') > 0 then do
-      parse var time time '-' tz
-      offset = -(tz~left(2) * 60 + tz~right(2))
+      parse var time time '-' hours ":" minutes
+      offset = -(hours * 60 + minutes)
   end
 
   -- our standard format uses 6 digits for the fraction,
@@ -2571,14 +2555,79 @@ nomethod:
   time = base'.'fraction~left(6, '0')
 
   numeric digits 18
-  -- convert this time stamp to local time, then create the date time object
-  -- using the adjusted time and offset
-  time = date('F', date, 'S',,"-") + time("F", time, "L")
-  time = time + (offset *60000000)
-  return self~new(time, offset);
+  -- create the date time object the adjusted time and offset
+  return self~new(date('F', date, 'S',,"-") + time("F", time, "L"), offset)
 
   syntax:
-  raise syntax 88.918 array("date", time)
+  raise syntax 88.918 array("date", basetime)
+
+
+-- parse a week number date in either basic ISO format yyyyWwwd
+-- or extended ISO format yyyy-Www-d into a date object
+::METHOD fromWeekNumberDate class
+   use strict arg _date, offset=(time('O')/60000000)
+   if _date~contains("-") then
+       parse var _date year "-W" weekNumber "-" dayNumber
+   else
+       parse var _date year "W" +1 weekNumber +2 dayNumber
+
+   signal on syntax
+
+   -- to calculate the start of W01 we use January 4th which is always
+   -- a day within W01. Then the start of W01 is -pivot~weekDay
+   pivot = self~new(year, 1, 4)
+
+   -- now we need to validate all date components
+   -- WholeNumber validation isn't enough here, we don't accept e. g. 1e03
+   -- we also require fixed lengths with leading zeros
+   if year~verify("0123456789") \= 0 | year~length \= 4 |,
+      weekNumber~verify("0123456789") \= 0 | weekNumber~length \= 2 |,
+      weekNumber < 1 | weekNumber > pivot~weeksInYear |,
+      dayNumber~verify("0123456789") \= 0 | dayNumber~length \= 1 |,
+      dayNumber < 1 | dayNumber > 7 then
+       signal syntax
+
+   -- we calculate the offset in days relative to pivot day
+   offset = (weekNumber - 1) * 7 + dayNumber - pivot~weekDay
+   -- even if the offset is negative or larger than 365, addDays will handle
+   -- Note that due to good fortune, the week number date for Jan 1, 0001
+   -- is 0001-W01-1, so we will never have to deal with the year 0000.
+   -- Also, December 31, 9999 has a weekNumberDate of 9999-W52-5, so we
+   -- never have to deal with a valid date requiring 5 digits for the year.
+   -- We will still raise syntax if we get a request for 9999-W52-6 or -7
+   return pivot~addDays(offset)
+
+   syntax:
+   raise syntax 88.918 array("date", _date)
+
+-- create a DateTime instance from an ISO ordinal date either in
+-- extended format yyyy-ddd or in basic format yyyyddd
+::METHOD fromOrdinalDate class
+   use strict arg _date, offset=(time('O')/60000000)
+   if _date~contains("-") then
+       parse var _date year "-" ordinal
+   else
+       parse var _date year +4 ordinal
+
+   signal on syntax
+
+   -- we get a datetime object based on the first day of the year. We need this so we
+   -- can determine if the ordinal value is within the range for this year
+   base = .datetime~new(year, 1, 1, offset)
+
+   -- now we need to validate all date components
+   -- WholeNumber validation isn't enough here, we don't accept e. g. 1e03
+   -- we also require fixed lengths with leading zeros
+   if year~verify("0123456789") \= 0 | year~length \= 4 |,
+      ordinal~verify("0123456789") \= 0 | ordinal~length \= 3 |,
+      ordinal < 1 | ordinal > base~daysInYear then
+       signal syntax
+
+   -- the easiest way to calculate this is to add an offset from the first of the year
+   return base~addDays(ordinal - 1)
+
+   syntax:
+   raise syntax 88.918 array("date", _date)
 
 
 -- Create a DateTime object from Unix Ticks value
@@ -2615,29 +2664,27 @@ nomethod:
   numeric digits 18    -- need higher digits for time calculations
 
   argCount = arg()
-
   select
       when argCount == 0 then do
           -- no arguments, use current time and local timezone offset
           self~setTimeStamp(date('Full'), time('O')/60000000)
       end
-      when arg() <= 2 then do    -- just create from a microseconds value
+      when argCount <= 2 then do    -- just create from a microseconds value
           use strict arg timestamp, offset=(time('O')/60000000)
           -- seems silly, but this validates the time
           self~setTimeStamp(date('f', timestamp, 'f'), offset)
       end
-      when arg() <= 4 then do
+      when argCount <= 4 then do
           -- year month day to microseconds value
           use strict arg year, month, day, offset=(time('O')/60000000)
 
           -- format into a convertable date
-          timestamp = self~convertDate(year, month, day)
           self~setTimeStamp(self~convertDate(year, month, day), offset)
       end
-      -- only other format is everything, and only the microseconds are optional.
+      -- only other format is everything, except for optional seconds and microseconds.
       otherwise
           -- starting with year, month, day, hours, minutes, seconds
-          use strict arg year, month, day, hours, minutes, seconds, usecs = 0, offset=(time('O')/60000000)
+          use strict arg year, month, day, hours, minutes, seconds = 0, usecs = 0, offset=(time('O')/60000000)
 
           timestamp = self~convertDate(year, month, day) + self~convertTime(hours, minutes, seconds, usecs)
           self~setTimeStamp(timestamp, offset)
@@ -2649,16 +2696,16 @@ nomethod:
   use arg timestamp, offset
 
   numeric digits 18
-  -- if this is a timespan, then grab the number of microseconds in the
+  -- if offset is a timespan, then grab the number of microseconds in the
   -- span, retaining the sign
   if offset~isa(.TimeSpan) then
-      offset = offset~totalMicroseconds
-  else do
-     -- must be a whole number
-     .Validate~wholeNumber("offset", offset)
-     -- we need to convert from minutes to microseconds
-     offset = offset * 60000000
-  end
+      offset = offset~totalMicroseconds / 60000000
+  -- as of today, world time zone offsets range from -12:00 to +14:00
+  -- for good measure we allow offsets between -15:00 and +15:00
+  .Validate~wholeNumberRange("offset", offset, -900, 900)
+  -- we need to convert from minutes to microseconds
+  offset = offset * 60000000
+
   -- adjust the internal timestamp back to UTC
   utctimestamp = timestamp - offset
 
@@ -2672,7 +2719,7 @@ nomethod:
   date = year~right(4, '0')month~right(2, '0')day~right(2, '0')
   return date('F', date, 'S')
 
--- private utility method to get a full date value from an hour/minute/second/microseconds set.
+-- private utility method to get a full time value from an hour/minute/second/microseconds set.
 ::METHOD convertTime private
   use arg hours, minutes, seconds, usecs = 0
 
@@ -2821,9 +2868,7 @@ nomethod:
   -- 2 dates is pretty meaningless
   use strict arg other
 
-  -- "+" can do the addition to either a timespan or a datetime.
-  -- When addition occurs between two timespaces, the result is a timespan.
-  -- When adding to a datatime, the result is a datetime.
+  -- When adding a timespan, the result is a datetime.
   if other~isa(.timespan) then do
       -- combine the two intervals, using the same timezone value
       return self~class~new(timestamp + other~totalMicroseconds, self~offset)
@@ -2960,11 +3005,11 @@ nomethod:
   use strict arg
   return date("S",timestamp,"F","-")"T"time("L", timestamp, "F")
 
--- Format the datetime into full ISO format, yyyy-mm-ddT00:00:00.000000+hhmm
+-- Format the datetime into full ISO format, yyyy-mm-ddT00:00:00.000000+hh:mm
 ::METHOD utcIsoDate
-  expose utcTimeStamp offset
+  expose timeStamp offset
   use strict arg
-  base = date("S",utcTimeStamp,"F","-")"T"time("L", utcTimeStamp, "F")
+  base = date("S", timeStamp, "F", "-")"T"time("L", timeStamp, "F")
   if offset = 0 then
      return base||'Z'  -- this is Zulu time
   numeric digits 18
@@ -2979,7 +3024,7 @@ nomethod:
   hours = minutes%60
   minutes = minutes//60
   --this returns the padded value
-  return base||sign||right(hours, 2, '0')||right(minutes, 2, '0')
+  return base||sign||right(hours, 2, '0')||":"||right(minutes, 2, '0')
 
 -- Return the basedate for this datetime instance.
 ::METHOD baseDate
@@ -3049,6 +3094,19 @@ nomethod:
   use strict arg sep = ("/")
   return date("U", timestamp, "F", sep);
 
+-- Format the date into the ISO week number format, yyyy-Www-d
+::METHOD weekNumberDate
+  use strict arg
+
+  return right(self~weekNumberYear, 4, '0')"-W"right(self~weekNumber, 2, '0')"-"self~weekDay
+
+-- return the date as a year/ordinal pair in the formay YYYY-DDD
+::METHOD ordinalDate
+  use strict arg
+
+  return right(self~year, 4, '0')"-"right(self~yearDay, 3, '0')
+
+
 -- Return the day of the week as an integer.  1 = Monday,
 -- 2 = Tuesday, etc.  These are the ISO definitions for the
 -- day numbers.
@@ -3095,17 +3153,21 @@ nomethod:
   use strict arg offset=0
 
   numeric digits 18
-  -- if this is a timespan, then grab the number of microseconds in the
+  -- if offset is a timespan, then grab the number of microseconds in the
   -- span, retaining the sign
   if offset~isa(.TimeSpan) then do
       adjustment = offset~totalMicroseconds
       offset = adjustment/60000000
   end
   else do
-     -- offset in minutes, must be a whole number
-     .Validate~wholeNumber("offset", offset)
-     adjustment = offset * 60000000
+      -- we need to convert from minutes to microseconds
+      adjustment = offset * 60000000
   end
+
+  -- as of today, world time zone offsets range from -12:00 to +14:00
+  -- for good measure we allow offsets between -15:00 and +15:00
+  .Validate~wholeNumberRange("offset", offset, -900, 900)
+
   -- we create a new DateTime by converting the UTC time to
   -- the target timezone, then create a new object using that offset
   return self~class~new(utcTimeStamp + adjustment, offset)
@@ -3157,7 +3219,9 @@ nomethod:
   use strict arg
   year = self~year
 
-  return year // 4 == 0 & ((year // 100 \= 0) | (year // 400 == 0))
+  if year // 4 == 0, year // 100 \== 0 | year // 400 == 0
+      then return .true
+      else return .false
 
 -- Returns the number of days in the current month.  This accounts
 -- for leap years.
@@ -3165,30 +3229,90 @@ nomethod:
   use strict arg
   month = self~month
 
-  if self~isLeapYear then do
-      return "31 29 31 30 31 30 31 31 30 31 30 31"~word(month)
-  end
-  else do
-      return "31 28 31 30 31 30 31 31 30 31 30 31"~word(month)
-  end
+  if month == 2 then
+      return 28 + self~isLeapYear
+  else
+      return "31 . 31 30 31 30 31 31 30 31 30 31"~word(month)
 
 -- Returns the number of days in the current year.  This accounts
 -- for leap years.
 ::METHOD daysInYear
   use strict arg
 
-  if self~isLeapYear then do
-      return 366
+  return 365 + self~isLeapYear
+
+
+-- Returns the ISO week number for a given date
+::METHOD weekNumber
+  use strict arg
+
+  -- we calculate the ISO week number according to
+  -- https://en.wikipedia.org/wiki/ISO_week_date#Calculation
+  -- week(date) = ( ordinal(date) - weekday(date) + 10 ) % 7
+  -- week = ( lastWeek(year-1), week < 1
+  --        ( 1,                week > lastWeek(year)
+  weekNumber = (self~yearDay - self~weekDay + 10) % 7
+
+  -- if not on the edges, then we are done
+  if weekNumber >= 1, weekNumber <= 52 then
+      return weekNumber
+  -- if this is less than one, then the day belongs to the last week of the previous year
+  else if weekNumber < 1 then
+      return self~addYears(-1)~weeksInYear
+  -- if greater than 52, see if it falls into first week of next year
+  else return (weekNumber > self~weeksInYear)~?(1, weekNumber)
+
+-- return the year associated with this date's week number. This may be
+-- different than the year for dates at the beginning or end of the year
+::METHOD weekNumberYear
+  use strict arg
+
+  year = self~year
+  weekNumber = self~weekNumber
+  month = self~month
+
+  -- if the week number is 1 but we're in December, then this actually is part of next year
+  if weekNumber == 1, month == 12 then do
+      year += 1
   end
-  else do
-      return 365
+  -- if the week number is at the end of the year but the date is in January, then
+  -- this belongs to the previous year
+  else if weekNumber >= 52, month == 1 then do
+      year -= 1
   end
+
+  return year
+
+-- return the number of weeks contained in a year according to the ISO
+-- week number rules
+::method weeksInYear
+  use strict arg
+
+  -- we calculate the number of ISO weeks according to
+  -- https://en.wikipedia.org/wiki/ISO_week_date#Weeks_per_year
+  -- weeks(year) = 52 + ( 1   if p(year) = 4 or p(year-1) = 3
+  --                    ( 0   otherwise
+  -- p(year) = (year + year % 4 - year % 100 + year % 400 ) mod 7
+
+  year = self~year
+  if p(year) \= 4, p(year - 1) \= 3 then
+      return 52
+  else
+      return 53
+
+  p: procedure
+      parse arg year
+      return (year + year % 4 - year % 100 + year % 400 ) // 7
+
 
 -- Returns a string form for this date time.  The string value
 -- is the ISO date.
 ::METHOD string      -- return a formatted string value
   use strict arg    -- enforces no arguments
   return self~isoDate
+
+::method makeString
+  forward message "STRING"
 
 
 -- TimeSpan represents an interval of time.  Timespans are created by subtracting
@@ -3306,16 +3430,25 @@ nomethod:
   select
       when arg() <= 1 then do    -- just create from a microseconds value
           use strict arg timestamp
+          .Validate~wholeNumber("timestamp", timestamp, 18)
       end
       when arg() <= 3 then do
           -- convert hours, minutes, seconds to microseconds value
-          use strict arg hours, minutes, seconds
-          timestamp = ((hours * 3600) + (minutes * 60) + seconds) * 1000000
+          use strict arg hours, minutes, seconds = 0
+          .Validate~wholeNumberRange("hours", hours, 0, 23)
+          .Validate~wholeNumberRange("minutes", minutes, 0, 59)
+          .Validate~wholeNumberRange("seconds", seconds, 0, 59)
+          timestamp = (hours * 3600 + minutes * 60 + seconds) * 1000000
       end
       otherwise
           -- starting with days, hours, minutes, seconds, and microseconds
           use strict arg days, hours, minutes, seconds, microseconds = 0
-          timestamp = (((days * 24 * 3600) + (hours * 3600) + (minutes * 60) + seconds) * 1000000) + microseconds
+          .Validate~nonNegativeWholeNumber("days", days)
+          .Validate~wholeNumberRange("hours", hours, 0, 23)
+          .Validate~wholeNumberRange("minutes", minutes, 0, 59)
+          .Validate~wholeNumberRange("seconds", seconds, 0, 59)
+          .Validate~wholeNumberRange("microseconds", microseconds, 0, 999999)
+          timestamp = ((days * 24 + hours) * 3600 + minutes * 60 + seconds) * 1000000 + microseconds
   end
 
   -- this will validate the timestamp value
@@ -3495,12 +3628,12 @@ nomethod:
       return self~class~new(timestamp)
   end
 
-  -- ok, actually addition.  We require
+  -- ok, actually addition.  We require a timespan or a datetime.
   use strict arg other
 
   -- "+" can do the addition to either a timespan or a datetime.
-  -- When addition occurs between two timespaces, the result is a timespan.
-  -- When adding to a datatime, the result is a datetime.
+  -- When addition occurs between two timespans, the result is a timespan.
+  -- When adding a datetime, the result is a datetime.
   if other~isa(.timespan) then do
       -- combine the two intervals
       return self~class~new(timestamp + other~totalMicroseconds)
@@ -3675,9 +3808,12 @@ nomethod:
       return sign||hours~right(2, '0')":"minutes~right(2, '0')":"seconds~right(2, '0')"."microseconds~right(6, '0')
   end
 
+::method makeString
+  forward message "STRING"
+
 
 -- NOTE: undocumented ArgUtil class has been superseded by documented Validate class
--- ArgUtil is deprected, use of it is discouraged, as it may be removed in the future
+-- ArgUtil is deprecated, use of it is discouraged, as it may be removed in the future
 ::CLASS 'ArgUtil' public
 ::METHOD validateNumber class
   use strict arg name, number
@@ -3906,6 +4042,19 @@ nomethod:
       raise syntax 88.914 array(name, class~id)
   end
 
+-- validate that an argument can be expressed as an instance of a specific class
+::METHOD requestClassType class
+  use strict arg name, object, class
+
+  newObject = object~request(class~id)
+
+  if \newObject~isA(class) then do
+      -- 93.978:  Method argument NAME could not be converted to type CLASS; found "OBJECT".
+      raise syntax 93.978 array(name, class~id, object)
+  end
+
+  return newObject
+
 -- validate that an argument is a valid boolean
 ::METHOD logical class
   use strict arg name, number
@@ -4045,3 +4194,21 @@ nomethod:
   -- this is equivalent of ">>="
   forward message(">>=")
 
+
+/** This metaclass makes sure that only a single instance of a class can be created,
+*   a "singleton". After a singleton got created each time a NEW message gets sent
+*   to the class will cause that singleton to be returned. The Singleton metaclass
+*   makes sure that the singleton object will return itself upon receiving the COPY
+*   message.
+*/
+::class "Singleton" mixinclass class public
+
+::method new            -- create a new instance
+  expose s              -- attribute to hold singleton
+  if var("S")=.false then  -- not yet created?
+  do
+     self~define("COPY", "return self")   -- make sure COPY returns singleton as well
+     forward class (super) continue       -- let the superclass create the instance
+     s=result           -- fetch & save the returned instance
+  end
+  return s              -- return singleton instance

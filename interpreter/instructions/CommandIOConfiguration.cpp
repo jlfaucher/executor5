@@ -5,7 +5,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -300,7 +300,7 @@ InputRedirector *CommandIOConfiguration::createInputSource(RexxActivation *conte
 
             // because we need to detect conflicts between input and outputs,
             // we need to use the fully qualified file name here.
-            streamName = SystemInterpreter::qualifyFileSystemName(streamName);
+            streamName = Interpreter::qualifyFileSystemName(streamName);
 
             return new StreamInputSource(streamName);
         }
@@ -450,7 +450,7 @@ OutputRedirector *CommandIOConfiguration::createOutputTarget(RexxString *keyword
             Protected<RexxString> streamName = outputObject->requestString();
             // because we need to detect conflicts between input and outputs,
             // we need to use the fully qualified file name here.
-            streamName = SystemInterpreter::qualifyFileSystemName(streamName);
+            streamName = Interpreter::qualifyFileSystemName(streamName);
 
             return new StreamOutputTarget(streamName, option);
         }

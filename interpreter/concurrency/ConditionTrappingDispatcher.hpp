@@ -5,7 +5,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -73,14 +73,14 @@ public:
     inline ConditionTrappingDispatcher(TrapInvoker &t) : invoker(t), errorCode(0) { }
     virtual ~ConditionTrappingDispatcher() { ; }
 
-    virtual void run();
-    virtual void handleError(wholenumber_t, DirectoryClass *);
-    virtual void handleError(DirectoryClass *);
-    virtual bool trapConditions() { return true; }
+    void run() override;
+    void handleError(wholenumber_t, DirectoryClass *) override;
+    void handleError(DirectoryClass *) override;
+    bool trapConditions() override { return true; }
 
-            bool errorOccurred()  { return errorCode != 0; }
-            bool conditionOccurred() { return conditionData != OREF_NULL; }
-            DirectoryClass *getCondition() { return conditionData; }
+    bool errorOccurred()  { return errorCode != 0; }
+    bool conditionOccurred() { return conditionData != OREF_NULL; }
+    DirectoryClass *getCondition() { return conditionData; }
 
 protected:
     TrapInvoker &invoker;          // that invokes the method call.

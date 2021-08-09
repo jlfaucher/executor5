@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -344,6 +344,32 @@ void RexxStemVariable::clearGuard(RexxActivation *context )
     // look up the variable and remove the inform status for this activity.
     RexxVariable *variable = context->getLocalStemVariable(stemName, stemIndex);
     variable->uninform(context->getActivity());
+}
+
+
+/**
+ * Set a GUARD WHEN watch on a stem variable.
+ *
+ * @param dictionary The target dictionary
+ */
+void RexxStemVariable::setGuard(VariableDictionary *dictionary)
+{
+    // get the variable and ask for our activity to be notified.
+    RexxVariable *variable = dictionary->getStemVariable(stemName);
+    variable->inform(ActivityManager::currentActivity);
+}
+
+
+/**
+ * Remove a guard notification from a variable.
+ *
+ * @param dictionary The target dictionary
+ */
+void RexxStemVariable::clearGuard(VariableDictionary *dictionary)
+{
+    // look up the variable and remove the inform status for this activity.
+    RexxVariable *variable = dictionary->getStemVariable(stemName);
+    variable->uninform(ActivityManager::currentActivity);
 }
 
 

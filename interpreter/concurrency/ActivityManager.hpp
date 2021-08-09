@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -305,17 +305,13 @@ inline void reportException(RexxErrorCodes error, const char *a1, RexxObject *a2
     ActivityManager::currentActivity->reportAnException(error, new_string(a1), a2, a3);
 }
 
-inline void reportNomethod(RexxString *message, RexxObject *receiver)
+inline void reportNomethod(RexxErrorCodes error, RexxString *message, RexxObject *receiver)
 {
     if (!ActivityManager::currentActivity->raiseCondition(GlobalNames::NOMETHOD, OREF_NULL, message, receiver, OREF_NULL))
     {
-        reportException(Error_No_method_name, receiver, message);
+        reportException(error, receiver, message);
     }
 }
-
-
-inline Activity *new_activity()  { return ActivityManager::createNewActivity(); }
-inline Activity *new_activity(Activity *parent)  { return ActivityManager::createNewActivity(parent); }
 
 
 /**

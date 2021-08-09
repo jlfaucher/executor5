@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                          */
+/* https://www.oorexx.org/license.html                         */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -36,7 +36,6 @@
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 /******************************************************************************/
-/* Oryx Kernel                                                  rexx.c        */
 /*                                                                            */
 /* translate a program and save to an output file                             */
 /*                                                                            */
@@ -50,76 +49,99 @@
 #include "RexxErrorCodes.h"
 #include "RexxInternalApis.h"
 
-#define DLLNAME "rexx.dll"
-
-#define BUFFERLEN         256          /* Length of message bufs used       */
-
-void DisplayError(HINSTANCE hDll, int err_no)
+void displayError(int msgid)
 {
-   char str[BUFFERLEN];
-   if (LoadString(hDll, err_no, str, BUFFERLEN))
-       printf("\n%s", str);
-   else
-       printf("\nError in service program but no error message found!");
+    // retrieve the message from the central catalog
+    const char *message = RexxGetErrorMessage(msgid);
+
+    printf("%s\n", message);    /* print the message                 */
+}
+
+
+/**
+ * Handle syntax errors for the rexxc command
+ */
+void syntaxError()
+{
+    displayError(Error_REXXC_wrongNrArg);
+    displayError(Error_REXXC_SynCheckInfo);
+    exit(-1);
 }
 
 
 int SysCall main(int argc, char **argv)
 {
-  char fn[2][BUFFERLEN];
-  int  silent = 0;
-  int  j = 0;
+    bool  silent = false;
+    bool  encode = false;
 
-  HINSTANCE hDll=NULL;
+    const char *input;
+    const char *output = NULL;
 
-  hDll = LoadLibrary(DLLNAME);
+    // first possible flag argument
+    int firstFlag = 2;
 
-  for (j=1; j<argc; j++)
-  {
-      if (((argv[j][0] == '/') || (argv[j][0] == '-'))
-      && ((argv[j][1] == 's') || (argv[j][1] == 'S'))) silent = j;
-  }
-  if (!silent)
-  {
-      char *ptr = RexxGetVersionInformation();
-      if (ptr) {
-          printf(ptr, "Tokenizer");
-          printf("\n");
-          RexxFreeMemory(ptr);
-      }
-  }
+    // the source file name is required
+    if (argc < 2)
+    {
+        syntaxError();
+    }
 
-  /* check arguments: at least 1 argument, max. 2, /s must be last */
-  if ((argc < 2) || (argc > 4) ||           /* invalid no. of args */
-      (silent && (argc == 2)) ||            /* only /s             */
-      (silent && (silent+1 != argc)) ||     /* /s not last arg     */
-      (!silent && (argc == 4)))             /* 3 args, no /s       */
-  {
-      if (argc > 2) {
-      DisplayError(hDll, Error_REXXC_cmd_parm_incorrect);
-      }
-      DisplayError(hDll, Error_REXXC_wrongNrArg);
-      DisplayError(hDll, Error_REXXC_SynCheckInfo);
-      if (hDll) FreeLibrary(hDll);
-      exit(-1);
-  }
+    input = argv[1];
 
-  strcpy(fn[0], argv[1]);
-  if (argc >= 3) strcpy(fn[1], argv[2]);
+    // the output file is optional, but it cannot be a possible flag
+    if (argc > 2)
+    {
+        // if not a possible flag, this is the output file
+        if ((argv[2][0] != '/') && (argv[2][0] != '-'))
+        {
+            output = argv[2];
+            // first possible flage is the third argument
+            firstFlag = 3;
+        }
+    }
 
-  if ( ((argc>3) || ((argc==3) && !silent)) &&
-       (strcmp(strupr(fn[0]), strupr(fn[1])) == 0))
-  {
-      DisplayError(hDll, Error_REXXC_outDifferent);
-      if (hDll) FreeLibrary(hDll);
-      exit(-2);
-  }
+    // process any remaining arguments as flags.
+    for (int j = firstFlag; j < argc; j++)
+    {
+        if ((argv[j][0] == '/') || (argv[j][0] == '-'))
+        {
+            if ((argv[j][1] == 's') || (argv[j][1] == 'S'))
+            {
+                silent = j;
+            }
+            else if ((argv[j][1] == 'e') || (argv[j][1] == 'E'))
+            {
+                encode = j;
+            }
+            // unknown flag
+            else
+            {
+                displayError(Error_REXXC_cmd_parm_incorrect);
+                syntaxError();
+            }
+        }
+        else
+        {
+            displayError(Error_REXXC_cmd_parm_incorrect);
+            syntaxError();
+        }
+    }
 
-  if (hDll) FreeLibrary(hDll);
+    // if not silent, output the banner
+    if (!silent)
+    {
+        char *ptr = RexxGetVersionInformation();
+        printf("%s\n", ptr);
+        RexxFreeMemory(ptr);
+    }
 
-  if ((argc == 2) || ((argc==3) && silent) )  /* just doing a syntax check? */
-                                       /* go perform the translation        */
-    return RexxTranslateProgram(argv[1], NULL, NULL);
-  else                                 /* translate and save the output     */
-    return RexxTranslateProgram(argv[1], argv[2], NULL);
+
+    // if we have an output file, it must be different than the input file
+    if (output != NULL && stricmp(input, output) == 0)
+    {
+        displayError(Error_REXXC_outDifferent);
+        exit(-2);
+    }
+
+    return RexxCompileProgram(input, output, NULL, encode);
 }

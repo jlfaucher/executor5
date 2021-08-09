@@ -40,9 +40,9 @@
 </listitem>
 </varlistentry>
 <varlistentry>
-<term>904</term>
+<term>905</term>
 <listitem>
-<para>Failure during initialization: Program "<emphasis role="italic">program</emphasis>" needs to be tokenized. To run untokenized scripts you need a full version of Object REXX.</para>
+<para>Encoded compiled program "<emphasis role="italic">program_name</emphasis>" cannot be decoded.</para>
 </listitem>
 </varlistentry>
 </variablelist>
@@ -187,12 +187,12 @@ construction. For example:</para>
 <programlisting>
 WRONG                     RIGHT
 
-If a=c then do;           If a=c then do;
-Say EQUALS                Say EQUALS
-exit                      exit
-else                        end
-Say NOT EQUALS            else
-Say NOT EQUALS
+if a = b then do          if a = b then do
+  say "equals"              say "equals"
+  exit                      exit
+else                      end
+  say "not equals"        else
+                            say "not equals"
 </programlisting>
 <para>The associated subcodes are: </para>
 <variablelist>
@@ -430,6 +430,18 @@ Say NOT EQUALS
 <term>004</term>
 <listitem>
 <para>Only 0, 1, and whitespace characters are valid in a binary string; found "<emphasis role="italic">character</emphasis>".</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>005</term>
+<listitem>
+<para>Hexadecimal strings must be grouped in units that are multiples of two characters.</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>006</term>
+<listitem>
+<para>Binary strings must be grouped in units that are multiples of four characters.</para>
 </listitem>
 </varlistentry>
 </variablelist>
@@ -899,6 +911,12 @@ special character (such as a parenthesis).
 <term>933</term>
 <listitem>
 <para>Symbol expected after WITH keyword.</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>934</term>
+<listitem>
+<para>Symbol expected after COUNTER keyword.</para>
 </listitem>
 </varlistentry>
 </variablelist>
@@ -1493,6 +1511,12 @@ special character (such as a parenthesis).
 <para>OVER keyword expected for a WITH loop.</para>
 </listitem>
 </varlistentry>
+<varlistentry>
+<term>905</term>
+<listitem>
+<para>COUNTER keyword not allowed on a simple DO instruction.</para>
+</listitem>
+</varlistentry>
 </variablelist>
 </section>
 <section id="ERR28">
@@ -1552,23 +1576,17 @@ special character (such as a parenthesis).
 </variablelist>
 </section>
 <section id="ERR30">
-<title>Error 30 - Name or string too long.</title>
+<title>Error 30 - Name or symbol too long.</title>
 <para>
 <emphasis role="bold">Explanation:</emphasis>
 </para>
-<para>A variable name, label name, literal (quoted) string has exceeded the allowed limit of 250 characters. The limit for names includes any substitutions. A possible cause of this error is if you use a period (.) in a name, causing an unexpected substitution. Leaving off an ending quotation mark for a literal string, or putting a single quotation mark in a string, can cause this error because several clauses can be included in the string. For example, write the string 'don't' as 'don't' or "don't".</para>
+<para>A variable name, label name, or symbol has exceeded the allowed limit of 250 characters.</para>
 <para>The associated subcodes are: </para>
 <variablelist>
 <varlistentry>
 <term>001</term>
 <listitem>
-<para>Name exceeds 250 characters:  "<emphasis role="italic">name</emphasis>".</para>
-</listitem>
-</varlistentry>
-<varlistentry>
-<term>002</term>
-<listitem>
-<para>Literal string exceeds 250 characters:  "<emphasis role="italic">string</emphasis>".</para>
+<para>Name or symbol exceeds 250 characters:  "<emphasis role="italic">name</emphasis>".</para>
 </listitem>
 </varlistentry>
 <varlistentry>
@@ -1576,18 +1594,6 @@ special character (such as a parenthesis).
 <listitem>
 <para>
 <emphasis role="italic">message</emphasis>.</para>
-</listitem>
-</varlistentry>
-<varlistentry>
-<term>901</term>
-<listitem>
-<para>Hexadecimal literal string exceeds 250 characters "<emphasis role="italic">string</emphasis>".</para>
-</listitem>
-</varlistentry>
-<varlistentry>
-<term>902</term>
-<listitem>
-<para>Binary literal string exceeds 250 characters "<emphasis role="italic">string</emphasis>".</para>
 </listitem>
 </varlistentry>
 </variablelist>
@@ -2006,6 +2012,12 @@ special character (such as a parenthesis).
 <para>Missing expression following <emphasis role="italic">keyword</emphasis> keyword of a <emphasis role="italic">instruction</emphasis> instruction.</para>
 </listitem>
 </varlistentry>
+<varlistentry>
+<term>936</term>
+<listitem>
+<para>Missing expression on ::CONSTANT directive.</para>
+</listitem>
+</varlistentry>
 </variablelist>
 </section>
 <section id="ERR36">
@@ -2398,6 +2410,43 @@ special character (such as a parenthesis).
 <para>Argument <emphasis role="italic">argument</emphasis> must have a stem object or stem name value; found "<emphasis role="italic">value</emphasis>".</para>
 </listitem>
 </varlistentry>
+<varlistentry>
+<term>920</term>
+<listitem>
+<para>
+<emphasis role="italic">function_name</emphasis> argument <emphasis role="italic">name</emphasis> must be one of "<emphasis role="italic">option</emphasis>"; found "<emphasis role="italic">value</emphasis>".</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>921</term>
+<listitem>
+<para>Argument <emphasis role="italic">first option</emphasis> ("<emphasis role="italic">first value</emphasis>") must be greater than argument <emphasis role="italic">second option</emphasis> ("<emphasis role="italic">second value</emphasis>").</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>922</term>
+<listitem>
+<para>Stem argument does not have a valid count for element 0.</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>923</term>
+<listitem>
+<para>The operation is outside the size of the stem array ("<emphasis role="italic">value</emphasis>").</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>924</term>
+<listitem>
+<para>Stem element at position "<emphasis role="italic">position</emphasis>" is not set.</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>925</term>
+<listitem>
+<para>Argument <emphasis role="italic">argument</emphasis> must be an array object, a stem object, or a stem name value; found "<emphasis role="italic">value</emphasis>".</para>
+</listitem>
+</varlistentry>
 </variablelist>
 </section>
 <section id="ERR41">
@@ -2727,7 +2776,7 @@ special character (such as a parenthesis).
 <varlistentry>
 <term>901</term>
 <listitem>
-<para>Missing argument; the <emphasis role="italic">argument</emphasis> argument is required.</para>
+<para>Missing argument; argument <emphasis role="italic">argument</emphasis> is required.</para>
 </listitem>
 </varlistentry>
 <varlistentry>
@@ -2751,25 +2800,25 @@ special character (such as a parenthesis).
 <varlistentry>
 <term>905</term>
 <listitem>
-<para>The <emphasis role="italic">argument</emphasis> argument must be a positive whole number; found "<emphasis role="italic">value</emphasis>".</para>
+<para>Argument <emphasis role="italic">argument</emphasis> must be a positive whole number; found "<emphasis role="italic">value</emphasis>".</para>
 </listitem>
 </varlistentry>
 <varlistentry>
 <term>906</term>
 <listitem>
-<para>The <emphasis role="italic">argument</emphasis> argument must not exceed <emphasis role="italic">limit</emphasis>; found "<emphasis role="italic">value</emphasis>".</para>
+<para>Argument <emphasis role="italic">argument</emphasis> must not exceed <emphasis role="italic">limit</emphasis>; found "<emphasis role="italic">value</emphasis>".</para>
 </listitem>
 </varlistentry>
 <varlistentry>
 <term>907</term>
 <listitem>
-<para>The <emphasis role="italic">argument</emphasis> argument must be in the range <emphasis role="italic">min</emphasis> to <emphasis role="italic">max</emphasis>; found "<emphasis role="italic">value</emphasis>".</para>
+<para>Argument <emphasis role="italic">argument</emphasis> must be in the range <emphasis role="italic">min</emphasis> to <emphasis role="italic">max</emphasis>; found "<emphasis role="italic">value</emphasis>".</para>
 </listitem>
 </varlistentry>
 <varlistentry>
 <term>908</term>
 <listitem>
-<para>The <emphasis role="italic">argument</emphasis> argument must not be a null string.</para>
+<para>Argument <emphasis role="italic">argument</emphasis> must not be a null string.</para>
 </listitem>
 </varlistentry>
 <varlistentry>
@@ -2912,6 +2961,18 @@ special character (such as a parenthesis).
 <para>Argument <emphasis role="italic">argument</emphasis> was omitted. A VariableReference argument is required.</para>
 </listitem>
 </varlistentry>
+<varlistentry>
+<term>932</term>
+<listitem>
+<para>Date template <emphasis role="italic">template</emphasis> contains an invalid pattern; found "<emphasis role="italic">value</emphasis>".</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>933</term>
+<listitem>
+<para>Unable to parse date "<emphasis role="italic">date</emphasis>" with template "<emphasis role="italic">template</emphasis>".</para>
+</listitem>
+</varlistentry>
 </variablelist>
 </section>
 <section id="ERR89">
@@ -2931,7 +2992,7 @@ special character (such as a parenthesis).
 <varlistentry>
 <term>002</term>
 <listitem>
-<para>The PARSE was expecting a variable or a message term.</para>
+<para>The PARSE instruction was expecting a variable or a message term.</para>
 </listitem>
 </varlistentry>
 </variablelist>
@@ -2941,7 +3002,7 @@ special character (such as a parenthesis).
 <para>
 <emphasis role="bold">Explanation:</emphasis>
 </para>
-<para>An external class, method, or routine (specified with the EXTERNAL option on a ::CLASS, ::METHOD, or ::ROUTINE directive, or as a second argument on a NEW message to the Method class) cannot be found.</para>
+<para>An external method or routine (specified with the EXTERNAL option on an ::ATTRIBUTE, a ::METHOD, or a ::ROUTINE directive) cannot be found.</para>
 <para>The associated subcodes are: </para>
 <variablelist>
 <varlistentry>
@@ -3176,12 +3237,6 @@ special character (such as a parenthesis).
 <term>915</term>
 <listitem>
 <para>Method option must be one of "<emphasis role="italic">arguments</emphasis>"; found "<emphasis role="italic">value</emphasis>".</para>
-</listitem>
-</varlistentry>
-<varlistentry>
-<term>916</term>
-<listitem>
-<para>Method argument <emphasis role="italic">argument</emphasis> must have a string value.</para>
 </listitem>
 </varlistentry>
 <varlistentry>
@@ -3510,6 +3565,24 @@ special character (such as a parenthesis).
 <para>Invalid <emphasis role="italic">option</emphasis> value; found "<emphasis role="italic">value</emphasis>".</para>
 </listitem>
 </varlistentry>
+<varlistentry>
+<term>976</term>
+<listitem>
+<para>Hexadecimal strings must be grouped in units that are multiples of two characters.</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>977</term>
+<listitem>
+<para>Binary strings must be grouped in units that are multiples of four characters.</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>978</term>
+<listitem>
+<para>Method argument <emphasis role="italic">argument</emphasis> could not be converted to type <emphasis role="italic">type</emphasis>; found "<emphasis role="italic">value</emphasis>".</para>
+</listitem>
+</varlistentry>
 </variablelist>
 </section>
 <section id="ERR97">
@@ -3524,6 +3597,30 @@ special character (such as a parenthesis).
 <term>001</term>
 <listitem>
 <para>Object "<emphasis role="italic">object</emphasis>" does not understand message "<emphasis role="italic">message</emphasis>".</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>002</term>
+<listitem>
+<para>Object "<emphasis role="italic">object</emphasis>" cannot accept private message "<emphasis role="italic">message</emphasis>" from this context.</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>003</term>
+<listitem>
+<para>Object "<emphasis role="italic">object</emphasis>" cannot accept package scope message "<emphasis role="italic">message</emphasis>" from a different package caller.</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>004</term>
+<listitem>
+<para>Constant "<emphasis role="italic">name</emphasis>" of object "<emphasis role="italic">object</emphasis>" has not been initialized.</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>005</term>
+<listitem>
+<para>An unhandled NOMETHOD condition has been raised.</para>
 </listitem>
 </varlistentry>
 <varlistentry>
@@ -3548,6 +3645,12 @@ special character (such as a parenthesis).
 <listitem>
 <para>
 <emphasis role="italic">message</emphasis>.</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>901</term>
+<listitem>
+<para>Object "<emphasis role="italic">object</emphasis>" was not correctly initialized.</para>
 </listitem>
 </varlistentry>
 <varlistentry>
@@ -3761,6 +3864,36 @@ special character (such as a parenthesis).
 </listitem>
 </varlistentry>
 <varlistentry>
+<term>970</term>
+<listitem>
+<para>External command "<emphasis role="italic">command</emphasis>" ended with return code <emphasis role="italic">rc</emphasis>.</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>971</term>
+<listitem>
+<para>External command "<emphasis role="italic">command</emphasis>" failed with return code <emphasis role="italic">rc</emphasis>.</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>972</term>
+<listitem>
+<para>Number <emphasis role="italic">number</emphasis> has more digits than the current precision.</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>973</term>
+<listitem>
+<para>Object "<emphasis role="italic">object</emphasis>" does not have a string representation.</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>974</term>
+<listitem>
+<para>Stream "<emphasis role="italic">object</emphasis>" is not ready.</para>
+</listitem>
+</varlistentry>
+<varlistentry>
 <term>975</term>
 <listitem>
 <para>Missing array element at position <emphasis role="italic">position</emphasis>.</para>
@@ -3952,6 +4085,12 @@ special character (such as a parenthesis).
 </listitem>
 </varlistentry>
 <varlistentry>
+<term>906</term>
+<listitem>
+<para>A ::CONSTANT directive with an expression requires a matching ::CLASS directive.</para>
+</listitem>
+</varlistentry>
+<varlistentry>
 <term>907</term>
 <listitem>
 <para>EXPOSE must be the first instruction executed after a method invocation.</para>
@@ -4014,7 +4153,7 @@ special character (such as a parenthesis).
 <varlistentry>
 <term>917</term>
 <listitem>
-<para>Incorrect external directive name "<emphasis role="italic">method</emphasis>".</para>
+<para>Incorrect external name specification "<emphasis role="italic">name</emphasis>".</para>
 </listitem>
 </varlistentry>
 <varlistentry>

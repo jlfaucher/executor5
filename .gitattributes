@@ -1,5 +1,4 @@
 * text=auto !eol
-extensions/json/json.cls -text
 extensions/platform/windows/oodialog/AppIcon.ico -text
 extensions/platform/windows/oodialog/AppIcon2.ico -text
 extensions/platform/windows/oodialog/AppIconBlueBeaker.ico -text
@@ -9,42 +8,11 @@ extensions/platform/windows/oodialog/_downArrowBlue.ico -text
 extensions/platform/windows/oodialog/_upArrowBlue.ico -text
 extensions/platform/windows/oodialog/oodialog.ico -text svneol=unset#applicatiion/octet-stream
 extensions/platform/windows/oodialog/rexx.ico -text
-interpreter/classes/VariableReference.cpp -text
-interpreter/classes/VariableReference.hpp -text
-interpreter/concurrency/ConditionTrappingDispatcher.cpp -text
-interpreter/concurrency/ConditionTrappingDispatcher.hpp -text
-interpreter/expression/SpecialDotVariable.cpp -text
-interpreter/expression/SpecialDotVariable.hpp -text
-interpreter/expression/VariableReferenceOp.cpp -text
-interpreter/expression/VariableReferenceOp.hpp -text
-interpreter/instructions/AddressWithInstruction.cpp -text
-interpreter/instructions/AddressWithInstruction.hpp -text
-interpreter/instructions/CommandIOConfiguration.cpp -text
-interpreter/instructions/CommandIOConfiguration.hpp -text
-interpreter/instructions/CommandIOContext.cpp -text
-interpreter/instructions/CommandIOContext.hpp -text
-interpreter/instructions/InputRedirector.cpp -text
-interpreter/instructions/InputRedirector.hpp -text
-interpreter/instructions/OutputRedirector.cpp -text
-interpreter/instructions/OutputRedirector.hpp -text
-interpreter/instructions/UseArgVariableRef.cpp -text
-interpreter/instructions/UseArgVariableRef.hpp -text
-platform/unix/50-rxapid.preset -text
-platform/unix/debian/changelog.in -text svnc_snv_003aeol_002dstyle=native
-platform/unix/debian/cmake/postinst.in -text
-platform/unix/debian/cmake/prerm -text
-platform/unix/debian/compat -text svnc_snv_003aeol_002dstyle=native
-platform/unix/debian/control -text svnc_snv_003aeol_002dstyle=native
-platform/unix/debian/copyright -text svnc_snv_003aeol_002dstyle=native
-platform/unix/debian/dirs -text svnc_snv_003aeol_002dstyle=native
-platform/unix/debian/docs -text svnc_snv_003aeol_002dstyle=native
-platform/unix/debian/postinst.in -text svnc_snv_003aeol_002dstyle=native
-platform/unix/debian/postrm -text svnc_snv_003aeol_002dstyle=native
-platform/unix/debian/prerm -text svnc_snv_003aeol_002dstyle=native
-platform/unix/debian/rules -text svnc_snv_003aeol_002dstyle=native
-platform/unix/macosx/MakeRexxPackage.in -text
-platform/unix/menu/rexxtry.xml svneol=native#text
-platform/unix/oorexx.appdata.xml svneol=native#text
+platform/unix/macos/install/Readme_ooRexx.txt -text
+platform/unix/macos/install/Readme_ooRexx_USB.txt -text
+platform/unix/macos/install/oorexx.png -text
+platform/unix/menu/rexxtry.xml -text svneol=native#text
+platform/unix/oorexx.appdata.xml -text svneol=native#text
 platform/unix/oorexx.png -text svneol=unset#image/png
 platform/windows/install/orange-uninstall.bmp -text svneol=unset#image/bmp
 platform/windows/install/orange.bmp -text svneol=unset#image/bmp
@@ -52,6 +20,7 @@ platform/windows/install/uninstall.ico -text svneol=unset#applicatiion/octet-str
 platform/windows/orxw.ico -text svneol=unset#applicatiion/octet-stream
 platform/windows/rexx.ico -text svneol=unset#applicatiion/octet-stream
 rexxapi/server/platform/windows/rxapi.ico -text
+samples/factor.rex -text
 samples/windows/api/callrxnt/callrxnt.ico -text svneol=unset#applicatiion/octet-stream
 samples/windows/api/callrxwn/callrxwn.ico -text svneol=unset#applicatiion/octet-stream
 samples/windows/api/rexxexit/rexxexit.ico -text svneol=unset#applicatiion/octet-stream

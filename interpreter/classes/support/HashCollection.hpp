@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -57,13 +57,13 @@ class HashCollection : public RexxObject
  public:
     inline HashCollection() { ; }
 
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
-    virtual void flatten(Envelope *);
+    void live(size_t) override;
+    void liveGeneral(MarkReason reason) override;
+    void flatten(Envelope *) override;
 
-    virtual RexxInternalObject *unflatten(Envelope *);
-    virtual RexxInternalObject *copy();
-    virtual ArrayClass *makeArray();
+    RexxInternalObject *unflatten(Envelope *) override;
+    RexxInternalObject *copy() override;
+    ArrayClass *makeArray() override;
 
     virtual HashContents *allocateContents(size_t bucketSize, size_t capacity) = 0;
     virtual void validateIndex(RexxObject *&index);
@@ -150,7 +150,7 @@ public:
             IdentityHashCollection(size_t capacity);
     inline  IdentityHashCollection() { ; }
 
-    virtual HashContents *allocateContents(size_t bucketSize, size_t capacity);
+    HashContents *allocateContents(size_t bucketSize, size_t capacity) override;
 };
 
 
@@ -164,7 +164,7 @@ public:
             EqualityHashCollection(size_t capacity);
     inline  EqualityHashCollection() { ; }
 
-    virtual HashContents *allocateContents(size_t bucketSize, size_t capacity);
+    HashContents *allocateContents(size_t bucketSize, size_t capacity) override;
 };
 
 
@@ -179,10 +179,10 @@ public:
             StringHashCollection(size_t capacity);
     inline  StringHashCollection() { ; }
 
-    virtual HashContents *allocateContents(size_t bucketSize, size_t capacity);
-    virtual void validateIndex(RexxObject *&index);
+    HashContents *allocateContents(size_t bucketSize, size_t capacity) override;
+    void validateIndex(RexxObject *&index) override;
     // string collections don't require a rehash
-    virtual bool requiresRehash() { return false; }
+    bool requiresRehash() override { return false; }
 
     // additional string oriented lookup functions
     // base implementations of extra directory methods.
@@ -191,7 +191,7 @@ public:
     virtual RexxInternalObject *entry(RexxString *index);
     virtual RexxInternalObject *removeEntry(RexxString *index);
     virtual RexxObject *unknown(RexxString *msgname, RexxObject **arguments, size_t count);
-    virtual void processUnknown(RexxString *, RexxObject **, size_t, ProtectedObject &);
+    void processUnknown(RexxErrorCodes error, RexxString *, RexxObject **, size_t, ProtectedObject &) override;
 
     // Rexx stubs for these additional functions.
     RexxObject *entryRexx(RexxObject *entryName);
@@ -213,10 +213,10 @@ public:
             IndexOnlyHashCollection(size_t capacity) : EqualityHashCollection(capacity) { }
     inline  IndexOnlyHashCollection() { ; }
 
-    virtual void validateValueIndex(RexxObject *&value, RexxObject *&index);
-    virtual bool hasItem(RexxInternalObject *);
-    virtual RexxInternalObject *getIndex(RexxInternalObject * value);
-    virtual void put(RexxInternalObject *v) { HashCollection::put(v, v); }
+    void validateValueIndex(RexxObject *&value, RexxObject *&index) override;
+    bool hasItem(RexxInternalObject *) override;
+    RexxInternalObject *getIndex(RexxInternalObject * value) override;
+    void put(RexxInternalObject *v) { HashCollection::put(v, v); }
 
 };
 #endif

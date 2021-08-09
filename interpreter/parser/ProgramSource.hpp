@@ -1,11 +1,11 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -86,7 +86,7 @@ public:
     void *operator new(size_t);
     inline void  operator delete(void *) { ; }
 
-    ProgramSource() : lineCount(0) { };
+    ProgramSource() : firstLine(1), lineCount(0) { };
     inline ProgramSource(RESTORETYPE restoreType) { ; };
 
     // each subclass will need to implement this.
@@ -103,16 +103,17 @@ public:
     virtual bool isTraceable() { return false; }
     // provides the starting line location.  Can be non-zero
     // if this is an interpret
-    virtual size_t getFirstLine() { return 0; }
+    virtual size_t getFirstLine() { return firstLine; }
     size_t getLineCount() { return lineCount; }
 
     RexxString *getStringLine(size_t lineNumber);
     RexxString *getStringLine(size_t position, size_t startOffset, size_t endOffset = SIZE_MAX);
     RexxString *extract(SourceLocation &location);
-    ArrayClass  *extractSourceLines(SourceLocation &location);
+    ArrayClass *extractSourceLines(SourceLocation &location);
 
 protected:
 
+    size_t firstLine;               // the first line of the source for parsing
     size_t lineCount;               // count of lines in the source file.
 };
 
@@ -130,14 +131,14 @@ class BufferProgramSource: public ProgramSource
     BufferProgramSource(BufferClass *b) : buffer(b), descriptorArea(OREF_NULL), ProgramSource() { }
     inline BufferProgramSource(RESTORETYPE restoreType) { ; };
 
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
-    virtual void flatten(Envelope *);
+    void live(size_t) override;
+    void liveGeneral(MarkReason reason) override;
+    void flatten(Envelope *) override;
 
     // virtual definitions
-    virtual void setup();
-    virtual void getLine(size_t lineNumber, const char *&data, size_t &length);
-    virtual bool isTraceable() { return true; }
+    void setup() override;
+    void getLine(size_t lineNumber, const char *&data, size_t &length) override;
+    bool isTraceable() override { return true; }
 
     const char *getBufferPointer();
     void getBuffer(const char *&data, size_t &length);
@@ -168,12 +169,15 @@ class FileProgramSource: public BufferProgramSource
     FileProgramSource(RexxString *f) : fileName(f), BufferProgramSource(OREF_NULL) { }
     inline FileProgramSource(RESTORETYPE restoreType) : BufferProgramSource(restoreType) { ; };
 
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
-    virtual void flatten(Envelope *);
+    void live(size_t) override;
+    void liveGeneral(MarkReason reason) override;
+    void flatten(Envelope *) override;
 
     // virtual definitions
-    virtual void setup();
+    void setup() override;
+
+    // also used directly by the language parser
+    static BufferClass* readProgram(const char *file_name);
 
 protected:
 
@@ -193,14 +197,13 @@ class ArrayProgramSource: public ProgramSource
     ArrayProgramSource(ArrayClass *a, size_t adjust = 0) : interpretAdjust(adjust), array(a), ProgramSource() { };
     inline ArrayProgramSource(RESTORETYPE restoreType) { ; };
 
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
-    virtual void flatten(Envelope *);
+    void live(size_t) override;
+    void liveGeneral(MarkReason reason) override;
+    void flatten(Envelope *) override;
 
-    virtual void setup();
-    virtual void getLine(size_t lineNumber, const char *&data, size_t &length);
-    virtual bool isTraceable() { return true; }
-    virtual size_t getFirstLine() { return interpretAdjust; }
+    void setup() override;
+    void getLine(size_t lineNumber, const char *&data, size_t &length) override;
+    bool isTraceable() override { return true; }
 
  protected:
 

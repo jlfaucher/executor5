@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -51,6 +51,52 @@ public:
     static void strlower(char *str);
     static const char *strnchr(const char *, size_t n, char ch);
     static const char *locateCharacter(const char *s, const char *set, size_t l);
+};
+
+
+
+/**
+ * A simple implemenation of a smart pointer to prevent memory leaks.
+ */
+class AutoFree
+{
+ public:
+     AutoFree() : value(NULL) { };
+     AutoFree(char *p) : value(p) { }
+     ~AutoFree()
+     {
+         if (value != NULL)
+         {
+             free(value);
+         }
+         value = NULL;
+     }
+     AutoFree & operator=(char *p)
+     {
+         if (value != NULL)
+         {
+             free(value);
+         }
+         value = p;
+         return *this;
+     }
+     operator char *() const { return value; }
+     int operator==(char *p) { return value == p; }
+
+     bool realloc(size_t newLen)
+     {
+         // on failure, realloc returns NULL, but doesn't free the old buffer
+         char *newValue;
+         newValue = (char *)::realloc(value, newLen);
+         if (newValue == NULL)
+         {
+             return false;
+         }
+         value = newValue;
+         return true;
+     }
+ private:
+     char *value;
 };
 
 #endif

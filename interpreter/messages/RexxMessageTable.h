@@ -2,12 +2,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -37,7 +37,6 @@
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 /******************************************************************************/
-/* REXX Kernel                                                  okerrtxt.h    */
 /*                                                                            */
 /* Create table of mappings between Rexx errors and error messages            */
 /*                                                                            */
@@ -48,7 +47,7 @@
 #define Table_end   0                  /* constant to mark end of table     */
 #define Table_end_msg 0
 
-ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
+ERROR_MAP Message_map_table[] = {     /* table of major and minor errors   */
 
 
 /* -------------------------------------------------------------------------- */
@@ -64,7 +63,7 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Program_unreadable_notfound)
       MINOR(Error_Program_unreadable_output_error)
       MINOR(Error_Program_unreadable_version)
-      MINOR(Error_Program_not_tokenized)
+      MINOR(Error_Program_unreadable_invalid_encoding)
   MAJOR(Error_Program_interrupted)
       MINOR(Error_Program_interrupted_condition)
       MINOR(Error_Program_interrupted_user_defined)
@@ -89,9 +88,9 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Unexpected_end_nodo)
       MINOR(Error_Unexpected_end_control)
       MINOR(Error_Unexpected_end_nocontrol)
+      MINOR(Error_Unexpected_end_select)
       MINOR(Error_Unexpected_end_then)
       MINOR(Error_Unexpected_end_else)
-      MINOR(Error_Unexpected_end_select)
       MINOR(Error_Unexpected_end_select_nolabel)
   MAJOR(Error_Control_stack)
       MINOR(Error_Control_stack_full)
@@ -111,6 +110,8 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Invalid_hex_binblank)
       MINOR(Error_Invalid_hex_invhex)
       MINOR(Error_Invalid_hex_invbin)
+      MINOR(Error_Invalid_hex_invhex_group)
+      MINOR(Error_Invalid_hex_invbin_group)
   MAJOR(Error_Label_not_found)
       MINOR(Error_Label_not_found_name)
   MAJOR(Error_Unexpected_procedure)
@@ -185,6 +186,7 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Symbol_expected_after_use_arg_reference)
       MINOR(Error_Symbol_expected_after_stem_keyword)
       MINOR(Error_Symbol_expected_address_with)
+      MINOR(Error_Symbol_expected_counter)
   MAJOR(Error_Invalid_data)
       MINOR(Error_Invalid_data_user_defined)
       MINOR(Error_Invalid_data_nop)
@@ -202,8 +204,8 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Invalid_data_resource_dir)
   MAJOR(Error_Invalid_character_string)
       MINOR(Error_Invalid_character_string_char)
-      MINOR(Error_Invalid_character_string_DBCS)
       MINOR(Error_Invalid_character_string_user_defined)
+      MINOR(Error_Invalid_character_string_DBCS)
   MAJOR(Error_Invalid_data_string)
       MINOR(Error_Invalid_data_string_char)
       MINOR(Error_Invalid_data_string_user_defined)
@@ -225,8 +227,6 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Invalid_subkeyword_routine)
       MINOR(Error_Invalid_subkeyword_requires)
       MINOR(Error_Invalid_subkeyword_use)
-      MINOR(Error_Invalid_subkeyword_callonname)
-      MINOR(Error_Invalid_subkeyword_signalonname)
       MINOR(Error_Invalid_subkeyword_raise)
       MINOR(Error_Invalid_subkeyword_raiseoption)
       MINOR(Error_Invalid_subkeyword_description)
@@ -234,6 +234,8 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Invalid_subkeyword_result)
       MINOR(Error_Invalid_subkeyword_guard_on)
       MINOR(Error_Invalid_subkeyword_guard)
+      MINOR(Error_Invalid_subkeyword_callonname)
+      MINOR(Error_Invalid_subkeyword_signalonname)
       MINOR(Error_Invalid_subkeyword_forward_option)
       MINOR(Error_Invalid_subkeyword_to)
       MINOR(Error_Invalid_subkeyword_arguments)
@@ -262,8 +264,8 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Invalid_whole_number_power)
       MINOR(Error_Invalid_whole_number_intdiv)
       MINOR(Error_Invalid_whole_number_rem)
-      MINOR(Error_Invalid_whole_number_method)
       MINOR(Error_Invalid_whole_number_user_defined)
+      MINOR(Error_Invalid_whole_number_method)
       MINOR(Error_Invalid_whole_number_compareto)
       MINOR(Error_Invalid_whole_number_compare)
       MINOR(Error_Invalid_whole_number_stem_array_index)
@@ -273,6 +275,7 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Invalid_do_duplicate)
       MINOR(Error_Invalid_do_with_no_control)
       MINOR(Error_Invalid_do_with_no_over)
+      MINOR(Error_Invalid_do_simple_do_counter)
   MAJOR(Error_Invalid_leave)
       MINOR(Error_Invalid_leave_leave)
       MINOR(Error_Invalid_leave_iterate)
@@ -283,10 +286,7 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Environment_name_name)
   MAJOR(Error_Name_too_long)
       MINOR(Error_Name_too_long_name)
-      MINOR(Error_Name_too_long_string)
       MINOR(Error_Name_too_long_user_defined)
-      MINOR(Error_Name_too_long_hex)
-      MINOR(Error_Name_too_long_bin)
   MAJOR(Error_Invalid_variable)
       MINOR(Error_Invalid_variable_assign)
       MINOR(Error_Invalid_variable_number)
@@ -350,6 +350,7 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Invalid_expression_select_case)
       MINOR(Error_Invalid_expression_case_when_list)
       MINOR(Error_Invalid_expression_missing_general)
+      MINOR(Error_Invalid_expression_missing_constant)
   MAJOR(Error_Unmatched_parenthesis)
       MINOR(Error_Unmatched_parenthesis_user_defined)
       MINOR(Error_Unmatched_parenthesis_paren)
@@ -405,6 +406,12 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Incorrect_call_write_to_readonly)
       MINOR(Error_Incorrect_call_signature)
       MINOR(Error_Incorrect_call_nostem)
+      MINOR(Error_Incorrect_call_bad_option)
+      MINOR(Error_Incorrect_call_relative)
+      MINOR(Error_Incorrect_call_stem_size)
+      MINOR(Error_Incorrect_call_stem_range)
+      MINOR(Error_Incorrect_call_stem_sparse_array)
+      MINOR(Error_Incorrect_call_noarray_nostem)
   MAJOR(Error_Conversion)
       MINOR(Error_Conversion_operator)
       MINOR(Error_Conversion_prefix)
@@ -424,8 +431,8 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Overflow_power)
   MAJOR(Error_Routine_not_found)
       MINOR(Error_Routine_not_found_name)
-      MINOR(Error_Routine_not_found_requires)
       MINOR(Error_Routine_not_found_user_defined)
+      MINOR(Error_Routine_not_found_requires)
       MINOR(Error_Routine_not_found_namespace)
   MAJOR(Error_Function_no_data)
       MINOR(Error_Function_no_data_function)
@@ -479,6 +486,8 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Invalid_argument_variable_reference_stem)
       MINOR(Error_Invalid_argument_variable_reference_simple)
       MINOR(Error_Invalid_argument_no_reference)
+      MINOR(Error_Invalid_argument_date_template)
+      MINOR(Error_Invalid_argument_bad_date)
   MAJOR(Error_Variable_expected)
       MINOR(Error_Variable_expected_USE)
       MINOR(Error_Variable_expected_PARSE)
@@ -520,7 +529,6 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Incorrect_method_symbol)
       MINOR(Error_Incorrect_method_list)
       MINOR(Error_Incorrect_method_option)
-      MINOR(Error_Incorrect_method_string)
       MINOR(Error_Incorrect_method_methodname)
       MINOR(Error_Incorrect_method_index)
       MINOR(Error_Incorrect_method_array)
@@ -575,11 +583,19 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Incorrect_method_nil_not_orderable)
       MINOR(Error_Incorrect_method_no_method_type)
       MINOR(Error_Incorrect_method_invalid_value_for)
+      MINOR(Error_Incorrect_method_invhex_group)
+      MINOR(Error_Incorrect_method_invbin_group)
+      MINOR(Error_Incorrect_method_request_type)
   MAJOR(Error_No_method)
       MINOR(Error_No_method_name)
+      MINOR(Error_No_method_private)
+      MINOR(Error_No_method_package)
+      MINOR(Error_No_method_constant)
+      MINOR(Error_No_method_unhandled)
       MINOR(Error_No_method_user_defined)
   MAJOR(Error_Execution)
       MINOR(Error_Execution_user_defined)
+      MINOR(Error_Execution_noinit)
       MINOR(Error_Execution_nodouble)
       MINOR(Error_Execution_library)
       MINOR(Error_Execution_terminate)
@@ -615,6 +631,11 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Execution_forward)
       MINOR(Error_Execution_authorization)
       MINOR(Error_Execution_no_concurrency)
+      MINOR(Error_Execution_error_syntax)
+      MINOR(Error_Execution_failure_syntax)
+      MINOR(Error_Execution_lostdigits_syntax)
+      MINOR(Error_Execution_nostring_syntax)
+      MINOR(Error_Execution_notready_syntax)
       MINOR(Error_Execution_sparse_array)
       MINOR(Error_Execution_nostem)
       MINOR(Error_Execution_library_method)
@@ -646,6 +667,7 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Translation_duplicate_routine)
       MINOR(Error_Translation_duplicate_requires)
       MINOR(Error_Translation_missing_class)
+      MINOR(Error_Translation_constant_no_class)
       MINOR(Error_Translation_expose)
       MINOR(Error_Translation_expose_interpret)
       MINOR(Error_Translation_guard)
@@ -661,8 +683,8 @@ ERROR_MESSAGE Message_table[] = {      /* table of major and minor errors   */
       MINOR(Error_Translation_reply)
       MINOR(Error_Translation_invalid_line)
       MINOR(Error_Translation_requires)
-      MINOR(Error_Translation_reply_interpret)
       MINOR(Error_Translation_forward_interpret)
+      MINOR(Error_Translation_reply_interpret)
       MINOR(Error_Translation_invalid_attribute)
       MINOR(Error_Translation_class_external_bad_parameters)
       MINOR(Error_Translation_bad_metaclass)

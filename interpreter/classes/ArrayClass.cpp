@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2021 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -59,6 +59,7 @@
 // singleton class instance
 RexxClass *ArrayClass::classInstance = OREF_NULL;
 ArrayClass *ArrayClass::nullArray = OREF_NULL;
+const size_t ArrayClass::MinimumArraySize = 8;      // the minimum size we allocate.
 
 /**
  * Create initial class object at bootstrap time.
@@ -176,9 +177,9 @@ size_t ArrayClass::validateSize(RexxObject *size, size_t position)
     // Make sure it's an integer
     size_t totalSize = nonNegativeArgument(size, position);
 
-    if (totalSize >= MaxFixedArraySize)
+    if (totalSize > MaxFixedArraySize)
     {
-        reportException(Error_Incorrect_method_array_too_big, MaxFixedArraySize - 1);
+        reportException(Error_Incorrect_method_array_too_big, MaxFixedArraySize);
     }
     return totalSize;
 }
@@ -210,9 +211,9 @@ ArrayClass *ArrayClass::createMultidimensional(RexxObject **dims, size_t count, 
         size_t currentSize = nonNegativeArgument(currentDim, i + 1);
         // going to do an overflow?  By dividing, we can detect a
         // wrap situation.
-        if (currentSize != 0 && ((MaxFixedArraySize / currentSize) < totalSize))
+        if (currentSize != 0 && (MaxFixedArraySize + 1) / currentSize < totalSize)
         {
-            reportException(Error_Incorrect_method_array_too_big, MaxFixedArraySize - 1);
+            reportException(Error_Incorrect_method_array_too_big, MaxFixedArraySize);
         }
         // keep running total size and put integer object into current position
         totalSize *= currentSize;
@@ -223,9 +224,9 @@ ArrayClass *ArrayClass::createMultidimensional(RexxObject **dims, size_t count, 
     }
 
     // a final sanity check for out of bounds
-    if (totalSize >= MaxFixedArraySize)
+    if (totalSize > MaxFixedArraySize)
     {
-        reportException(Error_Incorrect_method_array_too_big, MaxFixedArraySize - 1);
+        reportException(Error_Incorrect_method_array_too_big, MaxFixedArraySize);
     }
 
     // create a new array item
@@ -275,9 +276,9 @@ ArrayClass *ArrayClass::allocateNewObject(size_t size, size_t items, size_t maxS
 {
     size_t bytes = size;
     // we never create below a minimum size
-    maxSize = Numerics::maxVal(maxSize, MinimumArraySize);
+    maxSize = std::max(maxSize, MinimumArraySize);
     // and use at least the size as the max
-    maxSize = Numerics::maxVal(maxSize, items);
+    maxSize = std::max(maxSize, items);
     // add in the max size value.  Note that we subtract one since
     // the first item is contained in the base object allocation.
     bytes += sizeof(RexxInternalObject *) * (maxSize - 1);
@@ -900,7 +901,7 @@ void ArrayClass::closeGap(size_t index, size_t elements)
     }
 
     // cap the number of elements we're shifting.
-    elements = Numerics::minVal(elements, lastItem - index + 1);
+    elements = std::min(elements, lastItem - index + 1);
 
     // explicitly null out the slots of the gap we're closing to
     // ensure that any oldspace tracking issues are resolved.
@@ -1262,9 +1263,9 @@ bool ArrayClass::validateSingleDimensionIndex(RexxObject **index, size_t indexCo
         if (!isInbounds(position))
         {
             // could be WAAAAAAY out of bounds.
-            if ((boundsError & RaiseBoundsInvalid) && position >= MaxFixedArraySize)
+            if ((boundsError & RaiseBoundsInvalid) && position > MaxFixedArraySize)
             {
-                reportException(Error_Incorrect_method_array_too_big, MaxFixedArraySize - 1);
+                reportException(Error_Incorrect_method_array_too_big, MaxFixedArraySize);
             }
             // if we're doing a put operation, we need to extend the upper bounds
             // to include
@@ -1514,7 +1515,7 @@ ArrayClass *ArrayClass::sectionRexx(RexxObject *start, RexxObject *end)
     else
     {
         // now cap the length at the remaining size of the array
-        nend = Numerics::minVal(nend, size() - nstart + 1);
+        nend = std::min(nend, size() - nstart + 1);
     }
 
     // get an array of the appropriate subclass
@@ -1991,6 +1992,9 @@ void ArrayClass::resize()
             memoryObject.reSize(this, sizeof(ArrayClass));
             // the outer array has no elements
             arraySize = 0;
+            // Since the new size includes a single objects field, we clear that out
+            // now so we don't end with dangliing unmarked references is saved objects.
+            objects[0] = OREF_NULL;
         }
     }
 }
@@ -2037,9 +2041,9 @@ void ArrayClass::extend(size_t toSize)
         return;
     }
 
-    if (toSize >= MaxFixedArraySize)
+    if (toSize > MaxFixedArraySize)
     {
-        reportException(Error_Incorrect_method_array_too_big, MaxFixedArraySize - 1);
+        reportException(Error_Incorrect_method_array_too_big, MaxFixedArraySize);
     }
 
     // double the size for small Arrays
@@ -2387,10 +2391,10 @@ void ArrayClass::extendMulti(RexxObject **index, size_t indexCount, size_t argPo
             // keep track of where we find the first difference
             if (newDimensionSize > oldDimensionSize)
             {
-                firstChangedDimension = Numerics::minVal(firstChangedDimension, i + 1);
+                firstChangedDimension = std::min(firstChangedDimension, i + 1);
             }
 
-            size_t newSize = Numerics::maxVal(newDimensionSize, oldDimensionSize);
+            size_t newSize = std::max(newDimensionSize, oldDimensionSize);
             totalSize = totalSize * newSize;
 
             newDimArray->put(newSize, i + 1);

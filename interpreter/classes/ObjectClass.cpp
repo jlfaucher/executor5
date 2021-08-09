@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2021 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -45,7 +45,6 @@
 #include "ObjectClass.hpp"
 #include "StringClass.hpp"
 #include "BufferClass.hpp"
-#include "SmartBuffer.hpp"
 #include "DirectoryClass.hpp"
 #include "VariableDictionary.hpp"
 #include "ArrayClass.hpp"
@@ -604,10 +603,11 @@ void RexxObject::copyObjectVariables(RexxObject *newObj)
  * Check a private method for accessibility.
  *
  * @param method The method object to check
+ * @param error  An error to be raised if this is not permitted.
  *
  * @return An executable method, or OREF_NULL if this cannot be called.
  */
-MethodClass *RexxObject::checkPrivate(MethodClass *method )
+MethodClass *RexxObject::checkPrivate(MethodClass *method, RexxErrorCodes &error)
 {
     // get the calling activation context
     ActivationBase *activation = ActivityManager::currentActivity->getTopStackFrame();
@@ -622,6 +622,7 @@ MethodClass *RexxObject::checkPrivate(MethodClass *method )
         // no sender means this is a routine or program context.  Definitely not allowed.
         if (sender == OREF_NULL)
         {
+            error = Error_No_method_private;
             return OREF_NULL;
         }
         // ok, now we check the various scope possibilities
@@ -643,6 +644,47 @@ MethodClass *RexxObject::checkPrivate(MethodClass *method )
         }
     }
     // can't touch this...
+    error = Error_No_method_private;
+    return OREF_NULL;
+}
+
+
+/**
+ * Check a package method for accessibility.
+ *
+ * @param method The method object to check
+ * @param error  The error to be raised if this is not permitted.
+ *
+ * @return An executable method, or OREF_NULL if this cannot be called.
+ */
+MethodClass *RexxObject::checkPackage(MethodClass *method, RexxErrorCodes &error )
+{
+    // get the calling activation context
+    ActivationBase *activation = ActivityManager::currentActivity->getTopStackFrame();
+
+    // likely a topLevel call via SendMessage() API which is contextless.
+    if (activation == OREF_NULL)
+    {
+        error = Error_No_method_package;
+        return OREF_NULL;
+    }
+    // get the package from that frame.
+    PackageClass *callerPackage = activation->getPackage();
+
+    // it is possible this is a special native activation, which means there
+    // is no caller context. This is a no-go.
+    if (callerPackage == OREF_NULL)
+    {
+        return OREF_NULL;
+    }
+
+    // defined in the same package, this is good.
+    if (method->isSamePackage(callerPackage))
+    {
+        return method;
+    }
+    // can't touch this...
+    error = Error_No_method_package;
     return OREF_NULL;
 }
 
@@ -701,10 +743,26 @@ void RexxObject::checkRestrictedMethod(const char *methodName)
  * @param result    A ProtectedObject used for returning a result and
  *                  protecting it from garbage collection.
  */
-RexxObject *RexxObject::sendMessage(RexxString *message, ArrayClass  *arguments, ProtectedObject &result)
+RexxObject* RexxObject::sendMessage(RexxString *message, ArrayClass  *arguments, ProtectedObject &result)
 {
     return messageSend(message, arguments->messageArgs(), arguments->messageArgCount(), result);
 }
+
+
+/**
+ * Send a message to an object.
+ *
+ * @param message   The message name.
+ * @param scope     The scope where to start searching.
+ * @param arguments An array of the arguments.
+ * @param result    A ProtectedObject used for returning a result and
+ *                  protecting it from garbage collection.
+ */
+RexxObject* RexxObject::sendMessage(RexxString *message, RexxClass *scope, ArrayClass  *arguments, ProtectedObject &result)
+{
+    return messageSend(message, arguments->messageArgs(), arguments->messageArgCount(), scope, result);
+}
+
 
 
 /**
@@ -813,6 +871,8 @@ RexxObject *RexxObject::messageSend(RexxString *msgname, RexxObject **arguments,
     // see if we have a method defined
     MethodClass *method_save = behaviour->methodLookup(msgname);
 
+    RexxErrorCodes error = Error_No_method_name;
+
     // method exists, but is is protected or private?
     if (method_save != OREF_NULL && method_save->isSpecial())
     {
@@ -820,7 +880,11 @@ RexxObject *RexxObject::messageSend(RexxString *msgname, RexxObject **arguments,
         // OREF_NULL if not allowed
         if (method_save->isPrivate())
         {
-            method_save = checkPrivate(method_save);
+            method_save = checkPrivate(method_save, error);
+        }
+        else if (method_save->isPackageScope())
+        {
+            method_save = checkPackage(method_save, error);
         }
         // a protected method...this gets special send handling
         if (method_save != OREF_NULL && method_save->isProtected())
@@ -838,7 +902,7 @@ RexxObject *RexxObject::messageSend(RexxString *msgname, RexxObject **arguments,
     else
     {
         // not found, so check for an unknown method
-        processUnknown(msgname, arguments, count, result);
+        processUnknown(error, msgname, arguments, count, result);
     }
     return result;
 }
@@ -862,14 +926,22 @@ RexxObject *RexxObject::messageSend(RexxString *msgname, RexxObject **arguments,
     // do the lookup using the starting scope
     MethodClass *method_save = superMethod(msgname, startscope);
 
+    RexxErrorCodes error = Error_No_method_name;
+
     // perform the same private/protected checks as the normal case
-    if (method_save != OREF_NULL && method_save->isProtected())
+    if (method_save != OREF_NULL && method_save->isSpecial())
     {
         if (method_save->isPrivate())
         {
-            method_save = checkPrivate(method_save);
+            method_save = checkPrivate(method_save, error);
         }
-        else
+        else if (method_save->isPackageScope())
+        {
+            method_save = checkPackage(method_save, error);
+        }
+
+        // a protected method...this gets special send handling
+        if (method_save != OREF_NULL && method_save->isProtected())
         {
             processProtectedMethod(msgname, method_save, arguments, count, result);
             return result;
@@ -882,7 +954,7 @@ RexxObject *RexxObject::messageSend(RexxString *msgname, RexxObject **arguments,
     }
     else
     {
-        processUnknown(msgname, arguments, count, result);
+        processUnknown(error, msgname, arguments, count, result);
     }
     return result;
 }
@@ -918,13 +990,14 @@ void RexxObject::processProtectedMethod(RexxString *messageName, MethodClass *ta
 /**
  * Process an unknown message condition on an object.
  *
+ * @param error     The error number to raise.
  * @param messageName
  *                  The target message name.
  * @param arguments The message arguments.
  * @param count     The count of arguments.
  * @param result    The return result protected object.
  */
-void RexxObject::processUnknown(RexxString *messageName, RexxObject **arguments, size_t count, ProtectedObject &result)
+void RexxObject::processUnknown(RexxErrorCodes error, RexxString *messageName, RexxObject **arguments, size_t count, ProtectedObject &result)
 {
     // first check to see if there is an unknown method on this object.
     MethodClass *method_save = behaviour->methodLookup(GlobalNames::UNKNOWN);
@@ -932,7 +1005,7 @@ void RexxObject::processUnknown(RexxString *messageName, RexxObject **arguments,
     // check for a condition handler before issuing the syntax error.
     if (method_save == OREF_NULL)
     {
-        reportNomethod(messageName, this);
+        reportNomethod(error, messageName, this);
     }
     // we need to pass the arguments to the array as real arguments
     Protected<ArrayClass> argumentArray = new_array(count, arguments);
@@ -1303,7 +1376,7 @@ RexxString *RexxInternalObject::requiredString(size_t position )
     // if this did not convert, give the error message
     if (string_value == TheNilObject)
     {
-        reportException(Error_Incorrect_method_nostring, position);
+        reportException(Error_Invalid_argument_string, position);
     }
 
     // we should have a real string object here.
@@ -1589,6 +1662,27 @@ ArrayClass *RexxInternalObject::requestArray()
         ProtectedObject result;
         return(ArrayClass *)resultOrNil(((RexxObject *)this)->sendMessage(GlobalNames::REQUEST, GlobalNames::ARRAY, result));
     }
+}
+
+
+/**
+ * Request a double floating point number value from an object in a
+ * situation where a value is required.
+ *
+ * @param position  The position of the argument used for error reporting.
+ * @param precision The conversion precision.
+ *
+ * @return The double floating point number.
+ */
+double RexxInternalObject::requiredFloat(const char *position)
+{
+    double result;
+
+    if (!doubleValue(result))
+    {
+        reportException(Error_Invalid_argument_number, position, (RexxObject *)this);
+    }
+    return result;
 }
 
 
@@ -2133,7 +2227,6 @@ RexxObject *RexxObject::run(RexxObject **arguments, size_t argCount)
     requiredArgument(methobj, "method");
     // make sure we have a method object, including creating one from source if necessary
     methobj = MethodClass::newMethodObject(GlobalNames::RUN, (RexxObject *)methobj, (RexxClass *)TheNilObject, "method");
-    Protected<ArrayClass> argList;
 
     // if we have arguments, decode how we are supposed to handle method arguments.
     if (argCount > 1)
@@ -2776,8 +2869,10 @@ RexxObject *RexxObject::hasMethodRexx(RexxString *message )
  */
 RexxNilObject::RexxNilObject()
 {
-    // use the initial identify hash and save this.
-    hashValue = identityHash();
+    // The nil object needs to use a static hashcode so it remains
+    // the same after an image install. We use an arbitrary hardcoded value
+    // so that we get a constant value in the saved image file.
+    hashValue = 0xDEADBEEF;
     // we are a special proxy object.
     makeProxiedObject();
 }
@@ -2873,7 +2968,7 @@ PointerTable *RexxObject::getMemoryTable()
     if (table == OREF_NULL)
     {
         table = new PointerTable();
-        setObjectVariable(GlobalNames::OBJECTNAME, (RexxObject *)table, TheObjectClass);
+        setObjectVariable(GlobalNames::NULLSTRING, (RexxObject *)table, TheObjectClass);
     }
 
     return table;
@@ -2945,7 +3040,7 @@ void *RexxObject::reallocateObjectMemory(void *pointer, size_t newSize)
 
     // allocate a new object and copy the data over
     void * newPointer = allocateObjectMemory(newSize);
-    memcpy(newPointer, pointer, Numerics::minVal(oldSize, newSize));
+    memcpy(newPointer, pointer, std::min(oldSize, newSize));
 
     // remove the old pointer from the table
     memoryTable->remove(pointer);

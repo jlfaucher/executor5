@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -41,8 +41,8 @@
 /* Primitive String Class Definition                                          */
 /*                                                                            */
 /******************************************************************************/
-#ifndef Included_RexxString
-#define Included_RexxString
+#ifndef Included_StringClass
+#define Included_StringClass
 
 #include "IntegerClass.hpp"
 #include "StringUtil.hpp"
@@ -306,12 +306,12 @@ class RexxString : public RexxObject
     inline RexxString() {;} ;
     inline RexxString(RESTORETYPE restoreType) { ; }
 
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
-    virtual void flatten(Envelope *envelope);
-    virtual RexxInternalObject *unflatten(Envelope *);
+    void live(size_t) override;
+    void liveGeneral(MarkReason reason) override;
+    void flatten(Envelope *envelope) override;
+    RexxInternalObject *unflatten(Envelope *) override;
 
-    virtual HashCode getHashValue();
+    HashCode getHashValue() override;
 
     inline HashCode getStringHash()
     {
@@ -335,30 +335,31 @@ class RexxString : public RexxObject
 
     HashCode getObjectHashCode();
 
-    virtual bool numberValue(wholenumber_t &result, wholenumber_t precision);
-    virtual bool numberValue(wholenumber_t &result);
-    virtual bool unsignedNumberValue(size_t &result, wholenumber_t precision);
-    virtual bool unsignedNumberValue(size_t &result);
-    virtual bool doubleValue(double &result);
-    virtual NumberString *numberString();
-    virtual RexxInteger *integerValue(wholenumber_t);
-    virtual RexxString  *makeString();
-    virtual ArrayClass  *makeArray();
-    virtual RexxString  *primitiveMakeString();
-    virtual void         copyIntoTail(CompoundVariableTail *buffer);
-    virtual RexxString  *stringValue();
-    virtual bool  truthValue(RexxErrorCodes);
-    virtual bool logicalValue(logical_t &);
+    bool numberValue(wholenumber_t &result, wholenumber_t precision) override;
+    bool numberValue(wholenumber_t &result) override;
+    bool unsignedNumberValue(size_t &result, wholenumber_t precision) override;
+    bool unsignedNumberValue(size_t &result) override;
+    bool doubleValue(double &result) override;
+    NumberString *numberString() override;
+    RexxInteger *integerValue(wholenumber_t) override;
+    RexxString  *makeString() override;
+    ArrayClass  *makeArray() override;
+    RexxString  *primitiveMakeString() override;
+    void         copyIntoTail(CompoundVariableTail *buffer) override;
+    RexxString  *stringValue() override;
+    bool  truthValue(RexxErrorCodes) override;
+    bool logicalValue(logical_t &) override;
 
     // comparison methods
-    virtual bool isEqual(RexxInternalObject *);
+    bool isEqual(RexxInternalObject *) override;
+
     bool        primitiveIsEqual(RexxObject *);
     bool        primitiveCaselessIsEqual(RexxObject *);
     wholenumber_t strictComp(RexxObject *);
     wholenumber_t comp(RexxObject *);
     wholenumber_t primitiveStrictComp(RexxObject *);
     wholenumber_t stringComp(RexxString *);
-    virtual wholenumber_t compareTo(RexxInternalObject *);
+    wholenumber_t compareTo(RexxInternalObject *) override;
     RexxObject  *equal(RexxObject *);
     RexxObject  *strictEqual(RexxObject *);
     RexxObject  *notEqual(RexxObject *);
@@ -416,11 +417,12 @@ class RexxString : public RexxObject
     RexxObject *format(RexxObject *Integers, RexxObject *Decimals, RexxObject *MathExp, RexxObject *ExpTrigger);
     RexxObject *logicalOperation(RexxObject *, RexxObject *, unsigned int);
     RexxString *extract(size_t offset, size_t sublength) { return newString(getStringData() + offset, sublength); }
-    virtual RexxObject *evaluate(RexxActivation *, ExpressionStack *);
-    virtual RexxObject *getValue(RexxActivation *);
-    virtual RexxObject *getValue(VariableDictionary *);
-    virtual RexxObject *getRealValue(RexxActivation *);
-    virtual RexxObject *getRealValue(VariableDictionary *);
+
+    RexxObject *evaluate(RexxActivation *, ExpressionStack *) override;
+    RexxObject *getValue(RexxActivation *) override;
+    RexxObject *getValue(VariableDictionary *) override;
+    RexxObject *getRealValue(RexxActivation *) override;
+    RexxObject *getRealValue(VariableDictionary *) override;
                                         /* the following methods are in    */
                                         /* OKBSUBS                         */
     RexxString  *center(RexxInteger *, RexxString *);
@@ -554,6 +556,7 @@ class RexxString : public RexxObject
            void  copyToRxstring(RXSTRING &r);
     inline bool  endsWith(char c) const { return length > 0 && stringData[length - 1] == c; }
     inline bool  startsWith(char c) const { return length > 0 && stringData[0] == c; }
+    inline bool  startsWith(const char *c) const { size_t clen = strlen(c); return length >=clen && memcmp(getStringData(), c, clen) == 0; }
 
     inline int sortCompare(RexxString *other)
     {
@@ -692,6 +695,20 @@ class RexxString : public RexxObject
         return "0123456789ABCDEF"[n];
     }
 
+    static inline int hexDigitToInt(char ch)
+    {
+        return DIGITS_HEX_LOOKUP[(unsigned char)ch];
+    }
+
+    static inline char packByte2(const char *bytes)
+    {
+        // covert each hex digit and combind into a single value
+        int nibble1 = hexDigitToInt(bytes[0]);
+        int nibble2 = hexDigitToInt(bytes[1]);
+        /* combine the two digits            */
+
+        return ((nibble1 << 4) | nibble2);
+    }
 
     static RexxString *newString(const char *, size_t);
     static RexxString *newString(const char *, size_t, const char *, size_t);
@@ -745,9 +762,9 @@ class RexxString : public RexxObject
     static const char ch_NINE;
 
     // character validation sets for the datatype function
-    static const char *HEX_CHAR_STR;
+    static const char *DIGITS_HEX;
     static const char *ALPHANUM;
-    static const char *BINARY;
+    static const char *DIGITS_BIN;
     static const char *LOWER_ALPHA;
     static const char *MIXED_ALPHA;
     static const char *UPPER_ALPHA;
@@ -766,6 +783,17 @@ class RexxString : public RexxObject
     static const char *SPACE;
     static const char *UPPER;
     static const char *XDIGIT;
+
+    // Mapped character validation sets allow direct lookup.
+    // Those will be created from their unmapped string counterparts.
+    static struct lookupInit { lookupInit(); } lookupInitializer;
+    static char DIGITS_HEX_LOOKUP[256];
+    static char DIGITS_BASE64_LOOKUP[256];
+    static char DIGITS_BIN_LOOKUP[256];
+    static char ALPHANUM_LOOKUP[256];
+    static char LOWER_ALPHA_LOOKUP[256];
+    static char MIXED_ALPHA_LOOKUP[256];
+    static char UPPER_ALPHA_LOOKUP[256];
 
 
   protected:

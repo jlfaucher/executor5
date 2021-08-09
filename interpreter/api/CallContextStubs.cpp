@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -144,7 +144,22 @@ void RexxEntry DropContextVariable(RexxCallContext *c, CSTRING n)
     }
 }
 
-RexxDirectoryObject RexxEntry GetAllContextVariables(RexxCallContext *c)
+
+RexxVariableReferenceObject RexxEntry GetContextVariableReference(RexxCallContext * c, CSTRING n)
+{
+    ApiContext context(c);
+    try
+    {
+        return (RexxVariableReferenceObject)context.context->getContextVariableReference((const char *)n);
+    }
+    catch (NativeActivation *)
+    {
+    }
+    return NULLOBJECT;
+}
+
+
+RexxDirectoryObject RexxEntry GetAllContextVariables(RexxCallContext * c)
 {
     ApiContext context(c);
     try
@@ -157,7 +172,7 @@ RexxDirectoryObject RexxEntry GetAllContextVariables(RexxCallContext *c)
     return NULLOBJECT;
 }
 
-RexxStemObject RexxEntry ResolveStemVariable(RexxCallContext *c, RexxObjectPtr s)
+RexxStemObject RexxEntry ResolveStemVariable(RexxCallContext * c, RexxObjectPtr s)
 {
     ApiContext context(c);
     try
@@ -184,6 +199,42 @@ void RexxEntry InvalidRoutine(RexxCallContext *c)
     catch (NativeActivation *)
     {
     }
+}
+
+
+// the following stubs are like the Raise versions, but don't use
+// try/catch to allow a return to the caller. This will unwinded back
+// to the invoking NativeActivation.
+void RexxEntry CallThrowException0(RexxCallContext *c, size_t n)
+{
+    ApiContext context(c);
+    reportException((RexxErrorCodes)n);
+}
+
+void RexxEntry CallThrowException1(RexxCallContext *c, size_t n, RexxObjectPtr o1)
+{
+    ApiContext context(c);
+    reportException((RexxErrorCodes)n, (RexxObject *)o1);
+}
+
+void RexxEntry CallThrowException2(RexxCallContext *c, size_t n, RexxObjectPtr o1, RexxObjectPtr o2)
+{
+    ApiContext context(c);
+    reportException((RexxErrorCodes)n, (RexxObject *)o1, (RexxObject *)o2);
+}
+
+void RexxEntry CallThrowException(RexxCallContext *c, size_t n, RexxArrayObject a)
+{
+    ApiContext context(c);
+    reportException((RexxErrorCodes)n, (ArrayClass *)a);
+}
+
+void RexxEntry CallThrowCondition(RexxCallContext *c, CSTRING n, RexxStringObject desc, RexxObjectPtr add, RexxObjectPtr result)
+{
+    ApiContext context(c);
+    Protected<RexxString> name = new_upper_string(n);
+    context.context->enableConditionTrap();
+    context.activity->raiseCondition(name, OREF_NULL, (RexxString *)desc, (RexxObject *)add, (RexxObject *)result);
 }
 
 void RexxEntry SetExitContextVariable(RexxExitContext *c, CSTRING n, RexxObjectPtr v)
@@ -223,6 +274,21 @@ void RexxEntry DropExitContextVariable(RexxExitContext *c, CSTRING n)
     }
 }
 
+RexxVariableReferenceObject RexxEntry GetExitContextVariableReference(RexxExitContext *c, CSTRING n)
+{
+    ApiContext context(c);
+    try
+    {
+        return (RexxVariableReferenceObject)context.context->getContextVariableReference((const char *)n);
+    }
+    catch (NativeActivation *)
+    {
+    }
+    return NULLOBJECT;
+}
+
+
+
 RexxDirectoryObject RexxEntry GetAllExitContextVariables(RexxExitContext *c)
 {
     ApiContext context(c);
@@ -248,6 +314,42 @@ RexxObjectPtr RexxEntry GetExitCallerContext(RexxExitContext *c)
     {
     }
     return NULLOBJECT;
+}
+
+
+// the following stubs are like the Raise versions, but don't use
+// try/catch to allow a return to the caller. This will unwinded back
+// to the invoking NativeActivation.
+void RexxEntry ExitThrowException0(RexxExitContext *c, size_t n)
+{
+    ApiContext context(c);
+    reportException((RexxErrorCodes)n);
+}
+
+void RexxEntry ExitThrowException1(RexxExitContext *c, size_t n, RexxObjectPtr o1)
+{
+    ApiContext context(c);
+    reportException((RexxErrorCodes)n, (RexxObject *)o1);
+}
+
+void RexxEntry ExitThrowException2(RexxExitContext *c, size_t n, RexxObjectPtr o1, RexxObjectPtr o2)
+{
+    ApiContext context(c);
+    reportException((RexxErrorCodes)n, (RexxObject *)o1, (RexxObject *)o2);
+}
+
+void RexxEntry ExitThrowException(RexxExitContext *c, size_t n, RexxArrayObject a)
+{
+    ApiContext context(c);
+    reportException((RexxErrorCodes)n, (ArrayClass *)a);
+}
+
+void RexxEntry ExitThrowCondition(RexxExitContext *c, CSTRING n, RexxStringObject desc, RexxObjectPtr add, RexxObjectPtr result)
+{
+    ApiContext context(c);
+    Protected<RexxString> name = new_upper_string(n);
+    context.context->enableConditionTrap();
+    context.activity->raiseCondition(name, OREF_NULL, (RexxString *)desc, (RexxObject *)add, (RexxObject *)result);
 }
 
 stringsize_t RexxEntry GetContextDigits(RexxCallContext *c)
@@ -587,7 +689,13 @@ CallContextInterface Activity::callContextFunctions =
     GetContextFuzz,
     GetContextForm,
     GetCallerContext,
-    FindCallContextClass
+    FindCallContextClass,
+    GetContextVariableReference,
+    CallThrowException0,
+    CallThrowException1,
+    CallThrowException2,
+    CallThrowException,
+    CallThrowCondition,
 };
 
 
@@ -602,6 +710,12 @@ ExitContextInterface Activity::exitContextFunctions =
     DropExitContextVariable,
     GetAllExitContextVariables,
     GetExitCallerContext,
+    GetExitContextVariableReference,
+    ExitThrowException0,
+    ExitThrowException1,
+    ExitThrowException2,
+    ExitThrowException,
+    ExitThrowCondition,
 };
 
 

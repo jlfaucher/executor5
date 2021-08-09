@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2017 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2020 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -368,13 +368,14 @@ class RexxInternalObject : public RexxVirtualBase
     size_t requiredPositive(const char *position, wholenumber_t precision = Numerics::ARGUMENT_DIGITS);
     size_t requiredNonNegative(size_t position, wholenumber_t precision = Numerics::ARGUMENT_DIGITS);
     size_t requiredNonNegative(const char *position, wholenumber_t precision = Numerics::ARGUMENT_DIGITS);
+    double requiredFloat(const char *position);
 
     RexxString  *requestString();
     RexxString  *requestStringNoNOSTRING();
     RexxInteger *requestInteger(wholenumber_t digits = Numerics::ARGUMENT_DIGITS);
     bool         requestNumber(wholenumber_t &, wholenumber_t);
     bool         requestUnsignedNumber(size_t &, wholenumber_t);
-    ArrayClass  *requestArray();
+    virtual ArrayClass  *requestArray();
 
     ObjectHeader header;              // memory management header
     RexxBehaviour *behaviour;         // the object's behaviour
@@ -441,26 +442,27 @@ class RexxObject : public RexxInternalObject
 
             RexxObject  *defineInstanceMethod(RexxString *, MethodClass *, RexxClass *);
             RexxObject  *deleteInstanceMethod(RexxString *msgname);
-    virtual RexxString  *defaultName();
+            RexxString  *defaultName() override;
     virtual bool         hasMethod(RexxString *msg);
             RexxObject  *hasMethodRexx(RexxString *);
             bool         hasUninitMethod();
 
     RexxObject *initRexx();
-    virtual void uninit();
 
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
-    virtual void flatten(Envelope *);
+    void uninit() override;
+    void live(size_t) override;
+    void liveGeneral(MarkReason reason) override;
+    void flatten(Envelope *) override;
 
-    virtual RexxInternalObject *copy();
-    virtual HashCode     hash();
-    virtual RexxString  *stringValue();
-    virtual void processUnknown(RexxString *, RexxObject **, size_t, ProtectedObject &);
+    RexxInternalObject *copy() override;
+    HashCode     hash() override;
+    RexxString  *stringValue() override;
 
-    virtual bool isInstanceOf(RexxClass *);
-    virtual MethodClass   *instanceMethod(RexxString *);
-    virtual SupplierClass *instanceMethods(RexxClass *);
+    virtual void processUnknown(RexxErrorCodes, RexxString *, RexxObject **, size_t, ProtectedObject &);
+
+    bool isInstanceOf(RexxClass *) override;
+    MethodClass   *instanceMethod(RexxString *) override;
+    SupplierClass *instanceMethods(RexxClass *) override;
     RexxObject  *isInstanceOfRexx(RexxClass *);
     RexxObject  *isNilRexx();
     MethodClass   *instanceMethodRexx(RexxString *);
@@ -482,10 +484,12 @@ class RexxObject : public RexxInternalObject
 
     RexxObject  *messageSend(RexxString *, RexxObject **, size_t, ProtectedObject &);
     RexxObject  *messageSend(RexxString *, RexxObject **, size_t, RexxClass *, ProtectedObject &);
-    MethodClass *checkPrivate(MethodClass *);
+    MethodClass *checkPrivate(MethodClass *, RexxErrorCodes &);
+    MethodClass *checkPackage(MethodClass *, RexxErrorCodes &);
     void         checkRestrictedMethod(const char *methodName);
     void         processProtectedMethod(RexxString *, MethodClass *, RexxObject **, size_t, ProtectedObject &);
-    RexxObject  *sendMessage(RexxString *, ArrayClass *, ProtectedObject &);
+    RexxObject* sendMessage(RexxString *, ArrayClass *, ProtectedObject &);
+    RexxObject* sendMessage(RexxString *, RexxClass *, ArrayClass *, ProtectedObject &);
     inline RexxObject *sendMessage(RexxString *message, ProtectedObject &result) { return messageSend(message, OREF_NULL, 0, result); };
     inline RexxObject *sendMessage(RexxString *message, RexxObject **args, size_t argCount, ProtectedObject &result) { return messageSend(message, args, argCount, result); };
     inline RexxObject *sendMessage(RexxString *message, RexxObject *argument1, ProtectedObject &result)
@@ -600,7 +604,7 @@ public:
     inline RexxNilObject(RESTORETYPE restoreType) { ; };
     virtual ~RexxNilObject() {;};
 
-    virtual HashCode getHashValue();
+    HashCode getHashValue() override;
 
     static RexxObject *nilObject;
 

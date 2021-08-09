@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2020 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -254,6 +254,7 @@ typedef enum
     KEYWORD_LIBRARY,
     KEYWORD_REQUIRES,
     KEYWORD_USE_LOCAL,
+    KEYWORD_CONSTANT,
 } InstructionKeyword;
 
 // instruction subkeyword types
@@ -263,6 +264,7 @@ typedef enum
     SUBKEY_ARG,
     SUBKEY_BY,
     SUBKEY_DIGITS,
+    SUBKEY_COUNTER,
     SUBKEY_END,
     SUBKEY_ELSE,
     SUBKEY_ENGINEERING,
@@ -392,6 +394,12 @@ typedef enum
     SUBDIRECTIVE_ROUTINE,
     SUBDIRECTIVE_CONSTANT,
     SUBDIRECTIVE_DELEGATE,
+    SUBDIRECTIVE_SYNTAX,
+    SUBDIRECTIVE_ALL,
+    SUBDIRECTIVE_FAILURE,
+    SUBDIRECTIVE_LOSTDIGITS,
+    SUBDIRECTIVE_NOSTRING,
+    SUBDIRECTIVE_NOTREADY,
 } DirectiveSubKeyword;
 
 
@@ -537,8 +545,9 @@ class RexxToken : public RexxInternalObject
         stringValue(v), numeric(SUBTYPE_NONE), tokenLocation(l) { };
 
     inline RexxToken(RESTORETYPE restoreType) { ; };
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
+
+    void live(size_t) override;
+    void liveGeneral(MarkReason reason) override;
 
     inline void setStart(size_t l, size_t o) { tokenLocation.setStart(l, o); }
     inline void setEnd(size_t l, size_t o) { tokenLocation.setEnd(l, o); }

@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2020 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -190,9 +190,69 @@ inline RexxString *optionalStringArgument(RexxObject *o, RexxString *d, size_t p
  *
  * @return The argument value, in string form.
  */
-inline RexxString *optionalStringArgument(RexxObject *o, RexxString *d, const char *p)
+inline RexxString* optionalStringArgument(RexxObject *o, RexxString *d, const char *p)
 {
     return (o == OREF_NULL ? d : stringArgument(o, p));
+}
+
+
+/**
+ * Take in an argument passed to a method, convert it to a
+ * numeric object. If the argument is omitted, an error is
+ * raised.
+ *
+ * @param argument The argument reference to test.
+ * @param position The position of the argument (used for error reporting.)
+ *
+ * @return The argument converted to an integer value.
+ */
+wholenumber_t numberArgument(RexxObject *argument, size_t position);
+
+
+/**
+ * Take in an argument passed to a method, convert it to a
+ * numeric object. If the argument is omitted, an error is
+ * raised.
+ *
+ * @param argument The argument reference to test.
+ * @param position The position of the argument (used for error reporting.)
+ *
+ * @return The argument converted to an integer value.
+ */
+wholenumber_t numberArgument(RexxObject *argument, const char *position);
+
+
+/**
+ * Parse an optional whole number method argument.  this must be
+ * a whole number.  Raises a number if the argument not a
+ * numeric value.
+ *
+ * @param o      The object to check.
+ * @param d      The default value to return if the argument was omitted.
+ * @param p      The argument position.
+ *
+ * @return The converted numeric value of the object.
+ */
+inline wholenumber_t optionalNumberArgument(RexxObject *o, wholenumber_t d, size_t p)
+{
+    return (o == OREF_NULL ? d : numberArgument(o, p));
+}
+
+
+/**
+ * Parse an optional whole number method argument.  this must be
+ * a whole number.  Raises a number if the argument not a
+ * numeric value.
+ *
+ * @param o      The object to check.
+ * @param d      The default value to return if the argument was omitted.
+ * @param p      The argument position.
+ *
+ * @return The converted numeric value of the object.
+ */
+inline wholenumber_t optionalNumberArgument(RexxObject *o, wholenumber_t d, const char *p)
+{
+    return (o == OREF_NULL ? d : numberArgument(o, p));
 }
 
 
@@ -582,6 +642,19 @@ inline size_t optionalPositive(RexxObject *o, size_t d, const char *p)
 {
     return (o == OREF_NULL ? d : o->requiredPositive(p));
 }
+
+
+/**
+ * Take in an argument passed to a method, convert it to a
+ * floating point number. If the argument is omitted, an error is
+ * raised.
+ *
+ * @param argument The argument reference to test.
+ * @param position The name of the argument (used for error reporting.)
+ *
+ * @return The argument converted to a double floating point value.
+ */
+double floatingPointArgument(RexxObject *argument, const char *name);
 
 
 /**

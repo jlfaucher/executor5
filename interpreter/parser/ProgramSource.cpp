@@ -1,11 +1,11 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -48,6 +48,7 @@
 #include "SystemInterpreter.hpp"
 #include "GlobalNames.hpp"
 #include "ActivityManager.hpp"
+#include "SysFile.hpp"
 
 
 /**
@@ -119,7 +120,7 @@ RexxString *ProgramSource::getStringLine(size_t position, size_t startOffset, si
     }
 
     // protect from an overrun
-    startOffset = Numerics::minVal(startOffset, lineLength);
+    startOffset = std::min(startOffset, lineLength);
     // we frequently ask for the entire line by giving an offset of zero.
     if (endOffset == 0)
     {
@@ -127,7 +128,7 @@ RexxString *ProgramSource::getStringLine(size_t position, size_t startOffset, si
     }
     else
     {
-        endOffset = Numerics::minVal(endOffset, lineLength);
+        endOffset = std::min(endOffset, lineLength);
     }
 
     // we can use this to extract from a position to the end by
@@ -158,7 +159,7 @@ RexxString *ProgramSource::extract(SourceLocation &location )
     }
 
     // make sure this is within range of the lines we have.
-    if (location.getLineNumber() <= getFirstLine() || location.getLineNumber() > lineCount)
+    if (location.getLineNumber() < getFirstLine() || location.getLineNumber() > lineCount)
     {
         return GlobalNames::NULLSTRING;
     }
@@ -441,12 +442,13 @@ void BufferProgramSource::buildDescriptors()
     OrefSet(this, this->descriptorArea, indices->getBuffer());
 
     // now we need to see if we've got a shebang line.  If we find
-    // this, zero the length of the line to make this just a blank line
-    // we want to keep the line so we don't throw off the line counts.
+    // this, tell the language parser to start parsing on the second line.
+    // This will cause the line to be ignored, but it will be left in the
+    // lines returned by sourceline.
     if (bufferArea[0] == '#' && bufferArea[1] == '!')
     {
-        LineDescriptor &firstLine = getDescriptor(1);
-        firstLine.length = 0;
+        // start parsing with the second line
+        firstLine = 2;
     }
 }
 
@@ -569,30 +571,35 @@ void ArrayProgramSource::flatten(Envelope *envelope)
  */
 void ArrayProgramSource::setup()
 {
+    size_t adjust = 0;
+
     // if we have an interpret adjustment, back it off one
     if (interpretAdjust > 0)
     {
-        interpretAdjust --;
+        adjust = interpretAdjust - 1;
     }
 
     // set the line count to the number of items
     lineCount = array->lastIndex();
 
     // fake things out by the interpret adjustment amount
-    lineCount += interpretAdjust;
+    lineCount += adjust;
+
+    // also adjust the first line
+    firstLine += adjust;
 
     // it is possible that the array version might include a shebang line (sigh).
     // if we detect that, replace it with a null line so it will be ignored.
     // BUT, we don't do this if we're an interpret.
-    if (lineCount > 0 && interpretAdjust > 0)
+    if (lineCount > 0 && interpretAdjust == 0)
     {
-        RexxString *firstLine = (RexxString *)array->get(1);
+        RexxString *line = (RexxString *)array->get(1);
         // now we need to see if we've got a shebang line.  If we find
-        // this, zero the length of the line to make this just a null line
+        // this, bump the start line by one so we start parsing after the shebang
         // we want to keep the line so we don't throw off the line counts.
-        if (firstLine->getChar(0) == '#' && firstLine->getChar(1) == '!')
+        if (line->startsWith("#!"))
         {
-            array->put(GlobalNames::NULLSTRING, 1);
+            firstLine++;
         }
     }
 }
@@ -611,7 +618,7 @@ void ArrayProgramSource::setup()
  */
 void ArrayProgramSource::getLine(size_t lineNumber, const char *&linePointer, size_t &lineLength)
 {
-    if (lineNumber > lineCount || lineNumber <= interpretAdjust)
+    if (lineNumber > lineCount || lineNumber < interpretAdjust)
     {
         // null out the line information and quit
         linePointer = NULL;
@@ -620,7 +627,7 @@ void ArrayProgramSource::getLine(size_t lineNumber, const char *&linePointer, si
     }
 
     // adjust for the interpret offset
-    size_t targetLine = lineNumber - interpretAdjust;
+    size_t targetLine = lineNumber - (interpretAdjust > 0 ? interpretAdjust - 1 : 0);
 
     // get the line from the array, making sure we adjust for interpret line numbers.
     RexxString *line = (RexxString *)(array->get(targetLine));
@@ -709,11 +716,53 @@ void FileProgramSource::setup()
 {
     // read the file into a buffer object, reporting an error if this failed
     // for any reason
-    buffer = SystemInterpreter::readProgram(fileName->getStringData());
+    buffer = readProgram(fileName->getStringData());
     if (buffer == OREF_NULL)
     {
         reportException(Error_Program_unreadable_name, fileName);
     }
     // go set up all of the line information so the parser can read this.
     BufferProgramSource::setup();
+}
+
+
+/**
+ * Read a program, returning a buffer object.
+ *
+ * @param file_name The target file name.
+ *
+ * @return A buffer object holding the program data.
+ */
+BufferClass* FileProgramSource::readProgram(const char *file_name)
+{
+    SysFile programFile;          // the file we're reading
+
+    // if unable to open this, return false
+    if (!programFile.open(file_name, RX_O_RDONLY, RX_S_IREAD, RX_SH_DENYWR))
+    {
+        return OREF_NULL;
+    }
+
+    int64_t bufferSize = 0;
+
+    // get the size of the file
+    programFile.getSize(bufferSize);
+    size_t readSize;
+
+    // get a buffer object to return the image
+    Protected<BufferClass> buffer = new_buffer((size_t)bufferSize);
+    {
+        UnsafeBlock releaser;
+
+        // read the data
+        programFile.read(buffer->getData(), (size_t)bufferSize, readSize);
+        programFile.close();
+    }
+    // if there was a read error, return nothing
+    if ((int64_t)readSize < bufferSize)
+    {
+        return OREF_NULL;
+    }
+    // ready to run
+    return buffer;
 }

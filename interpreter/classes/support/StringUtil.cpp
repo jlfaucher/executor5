@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -49,7 +49,7 @@
 #include "QueueClass.hpp"
 #include "MethodArguments.hpp"
 #include "NumberStringClass.hpp"
-
+#include "MutableBufferClass.hpp"
 
 /**
  * Extract a substring from a data buffer.
@@ -98,7 +98,7 @@ RexxString *StringUtil::substr(const char *string, size_t stringLength, RexxInte
     else
     {
         // we have a combination of source string and pad characters
-        substrLength = Numerics::minVal(length, stringLength - position);
+        substrLength = std::min(length, stringLength - position);
         padCount = length - substrLength;
     }
     RexxString *retval = raw_string(length);
@@ -141,7 +141,7 @@ RexxString *StringUtil::substr(const char *string, size_t stringLength, RexxInte
     }
 
     // need to cap the length to the remainder of the string
-    length = Numerics::minVal(length, stringLength - position);
+    length = std::min(length, stringLength - position);
 
     // just extract a new string from the data
     return new_string(string + position, length);
@@ -208,7 +208,7 @@ size_t StringUtil::pos(const char *stringData, size_t haystack_length, RexxStrin
     // get the two working lengths
     size_t needle_length = needle->getLength();
     // make sure the range is capped
-    _range = Numerics::minVal(_range, haystack_length - _start);
+    _range = std::min(_range, haystack_length - _start);
 
     // ok, there are a few quick checks we can perform.  If the needle is
     // bigger than the haystack, or the needle is a null string or
@@ -270,7 +270,7 @@ size_t StringUtil::caselessPos(const char *stringData, size_t haystack_length, R
     // get the two working lengths
     size_t needle_length = needle->getLength();
     // make sure the range is capped
-    _range = Numerics::minVal(_range, haystack_length - _start);
+    _range = std::min(_range, haystack_length - _start);
 
     // ok, there are a few quick checks we can perform.  If the needle is
     // bigger than the haystack, or the needle is a null string or
@@ -350,8 +350,8 @@ size_t StringUtil::lastPos(const char *stringData, size_t haystackLen, RexxStrin
     else
     {
         // get the start position for the search.
-        haystackLen = Numerics::minVal(_start, haystackLen);
-        range = Numerics::minVal(range, haystackLen);
+        haystackLen = std::min(_start, haystackLen);
+        range = std::min(range, haystackLen);
         // adjust the starting point by pretending this is smaller than the original string
         const char *startPoint = stringData + haystackLen - range;
 
@@ -427,8 +427,8 @@ size_t StringUtil::caselessLastPos(const char *stringData, size_t haystackLen, R
     else
     {
         // get the start position for the search.
-        haystackLen = Numerics::minVal(_start, haystackLen);
-        range = Numerics::minVal(range, haystackLen);
+        haystackLen = std::min(_start, haystackLen);
+        range = std::min(range, haystackLen);
         // adjust the starting point
         const char *startPoint = stringData + haystackLen - range;
                                          /* do the search                     */
@@ -673,42 +673,18 @@ int  StringUtil::caselessCompare(const char *string1, const char *string2, size_
 }
 
 
-
-/**
- * Convert a hex digit to it's integer value equivalent.
- *
- * @param ch     The input character.
- *
- * @return the integer value of the digit.
- */
-int StringUtil::hexDigitToInt(char  ch)
-{
-    // for digits, just subtract the character zero
-    if (isdigit(ch))
-    {
-        return ch - '0';
-    }
-    // for the alpha digits, subtract A to get the relative value, then
-    // add 10 to that result
-    else
-    {
-        return toupper(ch) - 'A' + 10;
-    }
-}
-
-
 /**
  * The value of the buffer contents
  * interpreted as the binary expansion
  * of a byte, with most significant
- * bit in s[0] and least significant
- * bit in s[7].
+ * bit in string[0] and least significant
+ * bit in string[7].
  *
  * @param string The string to pack (must be 8 digits)
  *
  * @return The single packed character.
  */
-char StringUtil::packByte(const char *string )
+char StringUtil::packByte(const char *string)
 {
     char result = 0;
     // loop through all 8 characters
@@ -727,8 +703,8 @@ char StringUtil::packByte(const char *string )
  * The value of the buffer contents
  * interpreted as the binary expansion
  * of a byte, with most significant
- * bit in s[0] and least significant
- * bit in s[7].
+ * bit in string[0] and least significant
+ * bit in string[7].
  *
  * @param string Pack 4 characters into a hex string value.
  *
@@ -746,51 +722,26 @@ char StringUtil::packNibble(const char *string)
 
 
 /**
- * Pack 2 0123456789ABCDEFabcdef chars into
- * byte
- *
- * The value of the buffer contents
- * interpreted as the hex expansion
- * of a byte, with most significant
- * nibble in s[0] and least significant
- * nibble in s[2].
- *
- * @param Byte   The pointer to the hex digit pair to pack.
- *
- * @return The single byte encoding of the pair of digits.
- */
-char StringUtil::packByte2(const char *bytes)
-{
-    // covert each hex digit and combind into a single value
-    int nibble1 = hexDigitToInt(bytes[0]);
-    int nibble2 = hexDigitToInt(bytes[1]);
-    /* combine the two digits            */
-
-    return ((nibble1 << 4) | nibble2);
-}
-
-
-/**
  * Validate blocks in string
  *
- * A string is considered valid if consists
- * of zero or more characters belonging to
- * the null-terminated C string set in
- * groups of size modulus.  The first group
- * may have fewer than modulus characters.
- * The groups are optionally separated by
- * one or more blanks.
+ * A string is considered valid if it consists of zero or more characters
+ * belonging to the character set, in groups of size modulus.
+ * The first group may have fewer than modulus characters.
+ * The groups are optionally separated by one or more whitespace chars.
  *
- * @param String  The string to validate.
- * @param Length  The string length.
- * @param Set     The valid characters in the set.
- * @param Modulus The size of the smallest allowed grouping.
- * @param Hex     Indicates this is a hex or binary string.  Used for issuing
- *                the correct error type.
+ * @param string   The string to validate.
+ * @param length   The string length.
+ * @param set      The set of valid characters.
+ * @param modulus  The size of the smallest allowed grouping.
+ * @param hex      Indicates this is a hex or binary string.  Used for issuing
+ *                 the correct error message.
  *
  * @return The number of valid digits found.
+ *
+ * This version raises errors for invalid characters.
+ * See also validateGroupedSetQuiet().
  */
-size_t StringUtil::validateSet(const char *string, size_t length, const char *set, int modulus, bool hex)
+size_t StringUtil::validateGroupedSet(const char *string, size_t length, char set[256], int modulus, bool hex)
 {
     // leading whitespace not permitted
     if (*string == RexxString::ch_SPACE || *string == RexxString::ch_TAB)
@@ -811,7 +762,7 @@ size_t StringUtil::validateSet(const char *string, size_t length, const char *se
         ch = *current++;
 
         // if this is in the set, then add in the count of digits
-        if (ch != '\0' && strchr(set, ch) != NULL)
+        if (set[(unsigned char)ch] != '\xff')
         {
             count++;
         }
@@ -836,13 +787,12 @@ size_t StringUtil::validateSet(const char *string, size_t length, const char *se
                 // the residue needs to remain the same as the first gap
                 else if (residue != (count % modulus))
                 {
-                    reportException(hex ? Error_Incorrect_method_hexblank : Error_Incorrect_method_binblank, spaceLocation - string);
+                    reportException(hex ? Error_Incorrect_method_invhex_group : Error_Incorrect_method_invbin_group);
                 }
             }
             // the remaining possibility is an invalid character
             else
             {
-
                 reportException(hex ? Error_Incorrect_method_invhex : Error_Incorrect_method_invbin, new_string(ch));
             }
         }
@@ -850,30 +800,31 @@ size_t StringUtil::validateSet(const char *string, size_t length, const char *se
 
     // we've hit the end.  We could have ended on whitespace, which is an error, or the final grouping
     // has the wrong number of characters
-    if ((ch == RexxString::ch_SPACE || ch == RexxString::ch_TAB) || (spaceFound && ((count % modulus) != residue)))
+    if (ch == RexxString::ch_SPACE || ch == RexxString::ch_TAB)
     {
         reportException(hex ? Error_Incorrect_method_hexblank : Error_Incorrect_method_binblank, spaceLocation - string);
+    }
+    else if (spaceFound && ((count % modulus) != residue))
+    {
+        reportException(hex ? Error_Incorrect_method_invhex_group : Error_Incorrect_method_invbin_group);
     }
     return count;
 }
 
 
 /**
- * Scan string for next members of
- * character set
+ * Copy at most count characters from set from source to destination.
  *
- * @param Destination
- *               The string where the characters are packed.
- * @param Source The source for the string data.
- * @param Length The length of the input string.
- * @param Count  The number of valid characters in the string.
- * @param Set    The set of allowed characters.
- * @param ScannedSize
- *               The returned scan size.
+ * @param destination  The string where the characters are packed.
+ * @param source       The source for the string data.
+ * @param length       The length of the input string.
+ * @param count        The number of valid characters in the string.
+ * @param set          The mapped set of allowed characters.
+ * @param scannedSize  The returned scan size.
  *
- * @return
+ * @return  number of characters copied
  */
-size_t  StringUtil::chGetSm(char *destination, const char *source, size_t length, size_t count, const char *characterSet, size_t &scannedSize)
+size_t StringUtil::copyGroupedChars(char *destination, const char *source, size_t length, size_t count, char set[256], size_t &scannedSize)
 {
     // make sure the scanned size is initialized
     scannedSize = 0;
@@ -886,7 +837,7 @@ size_t  StringUtil::chGetSm(char *destination, const char *source, size_t length
         scannedSize++;
 
         // if this is one of our target characters, copy it to the destination
-        if (ch != '\0' && strchr(characterSet, ch) != NULL)
+        if (set[(unsigned char)ch] != '\xff')
         {
             *destination++ = ch;
             // if we've copied the desired number of characters, we're finished
@@ -923,8 +874,8 @@ RexxString *StringUtil::packHex(const char *string, size_t stringLength)
     }
 
     const char *source = string;
-    // perform the validation and get a character cound
-    size_t nibbles = validateSet(source, stringLength, "0123456789ABCDEFabcdef", 2, true);
+    // perform the validation and get a character count
+    size_t nibbles = validateGroupedSet(source, stringLength, RexxString::DIGITS_HEX_LOOKUP, 2, true);
     // get a result string, with rounding in case we have an odd number of digits
     RexxString *retval = raw_string((nibbles + 1) / 2);
 
@@ -944,9 +895,9 @@ RexxString *StringUtil::packHex(const char *string, size_t stringLength)
         }
         size_t scanned;
         // copy the digits into out buffer...we're copying either 1 or 2 characters
-        chGetSm(buf + 2 - b, source, stringLength, b, "0123456789ABCDEFabcdef", scanned);
+        copyGroupedChars(buf + 2 - b, source, stringLength, b, RexxString::DIGITS_HEX_LOOKUP, scanned);
         // now convert this into a single character and insert into the destination string
-        *destination++ = packByte2(buf);
+        *destination++ = RexxString::packByte2(buf);
         source += scanned;
         stringLength -= scanned;
         nibbles -= b;
@@ -977,20 +928,20 @@ void StringUtil::unpackNibble(int Val, char *p)
 
 
 /**
- * Find the first occurrence of the set non-member in a string.
+ * Validate that string contains characters only from given set.
  *
- * @param String The string to search.
- * @param Set    The character set.
- * @param Length The length to search.
+ * @param string The string to search.
+ * @param set    The character set.
+ * @param length The length to search.
  *
- * @return The position of a match.
+ * @return NULL if all chars match, otherwise the position of the failed match.
  */
-const char *StringUtil::memcpbrk(const char *string, const char *set, size_t length)
+const char* StringUtil::validateStrictSet(const char *string, char set[256], size_t length)
 {
     while (length--)
     {
-        // a null character or one in the set will terminate
-        if (*string == '\0' || !strchr(set, *string))
+        // any character outside the set will terminate
+        if (set[(unsigned char)*string] == '\xff')
         {
             return string;
         }
@@ -1004,23 +955,23 @@ const char *StringUtil::memcpbrk(const char *string, const char *set, size_t len
 /**
  * Validate blocks in string
  *
- * A string is considered valid if consists
- * of zero or more characters belonging to
- * the null-terminated C string set in
- * groups of size modulus.  The first group
- * may have fewer than modulus characters.
- * The groups are optionally separated by
- * one or more blanks.  This version does not raise errors.
+ * A string is considered valid if it consists of zero or more characters
+ * belonging to the character set, in groups of size modulus.
+ * The first group may have fewer than modulus characters.
+ * The groups are optionally separated by one or more whitespace chars.
  *
- * @param String     The string to validate.
- * @param Length     The string length.
- * @param Set        The validation set.
- * @param Modulus    The set modulus
- * @param PackedSize The final packed size.
+ * @param string   The string to validate.
+ * @param length   The string length.
+ * @param set      The set of valid characters.
+ * @param modulus  The size of the smallest allowed grouping.
+ * @param count    The number of valid digits found.
  *
- * @return The count of located characters.
+ * @return true for a valid string, false otherwise.
+ *
+ * This is the "quiet" version, it does not raise errors.
+ * See also validateGroupedSet()
  */
-bool StringUtil::validateCharacterSet(const char *string, size_t length, const char *set, int modulus, size_t &count)
+bool StringUtil::validateGroupedSetQuiet(const char *string, size_t length, char set[256], int modulus, size_t &count)
 {
     // leading whitespace not permitted
     if (*string == RexxString::ch_SPACE || *string == RexxString::ch_TAB)
@@ -1041,7 +992,7 @@ bool StringUtil::validateCharacterSet(const char *string, size_t length, const c
         ch = *current++;
 
         // if this is in the set, then add in the count of digits
-        if (ch != '\0' && strchr(set, ch) != NULL)
+        if (set[(unsigned char)ch] != '\xff')
         {
             count++;
         }
@@ -1105,22 +1056,22 @@ RexxObject *StringUtil::dataType(RexxString *string, char option )
     switch (toupper(option))
     {
         case RexxString::DATATYPE_ALPHANUMERIC:
-            return booleanObject(len != 0 && !memcpbrk(scanp, RexxString::ALPHANUM, len));
+            return booleanObject(len != 0 && !validateStrictSet(scanp, RexxString::ALPHANUM_LOOKUP, len));
 
         case RexxString::DATATYPE_BINARY:
         {
             size_t count;
-            return booleanObject(len == 0 || validateCharacterSet(scanp, len, RexxString::BINARY, 4, count));
+            return booleanObject(len == 0 || validateGroupedSetQuiet(scanp, len, RexxString::DIGITS_BIN_LOOKUP, 4, count));
         }
 
         case RexxString::DATATYPE_LOWERCASE:
-            return booleanObject(len != 0 && !memcpbrk(scanp, RexxString::LOWER_ALPHA, len));
+            return booleanObject(len != 0 && !validateStrictSet(scanp, RexxString::LOWER_ALPHA_LOOKUP, len));
 
         case RexxString::DATATYPE_UPPERCASE:
-            return booleanObject(len != 0 && !memcpbrk(scanp, RexxString::UPPER_ALPHA, len));
+            return booleanObject(len != 0 && !validateStrictSet(scanp, RexxString::UPPER_ALPHA_LOOKUP, len));
 
         case RexxString::DATATYPE_MIXEDCASE:
-            return booleanObject(len != 0 && !memcpbrk(scanp, RexxString::MIXED_ALPHA, len));
+            return booleanObject(len != 0 && !validateStrictSet(scanp, RexxString::MIXED_ALPHA_LOOKUP, len));
 
         case RexxString::DATATYPE_WHOLE_NUMBER:
         {
@@ -1161,7 +1112,7 @@ RexxObject *StringUtil::dataType(RexxString *string, char option )
         case RexxString::DATATYPE_HEX:
         {
             size_t count;
-            return booleanObject(len == 0 || validateCharacterSet(scanp, len, RexxString::HEX_CHAR_STR, 2, count));
+            return booleanObject(len == 0 || validateGroupedSetQuiet(scanp, len, RexxString::DIGITS_HEX_LOOKUP, 2, count));
         }
 
         case RexxString::DATATYPE_SYMBOL:
@@ -1347,7 +1298,7 @@ RexxInteger *StringUtil::verify(const char *data, size_t stringLen, RexxString  
     }
 
     // adjust the range for seaching
-    stringRange = Numerics::minVal(stringRange, stringLen - startPos + 1);
+    stringRange = std::min(stringRange, stringLen - startPos + 1);
 
     const char *current = data + startPos - 1;
 
@@ -1770,4 +1721,253 @@ size_t StringUtil::caselessWordPos(const char *data, size_t length, RexxString  
         count++;
     }
     return 0;                          // not found
+}
+
+
+/**
+ * Reverse the effect of an encodebase64 operation, converting
+ * a string in Base64 format into a "normal" character string.
+ * This supports Base64 encoding as described by RFC 2045, but
+ * does not allow (ignore) characters outside of the base64 alphabet.
+ * See https://tools.ietf.org/html/rfc2045#page-24
+ *
+ * @param input  Pointer to the data to decode
+ * @param inputLength
+ *               The length of the input to decode
+ * @param output The output buffer (which can be the same as the input if decoding in place.
+ * @param outputLength
+ *               The final decoded length, which will be <= to the input length
+ *
+ * @return true if this was decoded successfully, false if there were any decoding errors.
+ */
+bool StringUtil::decodeBase64(const char *source, size_t inputLength, char *destination, size_t &outputLength)
+{
+    // default this to a null string
+    outputLength = 0;
+
+    // remember where we start for calculating the final returned length
+    char *destinationStart = destination;
+
+    // a null string remains a null string.
+    if (inputLength == 0)
+    {
+        return true;
+    }
+
+    // the digit we're working on
+    int digit = 0;
+    // now loop through the input string, processing the informtion in 4 digit units
+    while (inputLength > 0)
+    {
+        unsigned char ch = *source++;
+        // consume the character now
+        inputLength--;
+
+        // first, find the matching character
+        unsigned char digitValue = RexxString::DIGITS_BASE64_LOOKUP[ch];
+        // if we did not find a match, this could be
+        // an end of buffer filler characters
+        if (digitValue == (unsigned char)'\xff')
+        {
+            // if this is '=' and we're looking at
+            // one of the last two digits, we've hit the
+            // end
+            if (ch == '=')
+            {
+                // if we're looking for the first digit, then the next character
+                // must also be an '='
+                if (digit == 2)
+                {
+                    if (inputLength == 0 || *source != '=')
+                    {
+                        return false;
+                    }
+                    // we consume two characters here
+                    source++;
+                    inputLength--;
+                    // stop processing the data from here
+                    break;
+                }
+                // single equal in the last position
+                else if (digit == 3)
+                {
+                    // stop processing the data from here
+                    break;
+                }
+            }
+            // line breaks are allowed, but only on four character boundars (i.e., digit is zero)
+            else if ((ch == '\n' || ch == '\r') && digit == 0)
+            {
+                // just ignore this line break
+                continue;
+            }
+
+
+            // found an invalid character
+            return false;
+        }
+
+        // digit value is the binary value of this digit.  Now, based
+        // on which digit of the input set we're working on, we update
+        // the values in the output buffer.  We only have 6 bits of
+        // character data at this point.
+        switch (digit)
+        {
+            // first digit, all 6 bits go into the current position, shifted
+            case 0:
+                *destination = digitValue << 2;
+                // step to the next digit in the encoding unit
+                digit++;
+                break;
+
+            // second digit.  2 bits are used to complete the current
+            // character, 4 bits are inserted into the next character
+            case 1:
+                *destination |= digitValue >> 4;
+                destination++;
+                *destination = digitValue << 4;
+                // step to the next digit in the encoding unit
+                digit++;
+                break;
+
+            // third digit.  4 bits are used to complete the
+            // current character, the remaining 2 bits go into the next one.
+            case 2:
+                *destination |= digitValue >> 2;
+                destination++;
+                *destination = digitValue << 6;
+                // step to the next digit in the encoding unit
+                digit++;
+                break;
+
+            // last character of the set.  All 6 bits are inserted into
+            // the current output position.
+            case 3:
+                *destination |= digitValue;
+                destination++;
+                // complete the four-character set, on the next one
+                digit = 0;
+                break;
+        }
+
+    }
+
+    // calculate the final length
+    outputLength = destination - destinationStart;
+
+    // if we have any thing left here, then it must be line break characters
+    while (inputLength > 0)
+    {
+        unsigned char ch = *source++;
+        // consume the character now
+        inputLength--;
+
+        if (ch != '\n' && ch != '\r')
+        {
+            return false;
+        }
+    }
+
+    // all processed without error, this is good.
+    return true;
+}
+
+
+/**
+ * Convert the character string into the same string with the
+ * characters converted into a Base64 encoding.
+ *
+ * @param data       Pointer to the data to encode.
+ * @param dataLength The length of the source data
+ * @param output     A mutable buffer into which the data are written
+ * @param chunkSize  The size of chunks to be used in the encoding. A line break is added after
+ *                   each chunk at 4-byte boundaries.
+ */
+void StringUtil::encodeBase64(const char *source, size_t inputLength, MutableBuffer *destination, size_t chunkSize)
+{
+    // if we're encoding a null string, the result is a
+    // null string, but we still add a linebreak at the end.
+    if (inputLength == 0)
+    {
+        destination->append('\n');
+        return;
+    }
+
+    // figure out the output string length (this will be roughly
+    // 4/3 the length of the input string (3 characters will encode
+    // into 4 digits)
+    size_t outputLength = (inputLength / 3) * 4;
+
+    // The encoding will always use 4-digit sequences, so if this
+    // was not evenly divisible by 3, add a complete 4-digit piece
+    // at the end.
+    if (inputLength % 3 > 0)
+    {
+        outputLength += 4;
+    }
+
+    size_t currentChunk = 0;
+
+    // loop through the entire string
+    while (inputLength > 0)
+    {
+        size_t inc[3];    // digit accumulator
+        int buflen = 0;
+        // the encoding is done 3 characters at a time.
+        for (int i = 0; i < 3; i++)
+        {
+            // we always do 3 characters, even at the end
+            // of the string.  If we still have characters
+            // left, grab that characters into our accumulator
+            // buffer
+            if (inputLength > 0)
+            {
+                // make sure we just get 8 bits
+                inc[i] = *source & 0xff;
+                inputLength--;
+                source++;
+                buflen++;
+            }
+            // this piece is just zero.  We also
+            // do not add this to the buffer length
+            else
+            {
+                inc[i] = '\0';
+            }
+        }
+        if (buflen > 0)
+        {
+            // now perform the base64 conversion to the next 4 output string chars.
+            // we are picking up 6 bits at a time from the 24 bits of input characters
+            // and converting those bits to a single base-64 digit.
+
+            // 6 bits from first character
+            destination->append(RexxString::DIGITS_BASE64[inc[0] >> 2]);
+
+            // remaining 2 bits from first character, plus 4 bits from the second character
+            destination->append(RexxString::DIGITS_BASE64[((inc[0] & 0x03) << 4) | ((inc[1] & 0xf0) >> 4)]);
+
+            // remaining bits from second char, plus 2 bits from the last character.  If we don't have
+            // a character here, use "="
+            destination->append((char)(buflen > 1 ? RexxString::DIGITS_BASE64[((inc[1] & 0x0f) << 2) | ((inc[2] & 0xc0) >> 6)] : '='));
+
+            // the final 6 bits...again, using "=" if we did not have a character here at the end.
+            destination->append((char)(buflen > 2 ? RexxString::DIGITS_BASE64[inc[2] & 0x3f] : '='));
+
+            // now handle the chunking. If we've grown longer than the designated chunck size,
+            // we add a line break;
+            currentChunk += 4;
+            if (currentChunk >= chunkSize)
+            {
+                currentChunk = 0;
+                destination->append('\n');
+            }
+        }
+    }
+
+    // if we did not end on a chunk boundary, add a newline to to end of the buffer
+    if (currentChunk > 0)
+    {
+        destination->append('\n');
+    }
 }

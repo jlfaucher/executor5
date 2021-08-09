@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -50,6 +50,7 @@ class RexxInstructionEnd;
 class RexxInstructionEndIf;
 class RexxClause;
 class LanguageParser;
+class RexxVariableBase;
 
 #include "SourceLocation.hpp"
 
@@ -70,9 +71,9 @@ class RexxInstruction : public RexxInternalObject
     inline RexxInstruction(RESTORETYPE restoreType) { ; };
     inline RexxInstruction() { ; }
 
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
-    virtual void flatten(Envelope *);
+    void live(size_t) override;
+    void liveGeneral(MarkReason reason) override;
+    void flatten(Envelope *) override;
 
     virtual void execute(RexxActivation *, ExpressionStack *) { ; };
     // indicates whether this is a block instruction type that requires
@@ -87,6 +88,8 @@ class RexxInstruction : public RexxInternalObject
     // NOTE:  This method is only used during program translation, so we can skip using
     // OrefSet to set this variable.
     inline void setNext(RexxInstruction *next) { nextInstruction = next; };
+    inline RexxInstruction *next() { return nextInstruction; }
+    inline bool isLast() { return nextInstruction == OREF_NULL; }
     void        setStart(size_t line, size_t off) { instructionLocation.setStart(line, off); }
     void        setEnd(size_t line, size_t off) { instructionLocation.setEnd(line, off); }
     inline      void        setType(InstructionKeyword type) { instructionType = type; };
@@ -122,24 +125,31 @@ class DoBlock;
 class RexxBlockInstruction : public RexxInstruction
 {
  public:
-    RexxBlockInstruction() {;};
-    RexxBlockInstruction(RESTORETYPE restoreType) { ; };
+     RexxBlockInstruction() {;};
+     RexxBlockInstruction(RESTORETYPE restoreType) {; };
 
-    // virtual functions required by subclasses to override.
+     // virtual functions required by subclasses to override.
 
-    virtual bool isBlock() { return true; }
-    // all block instructions are also control instructions.
-    virtual bool isControl() { return true; }
-    virtual EndBlockType getEndStyle() = 0;
-    virtual bool isLoop() { return false; };
-    virtual void matchEnd(RexxInstructionEnd *, LanguageParser *) { ; };
-    virtual void terminate(RexxActivation *, DoBlock *) { ; };
+     void live(size_t)override;
+     void liveGeneral(MarkReason reason)override;
+     void flatten(Envelope *)override;
 
-    // inherited behaviour
-    // NOTE: tokens on ends and label instructions are interned strings, so
-    // we can just do pointer compares
-    bool isLabel(RexxString *name) { return name == label; }
-    RexxString *getLabel() { return label; };
+     bool isBlock()override { return true; }
+     // all block instructions are also control instructions.
+     bool isControl()override { return true; }
+
+     virtual EndBlockType getEndStyle() = 0;
+     virtual bool isLoop() { return false; };
+     virtual void matchEnd(RexxInstructionEnd *, LanguageParser *) {; };
+     virtual void terminate(RexxActivation *, DoBlock *) {; };
+     virtual RexxVariableBase* getCountVariable() { return OREF_NULL; }
+
+     // inherited behaviour
+     // NOTE: tokens on ends and label instructions are interned strings, so
+     // we can just do pointer compares
+     bool isLabel(RexxString *name) { return name == label; }
+     RexxString* getLabel() { return label; };
+     void handleDebugPause(RexxActivation *context, DoBlock *doblock);
 
     RexxString *label;         // the block instruction label
     RexxInstructionEnd *end;   // the END matching the block instruction
@@ -170,9 +180,9 @@ class RexxInstructionExpression : public RexxInstruction
     RexxInstructionExpression() { ; };
     RexxInstructionExpression(RESTORETYPE restoreType) { ; };
 
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
-    virtual void flatten(Envelope *);
+    void live(size_t) override;
+    void liveGeneral(MarkReason reason) override;
+    void flatten(Envelope *) override;
 
     RexxObject *evaluateExpression(RexxActivation *context, ExpressionStack *stack);
     RexxString *evaluateStringExpression(RexxActivation *context, ExpressionStack *stack);

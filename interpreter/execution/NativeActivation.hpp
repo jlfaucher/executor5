@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2018 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2019 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -79,29 +79,31 @@ class NativeActivation : public ActivationBase
            NativeActivation(Activity *_activity, RexxActivation *_activation);
            NativeActivation(Activity *_activity);
 
-    virtual void live(size_t);
-    virtual void liveGeneral(MarkReason reason);
+    void live(size_t) override;
+    void liveGeneral(MarkReason reason) override;
 
-    virtual void run(MethodClass *_method, NativeMethod *_code, RexxObject  *_receiver,
+    void run(MethodClass *_method, NativeMethod *_code, RexxObject  *_receiver,
         RexxString  *_msgname, RexxObject **_arglist, size_t _argcount, ProtectedObject &resultObj);
 
-    virtual RexxObject *dispatch();
-    virtual wholenumber_t digits();
-    virtual wholenumber_t fuzz();
-    virtual bool form();
-    virtual void setDigits(wholenumber_t);
-    virtual void setFuzz(wholenumber_t);
-    virtual void setForm(bool);
-    virtual bool trap(RexxString *, DirectoryClass *);
-    virtual bool willTrap(RexxString *);
-    virtual void termination() { guardOff();}
-    virtual bool isStackBase();
-    virtual RexxActivation *getRexxContext();
-    virtual RexxActivation *findRexxContext();
-    virtual RexxObject *getReceiver();
-    virtual SecurityManager *getSecurityManager();
-    virtual const NumericSettings *getNumericSettings();
+    RexxObject *dispatch() override;
+    wholenumber_t digits() override;
+    wholenumber_t fuzz() override;
+    bool form() override;
+    void setDigits(wholenumber_t) override;
+    void setFuzz(wholenumber_t) override;
+    void setForm(bool) override;
+    bool trap(RexxString *, DirectoryClass *) override;
+    bool willTrap(RexxString *) override;
+    void termination() override { guardOff(); }
+    bool isStackBase() override;
+    RexxActivation *getRexxContext() override;
+    RexxActivation *findRexxContext() override;
+    RexxObject *getReceiver() override;
+    PackageClass *getPackage() override { return getPackageObject(); }
+    SecurityManager *getSecurityManager() override;
+    const NumericSettings *getNumericSettings() override;
 
+    MethodClass *getMethod();
     void run(ActivityDispatcher &dispatcher);
     void run(CallbackDispatcher &dispatcher);
     void run(TrappingDispatcher &dispatcher);
@@ -112,15 +114,19 @@ class NativeActivation : public ActivationBase
     stringsize_t unsignedIntegerValue(RexxObject *o, size_t position, stringsize_t maxValue);
     int64_t int64Value(RexxObject *o, size_t position);
     uint64_t unsignedInt64Value(RexxObject *o, size_t position);
-    const char *cstring(RexxObject *);
+    const char *cstring(RexxObject *, size_t position);
     double getDoubleValue(RexxObject *, size_t position);
     bool   isDouble(RexxObject *);
     void  *cself();
     void  *buffer();
     void  *pointer(RexxObject *);
     void  *pointerString(RexxObject *object, size_t position);
+    RexxVariableBase *getObjectVariableRetriever(const char *name);
+    RexxObject *guardOnWhenUpdated(const char *name);
+    RexxObject *guardOffWhenUpdated(const char *name);
     void   guardOff();
     void   guardOn();
+    void   guardWait();
     void   enableVariablepool();
     void   disableVariablepool();
     void   resetNext();
@@ -140,6 +146,7 @@ class NativeActivation : public ActivationBase
     inline RexxString *getMessageName()   {return messageName;}
     RexxObject *getContextStem(RexxString *name);
     RexxObject *getContextVariable(const char *name);
+    VariableReference *getContextVariableReference(const char *name);
     void dropContextVariable(const char *name);
     void setContextVariable(const char *name, RexxObject *value);
     RexxObject *getObjectVariable(const char *name);
@@ -183,7 +190,7 @@ class NativeActivation : public ActivationBase
     void variablePoolRequest(PSHVBLOCK pshvblock);
     RexxReturnCode copyValue(RexxObject * value, RXSTRING *rxstring, size_t *length);
     RexxReturnCode copyValue(RexxObject * value, CONSTRXSTRING *rxstring, size_t *length);
-    int stemSort(const char *stemname, int order, int type, size_t start, size_t end, size_t firstcol, size_t lastcol);
+    int stemSort(StemClass *stem, const char *tailExtension, int order, int type, wholenumber_t start, wholenumber_t end, wholenumber_t firstcol, wholenumber_t lastcol);
     inline void enableConditionTrap() { trapConditions = true; captureConditions = false; }
     inline void enableConditionCapture() { trapConditions = true; captureConditions = true; }
 

@@ -6,7 +6,7 @@
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -54,8 +54,8 @@ public:
     inline RexxStartDispatcher() : ActivityDispatcher() { ; }
     virtual ~RexxStartDispatcher() { ; }
 
-    virtual void run();
-    virtual void handleError(wholenumber_t, DirectoryClass *);
+    void run() override;
+    void handleError(wholenumber_t, DirectoryClass *) override;
 
     size_t     argcount;                 // Number of args in arglist
     PCONSTRXSTRING arglist;              // Array of args
@@ -77,7 +77,7 @@ public:
     inline CallRoutineDispatcher(RoutineClass *r, ArrayClass *a) : ActivityDispatcher(), routine(r), arguments(a) { ; }
     virtual ~CallRoutineDispatcher() { ; }
 
-    virtual void run();
+    void run() override;
 
     ProtectedObject result;
 
@@ -96,7 +96,7 @@ public:
     inline CallProgramDispatcher(const char *p, ArrayClass *a) : ActivityDispatcher(), program(p), arguments(a) { ; }
     virtual ~CallProgramDispatcher() { ; }
 
-    virtual void run();
+    void run() override;
 
     ProtectedObject result;
 

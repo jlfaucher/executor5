@@ -1,14 +1,12 @@
-#!/usr/bin/rexx
+#!@OOREXX_SHEBANG_PROGRAM@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
-/* Description: Simple socket client using socket class                       */
-/*                                                                            */
-/* Copyright (c) 2007-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2007-2021 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* http://www.oorexx.org/license.html                                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -36,23 +34,23 @@
 /* NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS         */
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.               */
 /*                                                                            */
-/* Author: David Ruggles                                                      */
-/*                                                                            */
 /*----------------------------------------------------------------------------*/
 
-/*  instaniate an instance of the socket class  */
+/* A simple socket client using the Socket class                              */
+
+/*  instantiate an instance of the socket class  */
     sock = .socket~new()
 
-/*  instaniate an instance of the inetaddress class
+/*  instantiate an instance of the inetaddress class
     with the host information of the server we will
-    contact: localhost and port 726578
+    contact: localhost and port 50010
     we use the "gethostid" class method of the socket
     class to determine the localhost address  */
-    host = .inetaddress~new(.socket~gethostid(), '726578')
+    host = .inetaddress~new(.socket~gethostid(), '50010')
 
 /*  connect to the server  */
     if sock~connect(host) < 0 then do
-        say 'Connect Failed'
+        say 'Connect failed:' sock~errno
         exit
     end
 
@@ -63,23 +61,20 @@
         if message~upper() = 'X' then leave
     /*  send message to server  */
         if sock~send(message) < 0 then do
-            say 'Send Failed'
+            say 'Send failed:' sock~errno
             leave
         end
     /*  get message from server  */
         ret = sock~recv(1024)
         if ret = .nil then do
-            if sock~errno() < 0 then
-                say 'Recv Failed'
-            else
-                say 'Socket Closed'
+            say 'Recv failed:' sock~errno
             leave
         end
-        say 'Server Responded:' ret
+        say 'Server responded:' ret
     end
 
 /*  close the socket connection  */
     if sock~close() < 0 then
-        say 'SockClose Failed'
+        say 'SockClose failed:' sock~errno
 
 ::requires 'socket.cls'

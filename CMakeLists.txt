@@ -601,7 +601,8 @@ set (common_rexxapi_sources
             ${build_common_platform_dir}/SysLibrary.cpp
             ${build_common_platform_dir}/SysFile.cpp
             ${build_common_platform_dir}/SysProcess.cpp
-            ${build_common_platform_dir}/SysThread.cpp)
+            ${build_common_platform_dir}/SysThread.cpp
+            ${build_common_platform_dir}/SysUtilities.cpp)
 # additional source files required by specific platforms
 if (WIN32)
    set (platform_rexxapi_sources
@@ -845,7 +846,8 @@ set (common_sources ${build_common_dir}/Utilities.cpp
             ${build_common_platform_dir}/SysLibrary.cpp
             ${build_common_platform_dir}/SysProcess.cpp
             ${build_common_platform_dir}/SysSemaphore.cpp
-            ${build_common_platform_dir}/SysThread.cpp)
+            ${build_common_platform_dir}/SysThread.cpp
+            ${build_common_platform_dir}/SysUtilities.cpp)
 set (runtime_sources ${build_runtime_dir}/InternalPackage.cpp
             ${build_runtime_dir}/Interpreter.cpp
             ${build_runtime_dir}/InterpreterInstance.cpp
@@ -1070,6 +1072,7 @@ add_executable(rxapi ${rxapi_executable_type}
          ${build_common_platform_dir}/SysProcess.cpp
          ${build_common_platform_dir}/SysSemaphore.cpp
          ${build_common_platform_dir}/SysThread.cpp
+         ${build_common_platform_dir}/SysUtilities.cpp
          ${platform_rxapi_sources})
 # Include file definition
 target_include_directories(rxapi PUBLIC

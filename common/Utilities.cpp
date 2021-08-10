@@ -49,6 +49,26 @@
 #include <sys/types.h>
 #include "Utilities.hpp"
 
+// Pointer to the function GetConcurrencyInfos declared in RexxActivation.hpp
+static ConcurrencyInfosCollector concurrencyCollector = NULL;
+
+void Utilities::SetConcurrencyInfosCollector(ConcurrencyInfosCollector collector)
+{
+    concurrencyCollector = collector;
+}
+
+
+void Utilities::GetConcurrencyInfos(struct ConcurrencyInfos &concurrencyInfos)
+{
+    if (concurrencyCollector != NULL) concurrencyCollector(concurrencyInfos);
+    else
+    {
+        memset(&concurrencyInfos, '\0', sizeof(concurrencyInfos));
+        concurrencyInfos.lock = '?'; // It's a way to know that the structure was not filled
+    }
+}
+
+
 /**
  * Locate the first occurrence of any character from a given set.
  *

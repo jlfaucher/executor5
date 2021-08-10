@@ -40,7 +40,37 @@
 #ifndef Included_Utilities
 #define Included_Utilities
 
+#include <rexx.h>
 #include <sys/types.h>
+#include <stdarg.h>
+
+#ifdef __REXX64__
+#define CONCURRENCY_TRACE "%16.16x %16.16x %16.16x %5.5hu%c "
+#else
+#define CONCURRENCY_TRACE "%8.8x %8.8x %8.8x %5.5hu%c "
+#endif
+
+#define CONCURRENCY_BUFFER_SIZE 100 // Must be enough to support CONCURRENCY_TRACE
+
+
+// For concurrency trace
+class Activity;
+class RexxActivation;
+class VariableDictionary;
+struct ConcurrencyInfos
+{
+    wholenumber_t threadId;
+    Activity *activity;
+    RexxActivation *activation;
+    VariableDictionary *variableDictionary;
+    unsigned short reserveCount;
+    char lock;
+};
+
+// Can't include RexxActivation.hpp to call the function GetConcurrencyInfos
+// A pointer to this function will be passed during the initialization of the interpreter.
+typedef void (*ConcurrencyInfosCollector) (struct ConcurrencyInfos &concurrencyInfos);
+
 
 class Utilities
 {
@@ -51,6 +81,15 @@ public:
     static void strlower(char *str);
     static const char *strnchr(const char *, size_t n, char ch);
     static const char *locateCharacter(const char *s, const char *set, size_t l);
+    static int vsnprintf(char *buffer, size_t count, const char *format, va_list args);
+    static int snprintf(char *buffer, size_t count, const char *format, ...);
+    static wholenumber_t currentThreadId(); // Could be in SysThread.hpp, but for the moment, it's here...
+    static void traceConcurrency(bool);
+    static bool traceConcurrency();
+
+    // For concurrency trace
+    static void SetConcurrencyInfosCollector(ConcurrencyInfosCollector);
+    static void GetConcurrencyInfos(struct ConcurrencyInfos &concurrencyInfos);
 };
 
 

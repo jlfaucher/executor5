@@ -84,6 +84,32 @@
 #include "LibraryPackage.hpp"
 
 
+// For concurrency trace
+// This function is called via Utility::GetConcurrencyInfos, because sometimes
+// it's not possible to include RexxActivation.hpp to call directly this function.
+void GetConcurrencyInfos(ConcurrencyInfos &infos)
+{
+    infos.threadId = Utilities::currentThreadId();
+    infos.activity = ActivityManager::currentActivity;
+    infos.activation = (infos.activity ? infos.activity-> getCurrentRexxFrame() : NULL);
+    infos.variableDictionary = (infos.activation ? infos.activation->getVariableDictionary() : NULL);
+    infos.reserveCount = (infos.activation ? infos.activation-> getReserveCount() : 0);
+    infos.lock = (infos.activation && infos.activation->isObjectScopeLocked() ? '*' : ' ');
+}
+
+
+class ConcurrencyInfosCollectorInitializer
+{
+    public:
+    // Store a pointer to the functionGetConcurrencyInfos in the Utilities area.
+    ConcurrencyInfosCollectorInitializer() { Utilities::SetConcurrencyInfosCollector(&GetConcurrencyInfos); }
+};
+
+
+// The goal of this declaration is to activate the constructor during the initialization
+static ConcurrencyInfosCollectorInitializer initializer;
+
+
 /**
  * Create a new activation object
  *
@@ -447,6 +473,7 @@ RexxObject* RexxActivation::run(RexxObject *_receiver, RexxString *name, RexxObj
     // the "msgname" can also be the name of an external routine, the label
     // name of an internal routine.
     settings.messageName = name;
+    bool traceEntryDone = false;
 
     // not a reply restart situation?  We need to do the full
     // initial setup
@@ -492,6 +519,19 @@ RexxObject* RexxActivation::run(RexxObject *_receiver, RexxString *name, RexxObj
                 {
                     // get the object variables and reserve these
                     settings.objectVariables = receiver->getObjectVariables(scope);
+
+                    // For proper diagnostic in case of deadlock, do the trace now
+                    if (tracingLabels() && isMethodOrRoutine())
+                    {
+                        traceEntry();
+                        if (!tracingAll())
+                        {
+                            // we pause on the label only for ::OPTIONS TRACE LABELS
+                            pauseLabel();
+                        }
+                        traceEntryDone = true;
+                    }
+
                     settings.objectVariables->reserve(activity);
                     objectScope = SCOPE_RESERVED;
                 }
@@ -556,7 +596,7 @@ RexxObject* RexxActivation::run(RexxObject *_receiver, RexxString *name, RexxObj
     // is a routine or method invocation in one of those packages, give the
     // initial entry trace so the user knows where we are.
     // Must be one of ::OPTIONS TRACE ALL/RESULTS/INTERMEDIATES/LABELS
-    if (tracingLabels() && isMethodOrRoutine())
+    if (!traceEntryDone && tracingLabels() && isMethodOrRoutine())
     {
         traceEntry();
         if (!tracingAll())

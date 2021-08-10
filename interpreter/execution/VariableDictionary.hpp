@@ -195,6 +195,7 @@ class VariableDictionary : public RexxInternalObject
     void         drop(RexxString *);
     void         dropStemVariable(RexxString *);
     void         reserve(Activity *);
+    unsigned short getReserveCount() { return reserveCount; } // for trace
     void         release(Activity *);
     bool         transfer(Activity *);
 

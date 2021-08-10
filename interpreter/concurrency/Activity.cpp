@@ -3046,22 +3046,38 @@ SecurityManager *Activity::getInstanceSecurityManager()
 void  Activity::traceOutput(RexxActivation *activation, RexxString *line)
 {
     // make sure this is a real string value (likely, since we constructed it in the first place)
-    line = line->stringTrace();
+    Protected<RexxString> pline = line->stringTrace();
+
+    if (Utilities::traceConcurrency())
+    {
+        // Add thread id, activation id and lock flag.
+        // Should help to analyze the traces of a multithreaded script...
+        char buffer[CONCURRENCY_BUFFER_SIZE];
+        struct ConcurrencyInfos concurrencyInfos;
+        Utilities::GetConcurrencyInfos(concurrencyInfos);
+        Utilities::snprintf(buffer, sizeof buffer - 1, CONCURRENCY_TRACE,
+                                                       concurrencyInfos.threadId,
+                                                       concurrencyInfos.activation,
+                                                       concurrencyInfos.variableDictionary,
+                                                       concurrencyInfos.reserveCount,
+                                                       concurrencyInfos.lock);
+        pline = pline->concatToCstring(buffer);
+    }
 
     // if the exit passes on the call, we write this to the .traceouput
-    if (callTraceExit(activation, line))
+    if (callTraceExit(activation, pline))
     {
         RexxObject *stream = getLocalEnvironment(TRACEOUTPUT);
 
         if (stream != OREF_NULL && stream != TheNilObject)
         {
             ProtectedObject result;
-            stream->sendMessage(LINEOUT, line, result);
+            stream->sendMessage(LINEOUT, pline, result);
         }
         // could not find the target, but don't lose the data!
         else
         {
-            lineOut(line);
+            lineOut(pline);
         }
     }
 }

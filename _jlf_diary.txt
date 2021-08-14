@@ -41,11 +41,45 @@ of ConcurrencyTraceOutput (was humanizeTraceOutput) when
     value('RXTRACE_CONCURRENCY', , 'ENVIRONMENT')~caselessEquals('on')
 
 
+An interpreter instance is also initialized when shutdown.
+    Interpreter::initLocal
+            localServer->messageSend(new_string("INITINSTANCE"), OREF_NULL, 0, result);
+    InterpreterInstance::initialize
+        Interpreter::initLocal();
+    Interpreter::createInterpreterInstance
+        instance->initialize(rootActivity, options);
+    Interpreter::createInterpreterInstance
+        { return createInterpreterInstance(NULL); }
+    InstanceBlock::InstanceBlock
+        instance = Interpreter::createInterpreterInstance();
+    InstanceBlock::InstanceBlock
+        <call constructor>
+    Interpreter::terminateInterpreter
+                    // this may seem funny, but we need to create an instance
+                    // to shut down so that the package manager can unload
+                    // the libraries (it needs to pass a RexxThreadContext
+                    // pointer out to package unloaders, if they are defined)
+                    InstanceBlock instance;
+                    // run whatever uninits we can before we start releasing the libraries
+                    memoryObject.lastChanceUninit();
+    ::Terminate
+        Interpreter::terminateInterpreter();
+    RexxInstance_::Terminate
+            functions->Terminate(this);
+    main
+            pgmInst->Terminate();
+
+
 TODO:
 See if it's possible to keep private the classes in ConcurrencyTraceClasses.orx
 Currently, I must declare all of them public, otherwise they are not found when
 the method "INITINSTANCE" is running, and the interpreter crashes (because of an
 uncaught exception NOMETHOD).
+[later]
+I tried very hard to make it work with private classes...
+Impossible!
+Either exception NOMETHOD because the class is not found, and replaced by its .name
+or crash for strange reasons like behaviour null.
 
 
 ===============================================================================

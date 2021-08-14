@@ -121,9 +121,12 @@ end
 
 call 'StreamClasses.orx' rexxPackage
 
+call 'ConcurrencyTraceClasses.orx' rexxPackage
+
 call 'PlatformObjects.orx' rexxPackage       -- now load platform-specific builtin classes
 
 exit
+
 
 /* ************************************************************************** */
 /* ************************************************************************** */
@@ -1005,6 +1008,10 @@ nomethod:
   .traceoutput~objectname = "The TRACE OUTPUT monitor"
 
   .local~setentry('STDQUE',.RexxQueue~new('SESSION'))
+
+  if value('RXTRACE_CONCURRENCY', , 'ENVIRONMENT')~caselessEquals('on') then do
+    .ConcurrencyTraceOutput~new -- install the concurrency trace
+  end
 
 
 -- methods defined for OrderedCollection classes

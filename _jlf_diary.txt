@@ -4,6 +4,51 @@ Hence the creation of a new Github repository Executor5...
 
 
 ===============================================================================
+2021 aug 14
+
+Rony implemented a class "humanizeTraceOutput" which transforms on the fly a
+raw trace line into a human-readable trace line with concurrency infos. This
+class is intended to be used with The TRACE OUTPUT monitor.
+This class is now incorporated in rexx.img and automatically used by the TRACE
+OUPUT monitor when the environment variable RXTRACE_ENVIRONMENT="on".
+
+Remember:
+
+The class Interpreter defines
+    static RexxObject *localServer;         // local environment initialization server
+This a variable common to ALL the interpreter instances.
+
+Interpreter::startInterpreter creates the singleton instance of LOCALSERVER:
+    RexxClass *server_class = TheRexxPackage->findClass(new_string("LOCALSERVER"), t);
+    server_class->messageSend(GlobalNames::NEW, OREF_NULL, 0, result);
+    localServer = (RexxObject *)result;
+
+Interpreter::initLocal sends the message "INITINSTANCE" to the singleton LOCALSERVER.
+    localServer->messageSend(new_string("INITINSTANCE"), OREF_NULL, 0, result);
+So, each time a new interpreter instance is created, the message "INITINSTANCE"
+is sent to the singleton LOCALSERVER.
+See InterpreterInstance::initialize
+
+The class LOCALSERVER is implemented in CoreClasses.orx.
+Its "initInstance" method adds these entries in .local.
+This .local is local to the current interpreter instance.
+    STDIN, INPUT, DEBUGINPUT
+    STDOUT, OUTPUT
+    STDERR, ERROR, TRACEOUTPUT
+    STDQUEUE
+This method has been modified to set the destination of TRACEOUTPUT to an instance
+of ConcurrencyTraceOutput (was humanizeTraceOutput) when
+    value('RXTRACE_CONCURRENCY', , 'ENVIRONMENT')~caselessEquals('on')
+
+
+TODO:
+See if it's possible to keep private the classes in ConcurrencyTraceClasses.orx
+Currently, I must declare all of them public, otherwise they are not found when
+the method "INITINSTANCE" is running, and the interpreter crashes (because of an
+uncaught exception NOMETHOD).
+
+
+===============================================================================
 2021 aug 10
 
 Concurrency trace backported from Executor.

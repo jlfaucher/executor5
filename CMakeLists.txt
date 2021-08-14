@@ -1016,12 +1016,14 @@ endmacro (configure_build_file)
 # Copy the class files to the build directory
 copy_build_file(CoreClasses.orx ${build_rexx_classes_dir})
 copy_build_file(StreamClasses.orx ${build_rexx_classes_dir})
+copy_build_file(ConcurrencyTraceClasses.orx ${build_rexx_classes_dir})
 copy_build_file(PlatformObjects.orx ${build_interpreter_platform_dir})
 
 # These are the portable class files the image requires
 set (image_class_files
    ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/CoreClasses.orx
    ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/StreamClasses.orx
+   ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ConcurrencyTraceClasses.orx
    ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/PlatformObjects.orx)
 
 # On Windows, the ole support is also included in the image

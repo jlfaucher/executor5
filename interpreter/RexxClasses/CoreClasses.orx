@@ -127,7 +127,6 @@ call 'PlatformObjects.orx' rexxPackage       -- now load platform-specific built
 
 exit
 
-
 /* ************************************************************************** */
 /* ************************************************************************** */
 /* *** Start of unattached METHOD definitions for the various enhanced    *** */
@@ -1010,7 +1009,7 @@ nomethod:
   .local~setentry('STDQUE',.RexxQueue~new('SESSION'))
 
   if value('RXTRACE_CONCURRENCY', , 'ENVIRONMENT')~caselessEquals('on') then do
-    .ConcurrencyTraceOutput~new -- install the concurrency trace
+    .Tracer.ConcurrencyTraceOutput~new -- install the concurrency trace
   end
 
 

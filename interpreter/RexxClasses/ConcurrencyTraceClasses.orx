@@ -53,13 +53,13 @@ do name over publicClasses
 end
 
 -------------------------------------------------------------------------------
-::class ConcurrencyTraceOutput public -- was humanizeTraceOutput
+::class Tracer.ConcurrencyTraceOutput public -- was humanizeTraceOutput
 -------------------------------------------------------------------------------
 ::attribute currTraceOutput   -- final destination for edited trace output line
 ::method init
   expose currTraceOutput traceLineParser
   currTraceOutput=.traceOutput~current    -- get current output
-  traceLineParser=.traceLineParser~new
+  traceLineParser=.Tracer.TraceLineParser~new
   .traceOutput~destination(self)
 
 ::method say
@@ -112,7 +112,7 @@ end
 
 
 -------------------------------------------------------------------------------
-::class TraceLineParser public
+::class Tracer.TraceLineParser public
 -------------------------------------------------------------------------------
 
 ::constant hexIdWidth64bit 16 -- width in digit count of hex id
@@ -138,12 +138,12 @@ end
 
 ::method isHexId64bit class
     use strict arg id
-    return .Tracer.Utility~isHex(id, .TraceLineParser~hexIdWidth64bit) -- Ex : 0001654c0001654c
+    return .Tracer.Utility~isHex(id, .Tracer.TraceLineParser~hexIdWidth64bit) -- Ex : 0001654c0001654c
 
 
 ::method isHexId32bit class
     use strict arg id
-    return .Tracer.Utility~isHex(id, .TraceLineParser~hexIdWidth32bit) -- Ex : 0001654c
+    return .Tracer.Utility~isHex(id, .Tracer.TraceLineParser~hexIdWidth32bit) -- Ex : 0001654c
 
 
 ::method init
@@ -166,14 +166,14 @@ end
 ::method parse64bit
     use strict arg -- none
     parse value self~rawLine with,
-            1 self~threadId >(.TraceLineParser~hexIdWidth64bit),
-            +1 self~activationId >(.TraceLineParser~hexIdWidth64bit),
-            +1 self~varDictId >(.TraceLineParser~hexIdWidth64bit),
-            +1 self~reserveCount >(.WithActivationInfo~reserveCountRawWidth) self~lock >1,
+            1 self~threadId >(.Tracer.TraceLineParser~hexIdWidth64bit),
+            +1 self~activationId >(.Tracer.TraceLineParser~hexIdWidth64bit),
+            +1 self~varDictId >(.Tracer.TraceLineParser~hexIdWidth64bit),
+            +1 self~reserveCount >(.Tracer.WithActivationInfo~reserveCountRawWidth) self~lock >1,
             +1 self~rawTrace
-    return  .TraceLineParser~isHexId64bit(self~threadId) &,
-            .TraceLineParser~isHexId64bit(self~activationId) &,
-            .TraceLineParser~isHexId64bit(self~varDictId) &,
+    return  .Tracer.TraceLineParser~isHexId64bit(self~threadId) &,
+            .Tracer.TraceLineParser~isHexId64bit(self~activationId) &,
+            .Tracer.TraceLineParser~isHexId64bit(self~varDictId) &,
             self~reserveCount~datatype("W") &,
             (self~lock == " " | self~lock == "*")
 
@@ -181,14 +181,14 @@ end
 ::method parse32bit
     use strict arg -- none
     parse value self~rawLine with,
-            1 self~threadId >(.TraceLineParser~hexIdWidth32bit),
-            +1 self~activationId >(.TraceLineParser~hexIdWidth32bit),
-            +1 self~varDictId >(.TraceLineParser~hexIdWidth32bit),
-            +1 self~reserveCount >(.WithActivationInfo~reserveCountRawWidth) self~lock >1,
+            1 self~threadId >(.Tracer.TraceLineParser~hexIdWidth32bit),
+            +1 self~activationId >(.Tracer.TraceLineParser~hexIdWidth32bit),
+            +1 self~varDictId >(.Tracer.TraceLineParser~hexIdWidth32bit),
+            +1 self~reserveCount >(.Tracer.WithActivationInfo~reserveCountRawWidth) self~lock >1,
             +1 self~rawTrace
-    return  .TraceLineParser~isHexId32bit(self~threadId) &,
-            .TraceLineParser~isHexId32bit(self~activationId) &,
-            .TraceLineParser~isHexId32bit(self~varDictId) &,
+    return  .Tracer.TraceLineParser~isHexId32bit(self~threadId) &,
+            .Tracer.TraceLineParser~isHexId32bit(self~activationId) &,
+            .Tracer.TraceLineParser~isHexId32bit(self~varDictId) &,
             self~reserveCount~datatype("W") &,
             (self~lock == " " | self~lock == "*")
 
@@ -196,14 +196,14 @@ end
 ::method parseHrId
     use strict arg -- none
     parse value self~rawLine with,
-            1 self~threadId >(.Thread~hrIdWidth),
-            +1 self~activationId >(.Activation~hrIdWidth),
-            +1 self~varDictId >(.VariableDictionary~hrIdWidth),
-            +1 self~reserveCount >(.WithActivationInfo~reserveCountHrWidth) self~lock >1,
+            1 self~threadId >(.Tracer.Thread~hrIdWidth),
+            +1 self~activationId >(.Tracer.Activation~hrIdWidth),
+            +1 self~varDictId >(.Tracer.VariableDictionary~hrIdWidth),
+            +1 self~reserveCount >(.Tracer.WithActivationInfo~reserveCountHrWidth) self~lock >1,
             +1 self~rawTrace
-    return  .Thread~isHrId(self~threadId) &,
-            .Activation~isHrId(self~activationId) &,
-            .VariableDictionary~isHrId(self~varDictId) &,
+    return  .Tracer.Thread~isHrId(self~threadId) &,
+            .Tracer.Activation~isHrId(self~activationId) &,
+            .Tracer.VariableDictionary~isHrId(self~varDictId) &,
             (self~reserveCount~datatype("W") | self~reserveCount~strip == "") &,
             (self~lock == " " | self~lock == "*")
 
@@ -231,28 +231,28 @@ end
     else if self~parseHrId then concurrencyTrace = "hr" -- hr ids (parsing a trace already hr-ized)
     else self~clearConcurrencyTrace
 
-    if self~rawTrace~pos("Error") == 1 then currentTrace = .ErrorTrace~new
+    if self~rawTrace~pos("Error") == 1 then currentTrace = .Tracer.ErrorTrace~new
     else do -- maybe normal trace line
         parse value self~rawTrace with 1 self~lineNumber >6 +1 self~tracePrefix >3 +1 self~restOfTrace
-        valid = .TraceLine~isValidLineNumber(self~lineNumber) &,
-                .TraceLine~isValidPrefix(self~tracePrefix)
+        valid = .Tracer.TraceLine~isValidLineNumber(self~lineNumber) &,
+                .Tracer.TraceLine~isValidPrefix(self~tracePrefix)
         if \valid then do
-            if concurrencyTrace == "none" then currentTrace = .UnknownFormat~new
-            else currentTrace = .InvalidTrace~new
+            if concurrencyTrace == "none" then currentTrace = .Tracer.UnknownFormat~new
+            else currentTrace = .Tracer.InvalidTrace~new
         end
         else do -- valid trace line
             if self~tracePrefix == ">I>" then do
                 if self~restOfTrace~pos("Routine ") == 1 then do
-                    currentTrace = .RoutineActivation~new
+                    currentTrace = .Tracer.RoutineActivation~new
                     parse value self~restOfTrace with "Routine " self~routine " in package " self~package
                 end
                 else if self~restOfTrace~pos("Method ") == 1 then do
-                    currentTrace = .MethodActivation~new
+                    currentTrace = .Tracer.MethodActivation~new
                     parse value self~restOfTrace with "Method " self~method ' with scope "' self~scope '" in package ' self~package
                 end
-                else currentTrace = .UnknownActivation~new
+                else currentTrace = .Tracer.UnknownActivation~new
             end
-            else currentTrace = .GenericTrace~new
+            else currentTrace = .Tracer.GenericTrace~new
         end
     end
 
@@ -261,7 +261,7 @@ end
 
 
 -------------------------------------------------------------------------------
-::class TraceLineCsv public
+::class Tracer.TraceLineCsv public
 -------------------------------------------------------------------------------
 -- Helper to generate a CSV line
 
@@ -352,7 +352,7 @@ end
 
 
 -------------------------------------------------------------------------------
-::class Thread public
+::class Tracer.Thread public
 -------------------------------------------------------------------------------
 
 ::constant hrIdWidth 4 -- width of hr id (used for parsing and rewriting)
@@ -370,16 +370,16 @@ end
 
 ::method fromId class
     use strict arg threadId
-    thread = .Thread~directory[threadId]
+    thread = .Tracer.Thread~directory[threadId]
     if .nil == thread then do
-        thread = .Thread~new
-        .Thread~directory[threadId] = thread
+        thread = .Tracer.Thread~new
+        .Tracer.Thread~directory[threadId] = thread
         thread~id = threadId
         if threadId == "" then thread~hrId = ""
         else if threadId = 0 | threadId == "T0" then thread~hrId = "T0" -- Always use T0 for null pointer
         else do
-            .Thread~counter += 1
-            thread~hrId = "T".Thread~counter
+            .Tracer.Thread~counter += 1
+            thread~hrId = "T".Tracer.Thread~counter
         end
     end
     return thread
@@ -401,7 +401,7 @@ end
 
 
 -------------------------------------------------------------------------------
-::class Activation public
+::class Tracer.Activation public
 -------------------------------------------------------------------------------
 
 ::constant hrIdWidth 6 -- max width of hr id (used for parsing and rewriting)
@@ -420,16 +420,16 @@ end
 -- Human-readable activation id
 ::method fromId class
     use strict arg activationId
-    activation = .Activation~directory[activationId]
+    activation = .Tracer.Activation~directory[activationId]
     if .nil == activation then do
-        activation = .Activation~new
-        .Activation~directory[activationId] = activation
+        activation = .Tracer.Activation~new
+        .Tracer.Activation~directory[activationId] = activation
         activation~id = activationId
         if activationId == "" then activation~hrId = ""
         else if activationId = 0 | activationId == "A0" then activation~hrId = "A0" -- Always use A0 for null pointer
         else do
-            .Activation~counter += 1
-            activation~hrId = "A".Activation~counter
+            .Tracer.Activation~counter += 1
+            activation~hrId = "A".Tracer.Activation~counter
         end
     end
     return activation
@@ -458,7 +458,7 @@ end
 
 
 -------------------------------------------------------------------------------
-::class VariableDictionary public
+::class Tracer.VariableDictionary public
 -------------------------------------------------------------------------------
 
 ::constant hrIdWidth 6 -- max width of hr id (used for parsing and rewriting)
@@ -477,16 +477,16 @@ end
 -- Human-readable varDict id
 ::method fromId class
     use strict arg varDictId -- can be made of spaces, when parsing hr trace
-    varDict = .VariableDictionary~directory[varDictId]
+    varDict = .Tracer.VariableDictionary~directory[varDictId]
     if .nil == varDict then do
-        varDict = .VariableDictionary~new
-        .VariableDictionary~directory[varDictId] = varDict
+        varDict = .Tracer.VariableDictionary~new
+        .Tracer.VariableDictionary~directory[varDictId] = varDict
         varDict~id = varDictId
         if varDictId == "" then varDict~hrId = ""
         else if varDictId = 0 | varDictId == "V0" | varDictId = "" then varDict~hrId = "V0" -- Always use V0 for null pointer
         else do
-            .VariableDictionary~counter += 1
-            varDict~hrId = "V".VariableDictionary~counter
+            .Tracer.VariableDictionary~counter += 1
+            varDict~hrId = "V".Tracer.VariableDictionary~counter
         end
     end
     return varDict
@@ -508,7 +508,7 @@ end
 
 
 -------------------------------------------------------------------------------
-::class TraceLine public
+::class Tracer.TraceLine public
 -------------------------------------------------------------------------------
 -- TraceLine
 --    UnknownFormat
@@ -542,7 +542,7 @@ end
 ::method lineout
     use strict arg stream, csv, filter
     if csv then do
-        csv = .TraceLineCsv~new
+        csv = .Tracer.Tracer.TraceLineCsv~new
         if self~prepareCsv(csv, filter) then csv~lineout(stream)
     end
     else do
@@ -561,7 +561,7 @@ end
 
 
 -------------------------------------------------------------------------------
-::class UnknownFormat subclass TraceLine public
+::class Tracer.UnknownFormat subclass Tracer.TraceLine public
 -------------------------------------------------------------------------------
 
 ::attribute rawLine
@@ -593,7 +593,7 @@ end
 
 
 -------------------------------------------------------------------------------
-::class WithActivationInfo subclass TraceLine public
+::class Tracer.WithActivationInfo subclass Tracer.TraceLine public
 -------------------------------------------------------------------------------
 
 ::constant reserveCountRawWidth 5 -- unsigned short : 0...65535 : 5 digits
@@ -633,22 +633,22 @@ end
 
     if self~noConcurrencyTrace then return .false
 
-    thread = .Thread~fromId(self~threadId)
-    activation = .Activation~fromId(self~activationId)
+    thread = .Tracer.Thread~fromId(self~threadId)
+    activation = .Tracer.Activation~fromId(self~activationId)
 
-    varDict = .VariableDictionary~fromId(self~varDictId)
+    varDict = .Tracer.VariableDictionary~fromId(self~varDictId)
     varDictHrId = varDict~hrId
     if varDictHrId == "V0" then varDictHrId = ""
 
     reserveCount = self~reserveCount
     if reserveCount = 0 then reserveCount = ""
-    if reserveCount <> "" then reserveCount = reserveCount~format(.WithActivationInfo~reserveCountHrWidth)
+    if reserveCount <> "" then reserveCount = reserveCount~format(.Tracer.WithActivationInfo~reserveCountHrWidth)
 
     if spaceNeeded then stream~charout(" ")
-    stream~charout(thread~hrId~left(.Thread~hrIdWidth),
-                   activation~hrId~left(.Activation~hrIdWidth),
-                   varDictHrId~left(.VariableDictionary~hrIdWidth),
-                   reserveCount~left(.WithActivationInfo~reserveCountHrWidth) || self~lock)
+    stream~charout(thread~hrId~left(.Tracer.Thread~hrIdWidth),
+                   activation~hrId~left(.Tracer.Activation~hrIdWidth),
+                   varDictHrId~left(.Tracer.VariableDictionary~hrIdWidth),
+                   reserveCount~left(.Tracer.WithActivationInfo~reserveCountHrWidth) || self~lock)
     return .true
 
 
@@ -657,13 +657,13 @@ end
     forward class (super) continue
     if self~noConcurrencyTrace then return .false
 
-    thread = .Thread~fromId(self~threadId)
+    thread = .Tracer.Thread~fromId(self~threadId)
     csv~threadId = thread~hrId
 
-    activation = .Activation~fromId(self~activationId)
+    activation = .Tracer.Activation~fromId(self~activationId)
     csv~activationId = activation~hrId
 
-    varDict = .VariableDictionary~fromId(self~varDictId)
+    varDict = .Tracer.VariableDictionary~fromId(self~varDictId)
     if varDict~hrId <> "V0" then csv~varDictId = varDict~hrId
 
     if self~reserveCount <> 0 then csv~reserveCount = self~reserveCount
@@ -676,7 +676,7 @@ end
 
 
 -------------------------------------------------------------------------------
-::class ErrorTrace subclass WithActivationInfo public
+::class Tracer.ErrorTrace subclass Tracer.WithActivationInfo public
 -------------------------------------------------------------------------------
 
 ::attribute rawTrace
@@ -704,7 +704,7 @@ end
 
 
 -------------------------------------------------------------------------------
-::class InvalidTrace subclass WithActivationInfo public
+::class Tracer.InvalidTrace subclass Tracer.WithActivationInfo public
 -------------------------------------------------------------------------------
 
 ::attribute rawTrace
@@ -734,7 +734,7 @@ end
 
 
 -------------------------------------------------------------------------------
-::class GenericTrace subclass WithActivationInfo public
+::class Tracer.GenericTrace subclass Tracer.WithActivationInfo public
 -------------------------------------------------------------------------------
 
 ::attribute lineNumber
@@ -770,7 +770,7 @@ end
 
 
 -------------------------------------------------------------------------------
-::class RoutineActivation subclass GenericTrace public
+::class Tracer.RoutineActivation subclass Tracer.GenericTrace public
 -------------------------------------------------------------------------------
 
 ::attribute routine
@@ -786,7 +786,7 @@ end
     if self~noConcurrencyTrace then return
 
     -- Stores other infos of the activation's trace on the activation, for use in following trace lines
-    activation = .Activation~fromId(self~activationId)
+    activation = .Tracer.Activation~fromId(self~activationId)
     activation~kind = "routine"
     activation~scope = ""
     activation~executable = self~routine
@@ -810,7 +810,7 @@ end
 
 
 -------------------------------------------------------------------------------
-::class MethodActivation subclass GenericTrace public
+::class Tracer.MethodActivation subclass Tracer.GenericTrace public
 -------------------------------------------------------------------------------
 
 ::attribute method
@@ -826,7 +826,7 @@ end
     forward class (super) continue
 
     -- Stores other infos of the activation's trace on the activation, for use in following trace lines
-    activation = .Activation~fromId(self~activationId)
+    activation = .Tracer.Activation~fromId(self~activationId)
     activation~kind = "method"
     activation~scope = self~scope
     activation~executable = self~method
@@ -851,7 +851,7 @@ end
 
 
 -------------------------------------------------------------------------------
-::class UnknownActivation subclass GenericTrace public
+::class Tracer.UnknownActivation subclass Tracer.GenericTrace public
 -------------------------------------------------------------------------------
 
 

@@ -542,7 +542,7 @@ end
 ::method lineout
     use strict arg stream, csv, filter
     if csv then do
-        csv = .Tracer.Tracer.TraceLineCsv~new
+        csv = .Tracer.TraceLineCsv~new
         if self~prepareCsv(csv, filter) then csv~lineout(stream)
     end
     else do

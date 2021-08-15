@@ -38,8 +38,23 @@
 /*----------------------------------------------------------------------------*/
 
 /****
+
 Usage :
     tracer [-csv] [-filter] [<traceFile>]
+
+
+Examples :
+    (Remember : you MUST redirect stderr to stdout with 2>&1)
+
+    Windows:
+    set RXTRACE_CONCURRENCY=on
+    rexx my_traced_script.rex 2>&1 | rexx tracer -csv > out.csv
+
+    Linux, MacOs:
+    RXTRACE_CONCURRENCY=on rexx my_traced_script.rex 2>&1 | rexx tracer -csv > out.csv
+
+    rexx tracer -csv my_trace_file.txt
+
 
 Description :
     Convert a trace to an annotated trace.
@@ -87,17 +102,83 @@ Description :
     That lets generate a CSV file, more easy to analyze/filter.
     Without concurrency trace, it's not possible to get the name of the executable for each line of the CSV file.
 
-Examples :
-    (Remember : you MUST redirect stderr to stdout with 2>&1)
 
-    Windows:
-    set RXTRACE_CONCURRENCY=on
-    rexx my_traced_script.rex 2>&1 | rexx tracer -csv > out.csv
+Implementation notes:
+    traceLineParser = .Tracer.TraceLineParser~new -- you can create a new instance for each line to parse (if you want to keep the attributes), or reuse the same instance (the attributes are reset before parsing)
+    currentTrace = traceLineParser~parse(rawLine) -- updates the attributes of traceLineParser and returns an instance of a subclass of Tracer.TraceLine
+    currentTrace~lineOut(streamOut, csv, filter)  -- csv: .true or .false, filter: .true or .false
 
-    Linux, MacOs:
-    RXTRACE_CONCURRENCY=on rexx my_traced_script.rex 2>&1 | rexx tracer -csv > out.csv
 
-    rexx tracer -csv my_trace_file.txt
+    Attributes of Tracer.TraceLineParser.
+    These attributes are analyzed by the class Tracer.TraceLine and its subclasses.
+    The parser instantiates the most specialized subclass in function of what have been parsed successfully.
+    This subclass analyzes the attributes in its perimeter, and then delegates to its superclass, until reaching the class Tracer.TraceLine.
+    ::attribute rawLine                                    ::class Tracer.UnknownFormat
+        Specific to concurrency trace
+        ::attribute threadId                               ::class Tracer.WithActivationInfo
+        ::attribute activationId                           ::class Tracer.WithActivationInfo
+        ::attribute varDictId                              ::class Tracer.WithActivationInfo
+        ::attribute reserveCount                           ::class Tracer.WithActivationInfo
+        ::attribute lock                                   ::class Tracer.WithActivationInfo
+        Normal trace line, without concurrency trace
+        ::attribute rawTrace                               ::class Tracer.ErrorTrace, ::class Tracer.InvalidTrace
+            ::attribute lineNumber                         ::class Tracer.GenericTrace
+            ::attribute tracePrefix                        ::class Tracer.GenericTrace
+            ::attribute restOfTrace                        ::class Tracer.GenericTrace
+                ::attribute routine                        ::class Tracer.RoutineActivation
+                ::attribute method                         ::class Tracer.MethodActivation
+                ::attribute scope                          ::class Tracer.MethodActivation
+                ::attribute package                        ::class Tracer.MethodActivation, ::class Tracer.RoutineActivation
+
+
+    The parser returns an instance of the most specialized subclass in function of what have been parsed successfully:
+    ::class Tracer.TraceLine (abstract)
+        ::class Tracer.UnknownFormat
+        ::class Tracer.WithActivationInfo
+            ::class Tracer.ErrorTrace
+            ::class Tracer.InvalidTrace
+            ::class Tracer.GenericTrace
+                ::class Tracer.RoutineActivation
+                ::class Tracer.MethodActivation
+                ::class Tracer.UnknownActivation
+
+
+    Helper classes to manage the task, activation and variable's dictionnary identifiers:
+        Tracer.Thread
+        Tracer.Activation
+        Tracer.VariableDictionary
+    Each manages a mapping between hexadecimal pointers and human-readable identifiers.
+    Their directories is always growing.
+    You can reset their directories by sending the message "init" to each class.
+
+
+    Output of a reworked trace line.
+    Done by the method charout of the most specialized subclass instanciated by the parser.
+    This subclass outputs its own attributes, and then delegates to its superclass, until reaching the class Tracer.TraceLine.
+
+
+    Output of the CSV line.
+    Done in three steps with the class Tracer.TraceLineCsv:
+    - create an instance of Tracer.TraceLineCsv
+    - collect the attributes to display
+    - display the attributes
+    Attributes of a Tracer.TraceLineCsv.
+    They are filled by the method prepareCsv of the most specialized subclass instanciated by the parser.
+    This subclass stores its own attributes, and then delegates to its superclass, until reaching the class Tracer.TraceLine.
+        ::attribute threadId        .Tracer.Thread~fromId(traceLineParser~threadId)~hrId
+        ::attribute activationId    .Tracer.Activation~fromId(traceLineParser~activationId)~hrId
+        ::attribute varDictId       .Tracer.VariableDictionary~fromId(traceLineParser~varDictId)~hrId
+        ::attribute reserveCount    traceLineParser~reserveCount
+        ::attribute lock            traceLineParser~lock
+        ::attribute kind            of executable : "method" or "routine"
+        ::attribute scope           of executable -- traceLineParser~scope
+        ::attribute executable      traceLineParser~method or traceLineParser~routine
+        ::attribute line            traceLineParser~lineNumber
+        ::attribute prefix          traceLineParser~traceprefix
+        ::attribute source          traceLineParser~restOfTrace -- empty when kind, scope, executable and package are provided (because redundant)
+        ::attribute package         traceLineParser~package
+        ::attribute raw             traceLineParser~rawline or traceLineParser~rawTrace
+
 ****/
 
 csv = .false

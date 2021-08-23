@@ -29,12 +29,12 @@ Description :
 
 
     The same format with human-readable ids is also supported :
-    I1     T1     A1                          >I> Routine D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    I1     T1     A1                          >I> Routine A_ROUTINE in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    I1     T1     A2       V1          1*          >I> Method INIT with scope "The COROUTINE class" in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    I1     T1     A2       V1          1*       44 *-* self~table = .IdentityTable~new
-    I1     T2     A0                        Error 99 running D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\trace\doit.rex line 17:  Translation error
-    I1     T2     A0                        Error 99.916:  Unrecognized directive instruction
+    R1     T1     A1                          >I> Routine D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
+    R1     T1     A1                          >I> Routine A_ROUTINE in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
+    R1     T1     A2       V1          1*          >I> Method INIT with scope "The COROUTINE class" in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
+    R1     T1     A2       V1          1*       44 *-* self~table = .IdentityTable~new
+    R1     T2     A0                        Error 99 running D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\trace\doit.rex line 17:  Translation error
+    R1     T2     A0                        Error 99.916:  Unrecognized directive instruction
 
     The classic trace (without any concurrency trace) is also supported.
     That lets generate a CSV file, more easy to analyze/filter.
@@ -450,7 +450,13 @@ end
 ::class Tracer.Interpreter public
 -------------------------------------------------------------------------------
 
-::constant hrIdWidth 6 -- width of hr id (used for parsing and rewriting): I0..I99999
+-- Change "I" to "R" for the RII (Rexx interpreter instance).
+-- The reason is, that "I1" and "T1" (actually "I" and "T")  look quite the same,
+-- whereas "R1" and "T1" very distinctive,
+::constant hrIdLetter "R"
+::constant hrId0 "R0"
+
+::constant hrIdWidth 6 -- width of hr id (used for parsing and rewriting): R0..R99999
 
 
 -- class attributes
@@ -471,10 +477,10 @@ end
         .Tracer.Interpreter~directory[interpreterId] = interpreter
         interpreter~id = interpreterId
         if interpreterId == "" then interpreter~hrId = ""
-        else if interpreterId = 0 | interpreterId == "I0" then interpreter~hrId = "I0" -- Always use I0 for null pointer
+        else if interpreterId = 0 | interpreterId == self~hrId0 then interpreter~hrId = self~hrId0 -- Always use R0 for null pointer
         else do
             .Tracer.Interpreter~counter += 1
-            interpreter~hrId = "I".Tracer.Interpreter~counter
+            interpreter~hrId = self~hrIdLetter || .Tracer.Interpreter~counter
         end
     end
     return interpreter
@@ -482,7 +488,7 @@ end
 
 ::method isHrId class
     use strict arg interpreterId
-    return interpreterId~left(1) =="I" & interpreterId~substr(2)~dataType("W")  -- Ex : I1, I12, I123, ...
+    return interpreterId~left(1) == self~hrIdLetter & interpreterId~substr(2)~dataType("W")  -- Ex : R1, R12, R123, ...
 
 
 -- instance attributes
@@ -498,6 +504,9 @@ end
 -------------------------------------------------------------------------------
 ::class Tracer.Thread public
 -------------------------------------------------------------------------------
+
+::constant hrIdLetter "T"
+::constant hrId0 "T0"
 
 ::constant hrIdWidth 6 -- width of hr id (used for parsing and rewriting): T0..T99999
 
@@ -520,10 +529,10 @@ end
         .Tracer.Thread~directory[threadId] = thread
         thread~id = threadId
         if threadId == "" then thread~hrId = ""
-        else if threadId = 0 | threadId == "T0" then thread~hrId = "T0" -- Always use T0 for null pointer
+        else if threadId = 0 | threadId == self~hrId0 then thread~hrId = self~hrId0 -- Always use T0 for null pointer
         else do
             .Tracer.Thread~counter += 1
-            thread~hrId = "T".Tracer.Thread~counter
+            thread~hrId = self~hrIdLetter || .Tracer.Thread~counter
         end
     end
     return thread
@@ -531,7 +540,7 @@ end
 
 ::method isHrId class
     use strict arg threadId
-    return threadId~left(1) =="T" & threadId~substr(2)~dataType("W")  -- Ex : T1, T12, T123, ...
+    return threadId~left(1) == self~hrIdLetter & threadId~substr(2)~dataType("W")  -- Ex : T1, T12, T123, ...
 
 
 -- instance attributes
@@ -547,6 +556,9 @@ end
 -------------------------------------------------------------------------------
 ::class Tracer.Activation public
 -------------------------------------------------------------------------------
+
+::constant hrIdLetter "A"
+::constant hrId0 "A0"
 
 ::constant hrIdWidth 8 -- max width of hr id (used for parsing and rewriting): A0..A9999999
 
@@ -570,10 +582,10 @@ end
         .Tracer.Activation~directory[activationId] = activation
         activation~id = activationId
         if activationId == "" then activation~hrId = ""
-        else if activationId = 0 | activationId == "A0" then activation~hrId = "A0" -- Always use A0 for null pointer
+        else if activationId = 0 | activationId == self~hrId0 then activation~hrId = self~hrId0 -- Always use A0 for null pointer
         else do
             .Tracer.Activation~counter += 1
-            activation~hrId = "A".Tracer.Activation~counter
+            activation~hrId = self~hrIdLetter || .Tracer.Activation~counter
         end
     end
     return activation
@@ -581,7 +593,7 @@ end
 
 ::method isHrId class
     use strict arg activationId
-    return activationId~left(1) =="A" & activationId~substr(2)~dataType("W")  -- Ex : A1, A12, A123, ...
+    return activationId~left(1) == self~hrIdLetter & activationId~substr(2)~dataType("W")  -- Ex : A1, A12, A123, ...
 
 -- instance attributes
 ::attribute id
@@ -605,6 +617,9 @@ end
 ::class Tracer.VariableDictionary public
 -------------------------------------------------------------------------------
 
+::constant hrIdLetter "V"
+::constant hrId0 "V0"
+
 ::constant hrIdWidth 8 -- max width of hr id (used for parsing and rewriting): V0..V9999999
 
 
@@ -627,10 +642,10 @@ end
         .Tracer.VariableDictionary~directory[varDictId] = varDict
         varDict~id = varDictId
         if varDictId == "" then varDict~hrId = ""
-        else if varDictId = 0 | varDictId == "V0" | varDictId = "" then varDict~hrId = "V0" -- Always use V0 for null pointer
+        else if varDictId = 0 | varDictId == self~hrId0 | varDictId = "" then varDict~hrId = self~hrId0 -- Always use V0 for null pointer
         else do
             .Tracer.VariableDictionary~counter += 1
-            varDict~hrId = "V".Tracer.VariableDictionary~counter
+            varDict~hrId = self~hrIdLetter || .Tracer.VariableDictionary~counter
         end
     end
     return varDict
@@ -639,7 +654,7 @@ end
 ::method isHrId class
     use strict arg varDictId
     if varDictId = "" then return .true -- special case, when parsing hr trace.
-    return varDictId~left(1) =="V" & varDictId~substr(2)~dataType("W")  -- Ex : V1, V12, V123, ...
+    return varDictId~left(1) == self~hrIdLetter & varDictId~substr(2)~dataType("W")  -- Ex : V1, V12, V123, ...
 
 -- instance attributes
 ::attribute id

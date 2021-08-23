@@ -9,7 +9,7 @@ Hence the creation of a new Github repository Executor5...
 Concurrency trace:
 - add a column for the interpreter instance (Rony's suggestion)
 - enlarge the human-readable identifiers:
-  6 characters for interpreter and task ids: I or T followed by 0..99999
+  6 characters for interpreter and task ids: R or T followed by 0..99999
   8 characters for activation and variable dictionary ids: A or V followed by 0..9999999
   5 characters for reserve count
 
@@ -17,11 +17,11 @@ Tested with Code 13 and Code 19 described in 201202-CreatingOoRexxInterpreterIns
 - Interpreter1 declares a Command Handler TEST1
 - Interpreter1 delegates to Interpreter2 the execution of the routine testSampleCommandHandler.rex
 - testSampleCommandHandler addresses 3 times a command to TEST1
-        I1                                          I2
-        create I2
+        R1                                          R2
+        create R2
         declare Command Handler TEST1
-        add Command Handler TEST1 to I2
-        delegate testSampleCommandHandler to I2
+        add Command Handler TEST1 to R2
+        delegate testSampleCommandHandler to R2
                                                     call testSampleCommandHandler
                                                         address test1 "hi"
         SampleCommandHandler~handleCommand
@@ -40,24 +40,24 @@ Tested with Code 13 and Code 19 described in 201202-CreatingOoRexxInterpreterIns
         return "Undefined command #" counter
                                                         RC => "Undefined command # 1"
                                                         return
-        terminate I2
+        terminate R2
 
 
-I1     T1     A1                           12 *-* rexxEngine~apply("from_rexSampleCommandHandler.rex", 0, 0, rexxCode, .nil, .nil)
-I1     T1     A1                              >V>   REXXENGINE => "org.rexxla.bsf.engines.rexx.RexxEngine@6c474e40"
-I1     T1     A1                              >V>   REXXCODE => "call 'testSampleCommandHandler.rex' "
-I2     T1     A3                              >I> Routine "/local/rexx/oorexx/scripts/CommandHandler/testSampleCommandHandler.rex" in package "/local/rexx/oorexx/scripts/CommandHandler/testSampleCommandHandler.rex".
-I2     T1     A3                            1 *-* address test1 "hi"
-I1     T1     A4       V1                     >I> Method "HANDLECOMMAND" with scope "SAMPLECOMMANDHANDLER" in package "/local/rexx/oorexx/scripts/CommandHandler/rexSampleCommandHandler.rxj".
-I1     T1     A4       V1           1*     26 *-* use arg slot, address, command
-I1     T1     A4       V1           1*        >=>   SLOT <= "[Ljava.lang.Object;@7a0f1664"
-I1     T1     A4       V1           1*        >=>   ADDRESS <= "TEST1"
-I1     T1     A4       V1           1*        >=>   COMMAND <= "hi"
-I1     T1     A4       V1           1*     28 *-* if command~caselessEquals("Hi")
-I1     T1     A4       V1           1*     28 *-*   then
-I1     T1     A4       V1           1*     28 *-*     return "Hi, who are you?"
-I2     T1     A3                            2 *-* say "rc="pp2(rc)
-I2     T1     A3                              >V>   RC => "Hi, who are you?"
+R1     T1     A1                           12 *-* rexxEngine~apply("from_rexSampleCommandHandler.rex", 0, 0, rexxCode, .nil, .nil)
+R1     T1     A1                              >V>   REXXENGINE => "org.rexxla.bsf.engines.rexx.RexxEngine@6c474e40"
+R1     T1     A1                              >V>   REXXCODE => "call 'testSampleCommandHandler.rex' "
+R2     T1     A3                              >I> Routine "/local/rexx/oorexx/scripts/CommandHandler/testSampleCommandHandler.rex" in package "/local/rexx/oorexx/scripts/CommandHandler/testSampleCommandHandler.rex".
+R2     T1     A3                            1 *-* address test1 "hi"
+R1     T1     A4       V1                     >I> Method "HANDLECOMMAND" with scope "SAMPLECOMMANDHANDLER" in package "/local/rexx/oorexx/scripts/CommandHandler/rexSampleCommandHandler.rxj".
+R1     T1     A4       V1           1*     26 *-* use arg slot, address, command
+R1     T1     A4       V1           1*        >=>   SLOT <= "[Ljava.lang.Object;@7a0f1664"
+R1     T1     A4       V1           1*        >=>   ADDRESS <= "TEST1"
+R1     T1     A4       V1           1*        >=>   COMMAND <= "hi"
+R1     T1     A4       V1           1*     28 *-* if command~caselessEquals("Hi")
+R1     T1     A4       V1           1*     28 *-*   then
+R1     T1     A4       V1           1*     28 *-*     return "Hi, who are you?"
+R2     T1     A3                            2 *-* say "rc="pp2(rc)
+R2     T1     A3                              >V>   RC => "Hi, who are you?"
 
 
 ===============================================================================

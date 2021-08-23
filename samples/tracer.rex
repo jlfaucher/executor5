@@ -92,12 +92,12 @@ Description :
 
 
     The same format with human-readable ids is also supported :
-    I1     T1     A1                          >I> Routine D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    I1     T1     A1                          >I> Routine A_ROUTINE in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    I1     T1     A2       V1          1*          >I> Method INIT with scope "The COROUTINE class" in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    I1     T1     A2       V1          1*       44 *-* self~table = .IdentityTable~new
-    I1     T2     A0                        Error 99 running D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\trace\doit.rex line 17:  Translation error
-    I1     T2     A0                        Error 99.916:  Unrecognized directive instruction
+    R1     T1     A1                          >I> Routine D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
+    R1     T1     A1                          >I> Routine A_ROUTINE in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
+    R1     T1     A2       V1          1*          >I> Method INIT with scope "The COROUTINE class" in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
+    R1     T1     A2       V1          1*       44 *-* self~table = .IdentityTable~new
+    R1     T2     A0                        Error 99 running D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\trace\doit.rex line 17:  Translation error
+    R1     T2     A0                        Error 99.916:  Unrecognized directive instruction
 
     The classic trace (without any concurrency trace) is also supported.
     That lets generate a CSV file, more easy to analyze/filter.

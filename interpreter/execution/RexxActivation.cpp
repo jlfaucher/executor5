@@ -91,7 +91,8 @@ void GetConcurrencyInfos(ConcurrencyInfos &infos)
 {
     infos.threadId = Utilities::currentThreadId();
     infos.activity = ActivityManager::currentActivity;
-    infos.activation = (infos.activity ? infos.activity-> getCurrentRexxFrame() : NULL);
+    infos.interpreter = (infos.activity ? infos.activity->getInstance() : NULL);
+    infos.activation = (infos.activity ? infos.activity->getCurrentRexxFrame() : NULL);
     infos.variableDictionary = (infos.activation ? infos.activation->getVariableDictionary() : NULL);
     infos.reserveCount = (infos.activation ? infos.activation-> getReserveCount() : 0);
     infos.lock = (infos.activation && infos.activation->isObjectScopeLocked() ? '*' : ' ');

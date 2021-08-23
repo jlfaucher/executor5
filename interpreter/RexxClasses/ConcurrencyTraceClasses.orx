@@ -3,15 +3,16 @@ Description :
     Convert a trace to an annotated trace.
 
     The expected input format is something like that (in case of 32-bit pointers) :
-    0000f5fc 7efb0180 7eeee7a0 00000         >I> Routine D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    0000f5fc 7efb0180 7eeee7a0 00000         >I> Routine A_ROUTINE in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    0000f5fc 7efb29f8 7eeee7a0 00001*        >I> Method INIT with scope "The COROUTINE class" in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    0000f5fc 7efb29f8 7eeee7a0 00001*     44 *-* self~table = .IdentityTable~new
-    00010244 00000000 00000000 00000  Error 99 running D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\trace\doit.rex line 17:  Translation error
-    00010244 00000000 00000000 00000  Error 99.916:  Unrecognized directive instruction
+    0bee66b0 0000f5fc 7efb0180 7eeee7a0 00000         >I> Routine D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
+    0bee66b0 0000f5fc 7efb0180 7eeee7a0 00000         >I> Routine A_ROUTINE in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
+    0bee66b0 0000f5fc 7efb29f8 7eeee7a0 00001*        >I> Method INIT with scope "The COROUTINE class" in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
+    0bee66b0 0000f5fc 7efb29f8 7eeee7a0 00001*     44 *-* self~table = .IdentityTable~new
+    0bee66b0 00010244 00000000 00000000 00000  Error 99 running D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\trace\doit.rex line 17:  Translation error
+    0bee66b0 00010244 00000000 00000000 00000  Error 99.916:  Unrecognized directive instruction
 
     See RexxActivity::traceOutput
     Utilities::snprintf(buffer, sizeof buffer - 1, CONCURRENCY_TRACE,
+                                                   (activity) ? activity->getInstance() : NULL,
                                                    Utilities::currentThreadId(),
                                                    activation,
                                                    (activation) ? activation->getVariableDictionary() : NULL,
@@ -21,19 +22,19 @@ Description :
     The same format with 64-bit pointers is also supported.
     See common\Utilities.hpp
     #ifdef __REXX64__
-    #define CONCURRENCY_TRACE "%16.16x %16.16x %16.16x %5.5hu%c "
+    #define CONCURRENCY_TRACE "%16.16x %16.16x %16.16x %16.16x %5.5hu%c "
     #else
-    #define CONCURRENCY_TRACE "%8.8x %8.8x %8.8x %5.5hu%c "
+    #define CONCURRENCY_TRACE "%8.8x %8.8x %8.8x %8.8x %5.5hu%c "
     #endif
 
 
     The same format with human-readable ids is also supported :
-    T1   A1                   >I> Routine D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    T1   A1                   >I> Routine A_ROUTINE in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    T1   A2     V1     1*          >I> Method INIT with scope "The COROUTINE class" in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    T1   A2     V1     1*       44 *-* self~table = .IdentityTable~new
-    T2   A0                 Error 99 running D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\trace\doit.rex line 17:  Translation error
-    T2   A0                 Error 99.916:  Unrecognized directive instruction
+    I1     T1     A1                          >I> Routine D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
+    I1     T1     A1                          >I> Routine A_ROUTINE in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
+    I1     T1     A2       V1          1*          >I> Method INIT with scope "The COROUTINE class" in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
+    I1     T1     A2       V1          1*       44 *-* self~table = .IdentityTable~new
+    I1     T2     A0                        Error 99 running D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\trace\doit.rex line 17:  Translation error
+    I1     T2     A0                        Error 99.916:  Unrecognized directive instruction
 
     The classic trace (without any concurrency trace) is also supported.
     That lets generate a CSV file, more easy to analyze/filter.
@@ -52,6 +53,7 @@ Implementation notes:
     This subclass analyzes the attributes in its perimeter, and then delegates to its superclass, until reaching the class Tracer.TraceLine.
     ::attribute rawLine                                    ::class Tracer.UnknownFormat
         Specific to concurrency trace
+        ::attribute interpreterId                          ::class Tracer.WithActivationInfo
         ::attribute threadId                               ::class Tracer.WithActivationInfo
         ::attribute activationId                           ::class Tracer.WithActivationInfo
         ::attribute varDictId                              ::class Tracer.WithActivationInfo
@@ -80,7 +82,8 @@ Implementation notes:
                 ::class Tracer.UnknownActivation
 
 
-    Helper classes to manage the task, activation and variable's dictionnary identifiers:
+    Helper classes to manage the interpreter, task, activation and variable's dictionnary identifiers:
+        Tracer.Interpreter
         Tracer.Thread
         Tracer.Activation
         Tracer.VariableDictionary
@@ -102,6 +105,7 @@ Implementation notes:
     Attributes of a Tracer.TraceLineCsv.
     They are filled by the method prepareCsv of the most specialized subclass instanciated by the parser.
     This subclass stores its own attributes, and then delegates to its superclass, until reaching the class Tracer.TraceLine.
+        ::attribute interpreterId   .Tracer.Interpreter~fromId(traceLineParser~interpreterId)~hrId
         ::attribute threadId        .Tracer.Thread~fromId(traceLineParser~threadId)~hrId
         ::attribute activationId    .Tracer.Activation~fromId(traceLineParser~activationId)~hrId
         ::attribute varDictId       .Tracer.VariableDictionary~fromId(traceLineParser~varDictId)~hrId
@@ -197,6 +201,7 @@ end
 
 ::attribute rawLine
     -- Specific to concurrency trace
+    ::attribute interpreterId
     ::attribute threadId
     ::attribute activationId
     ::attribute varDictId
@@ -225,6 +230,7 @@ end
 
 ::method init
     rawLine = ""
+    interpreterId = ""
     threadId = ""
     activationId = ""
     varDictId = ""
@@ -243,12 +249,14 @@ end
 ::method parse64bit
     use strict arg -- none
     parse value self~rawLine with,
-            1 self~threadId >(.Tracer.TraceLineParser~hexIdWidth64bit),
+            1 self~interpreterId >(.Tracer.TraceLineParser~hexIdWidth64bit),
+            +1 self~threadId >(.Tracer.TraceLineParser~hexIdWidth64bit),
             +1 self~activationId >(.Tracer.TraceLineParser~hexIdWidth64bit),
             +1 self~varDictId >(.Tracer.TraceLineParser~hexIdWidth64bit),
             +1 self~reserveCount >(.Tracer.WithActivationInfo~reserveCountRawWidth) self~lock >1,
             +1 self~rawTrace
-    return  .Tracer.TraceLineParser~isHexId64bit(self~threadId) &,
+    return  .Tracer.TraceLineParser~isHexId64bit(self~interpreterId) &,
+            .Tracer.TraceLineParser~isHexId64bit(self~threadId) &,
             .Tracer.TraceLineParser~isHexId64bit(self~activationId) &,
             .Tracer.TraceLineParser~isHexId64bit(self~varDictId) &,
             self~reserveCount~datatype("W") &,
@@ -258,12 +266,14 @@ end
 ::method parse32bit
     use strict arg -- none
     parse value self~rawLine with,
-            1 self~threadId >(.Tracer.TraceLineParser~hexIdWidth32bit),
+            1 self~interpreterId >(.Tracer.TraceLineParser~hexIdWidth32bit),
+            +1 self~threadId >(.Tracer.TraceLineParser~hexIdWidth32bit),
             +1 self~activationId >(.Tracer.TraceLineParser~hexIdWidth32bit),
             +1 self~varDictId >(.Tracer.TraceLineParser~hexIdWidth32bit),
             +1 self~reserveCount >(.Tracer.WithActivationInfo~reserveCountRawWidth) self~lock >1,
             +1 self~rawTrace
-    return  .Tracer.TraceLineParser~isHexId32bit(self~threadId) &,
+    return  .Tracer.TraceLineParser~isHexId32bit(self~interpreterId) &,
+            .Tracer.TraceLineParser~isHexId32bit(self~threadId) &,
             .Tracer.TraceLineParser~isHexId32bit(self~activationId) &,
             .Tracer.TraceLineParser~isHexId32bit(self~varDictId) &,
             self~reserveCount~datatype("W") &,
@@ -273,12 +283,14 @@ end
 ::method parseHrId
     use strict arg -- none
     parse value self~rawLine with,
-            1 self~threadId >(.Tracer.Thread~hrIdWidth),
+            1 self~interpreterId >(.Tracer.Interpreter~hrIdWidth),
+            +1 self~threadId >(.Tracer.Thread~hrIdWidth),
             +1 self~activationId >(.Tracer.Activation~hrIdWidth),
             +1 self~varDictId >(.Tracer.VariableDictionary~hrIdWidth),
             +1 self~reserveCount >(.Tracer.WithActivationInfo~reserveCountHrWidth) self~lock >1,
             +1 self~rawTrace
-    return  .Tracer.Thread~isHrId(self~threadId) &,
+    return  .Tracer.Interpreter~isHrId(self~interpreterId) &,
+            .Tracer.Thread~isHrId(self~threadId) &,
             .Tracer.Activation~isHrId(self~activationId) &,
             .Tracer.VariableDictionary~isHrId(self~varDictId) &,
             (self~reserveCount~datatype("W") | self~reserveCount~strip == "") &,
@@ -288,6 +300,7 @@ end
 ::method clearConcurrencyTrace
     -- The various parsings have stored some invalid values, clear them
     use strict arg -- none
+    self~interpreterId = ""
     self~threadId = ""
     self~activationId = ""
     self~varDictId = ""
@@ -351,6 +364,7 @@ end
 
 ::method lineoutTitle class
     use strict arg stream
+    stream~charout("interpreter") ; stream~charout(self~sep)
     stream~charout("thread") ; stream~charout(self~sep)
     stream~charout("activation") ; stream~charout(self~sep)
     stream~charout("varDict") ; stream~charout(self~sep)
@@ -367,6 +381,7 @@ end
     stream~lineout("")
 
 
+::attribute interpreterId
 ::attribute threadId
 ::attribute activationId
 ::attribute varDictId
@@ -383,6 +398,7 @@ end
 
 
 ::method init
+    self~interpreterId = ""
     self~threadId = ""
     self~activationId = ""
     self~varDictId = ""
@@ -413,6 +429,7 @@ end
 
 ::method lineout
     use strict arg stream
+    self~charout(stream, self~interpreterId)
     self~charout(stream, self~threadId)
     self~charout(stream, self~activationId)
     self~charout(stream, self~varDictId)
@@ -430,10 +447,59 @@ end
 
 
 -------------------------------------------------------------------------------
+::class Tracer.Interpreter public
+-------------------------------------------------------------------------------
+
+::constant hrIdWidth 6 -- width of hr id (used for parsing and rewriting): I0..I99999
+
+
+-- class attributes
+::attribute counter class
+::attribute directory class
+
+
+::method init class
+    self~counter = 0
+    self~directory = .directory~new
+
+
+::method fromId class
+    use strict arg interpreterId
+    interpreter = .Tracer.Interpreter~directory[interpreterId]
+    if .nil == interpreter then do
+        interpreter = .Tracer.Interpreter~new
+        .Tracer.Interpreter~directory[interpreterId] = interpreter
+        interpreter~id = interpreterId
+        if interpreterId == "" then interpreter~hrId = ""
+        else if interpreterId = 0 | interpreterId == "I0" then interpreter~hrId = "I0" -- Always use I0 for null pointer
+        else do
+            .Tracer.Interpreter~counter += 1
+            interpreter~hrId = "I".Tracer.Interpreter~counter
+        end
+    end
+    return interpreter
+
+
+::method isHrId class
+    use strict arg interpreterId
+    return interpreterId~left(1) =="I" & interpreterId~substr(2)~dataType("W")  -- Ex : I1, I12, I123, ...
+
+
+-- instance attributes
+::attribute id
+::attribute hrId -- Human-readable
+
+
+::method init
+    self~id = ""
+    self~hrId = ""
+
+
+-------------------------------------------------------------------------------
 ::class Tracer.Thread public
 -------------------------------------------------------------------------------
 
-::constant hrIdWidth 4 -- width of hr id (used for parsing and rewriting)
+::constant hrIdWidth 6 -- width of hr id (used for parsing and rewriting): T0..T99999
 
 
 -- class attributes
@@ -482,7 +548,7 @@ end
 ::class Tracer.Activation public
 -------------------------------------------------------------------------------
 
-::constant hrIdWidth 6 -- max width of hr id (used for parsing and rewriting)
+::constant hrIdWidth 8 -- max width of hr id (used for parsing and rewriting): A0..A9999999
 
 
 -- class attributes
@@ -539,7 +605,7 @@ end
 ::class Tracer.VariableDictionary public
 -------------------------------------------------------------------------------
 
-::constant hrIdWidth 6 -- max width of hr id (used for parsing and rewriting)
+::constant hrIdWidth 8 -- max width of hr id (used for parsing and rewriting): V0..V9999999
 
 
 -- class attributes
@@ -675,9 +741,10 @@ end
 -------------------------------------------------------------------------------
 
 ::constant reserveCountRawWidth 5 -- unsigned short : 0...65535 : 5 digits
-::constant reserveCountHrWidth 2 -- in practice, I don't think we go above 99 : 2 digits
+::constant reserveCountHrWidth 5
 
 
+::attribute interpreterId
 ::attribute threadId
 ::attribute activationId
 ::attribute varDictId
@@ -687,6 +754,7 @@ end
 
 ::method initializeWith
     use strict arg traceLineParser
+    self~interpreterId = traceLineParser~interpreterId
     self~threadId = traceLineParser~threadId
     self~activationId = traceLineParser~activationId
     self~varDictId = traceLineParser~varDictId
@@ -696,7 +764,8 @@ end
 
 
 ::method noConcurrencyTrace
-    return self~threadId == "",
+    return self~interpreterId == "",
+         & self~threadId == "",
          & self~activationId == "",
          & self~varDictId == "",
          & self~reserveCount == "",
@@ -711,6 +780,7 @@ end
 
     if self~noConcurrencyTrace then return .false
 
+    interpreter = .Tracer.Interpreter~fromId(self~interpreterId)
     thread = .Tracer.Thread~fromId(self~threadId)
     activation = .Tracer.Activation~fromId(self~activationId)
 
@@ -723,7 +793,8 @@ end
     if reserveCount <> "" then reserveCount = reserveCount~format(.Tracer.WithActivationInfo~reserveCountHrWidth)
 
     if spaceNeeded then stream~charout(" ")
-    stream~charout(thread~hrId~left(.Tracer.Thread~hrIdWidth),
+    stream~charout(interpreter~hrId~left(.Tracer.Interpreter~hrIdWidth),
+                   thread~hrId~left(.Tracer.Thread~hrIdWidth),
                    activation~hrId~left(.Tracer.Activation~hrIdWidth),
                    varDictHrId~left(.Tracer.VariableDictionary~hrIdWidth),
                    reserveCount~left(.Tracer.WithActivationInfo~reserveCountHrWidth) || self~lock)
@@ -734,6 +805,9 @@ end
     use strict arg csv, _filter
     forward class (super) continue
     if self~noConcurrencyTrace then return .false
+
+    interpreter = .Tracer.Interpreter~fromId(self~interpreterId)
+    csv~interpreterId = interpreter~hrId
 
     thread = .Tracer.Thread~fromId(self~threadId)
     csv~threadId = thread~hrId

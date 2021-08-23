@@ -45,20 +45,22 @@
 #include <stdarg.h>
 
 #ifdef __REXX64__
-#define CONCURRENCY_TRACE "%16.16x %16.16x %16.16x %5.5hu%c "
+#define CONCURRENCY_TRACE "%16.16x %16.16x %16.16x %16.16x %5.5hu%c "
 #else
-#define CONCURRENCY_TRACE "%8.8x %8.8x %8.8x %5.5hu%c "
+#define CONCURRENCY_TRACE "%8.8x %8.8x %8.8x %8.8x %5.5hu%c "
 #endif
 
 #define CONCURRENCY_BUFFER_SIZE 100 // Must be enough to support CONCURRENCY_TRACE
 
 
 // For concurrency trace
+class InterpreterInstance;
 class Activity;
 class RexxActivation;
 class VariableDictionary;
 struct ConcurrencyInfos
 {
+    InterpreterInstance *interpreter;
     wholenumber_t threadId;
     Activity *activity;
     RexxActivation *activation;

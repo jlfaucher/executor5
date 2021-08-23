@@ -4,6 +4,63 @@ Hence the creation of a new Github repository Executor5...
 
 
 ===============================================================================
+2021 aug 23
+
+Concurrency trace:
+- add a column for the interpreter instance (Rony's suggestion)
+- enlarge the human-readable identifiers:
+  6 characters for interpreter and task ids: I or T followed by 0..99999
+  8 characters for activation and variable dictionary ids: A or V followed by 0..9999999
+  5 characters for reserve count
+
+Tested with Code 13 and Code 19 described in 201202-CreatingOoRexxInterpreterInstances-article.pdf
+- Interpreter1 declares a Command Handler TEST1
+- Interpreter1 delegates to Interpreter2 the execution of the routine testSampleCommandHandler.rex
+- testSampleCommandHandler addresses 3 times a command to TEST1
+        I1                                          I2
+        create I2
+        declare Command Handler TEST1
+        add Command Handler TEST1 to I2
+        delegate testSampleCommandHandler to I2
+                                                    call testSampleCommandHandler
+                                                        address test1 "hi"
+        SampleCommandHandler~handleCommand
+        return "Hi, who are you?"
+                                                        RC => "Hi, who are you?"
+                                                        address test1 "one plus two"
+        SampleCommandHandler~handleCommand
+        return 3
+                                                        RC => "3"
+                                                        address test1 "please panic a little bit"
+        SampleCommandHandler~handleCommand
+        raise syntax 35.900
+                                                        condition caught
+                                                        address test1 "nothing to do?"
+        SampleCommandHandler~handleCommand
+        return "Undefined command #" counter
+                                                        RC => "Undefined command # 1"
+                                                        return
+        terminate I2
+
+
+I1     T1     A1                           12 *-* rexxEngine~apply("from_rexSampleCommandHandler.rex", 0, 0, rexxCode, .nil, .nil)
+I1     T1     A1                              >V>   REXXENGINE => "org.rexxla.bsf.engines.rexx.RexxEngine@6c474e40"
+I1     T1     A1                              >V>   REXXCODE => "call 'testSampleCommandHandler.rex' "
+I2     T1     A3                              >I> Routine "/local/rexx/oorexx/scripts/CommandHandler/testSampleCommandHandler.rex" in package "/local/rexx/oorexx/scripts/CommandHandler/testSampleCommandHandler.rex".
+I2     T1     A3                            1 *-* address test1 "hi"
+I1     T1     A4       V1                     >I> Method "HANDLECOMMAND" with scope "SAMPLECOMMANDHANDLER" in package "/local/rexx/oorexx/scripts/CommandHandler/rexSampleCommandHandler.rxj".
+I1     T1     A4       V1           1*     26 *-* use arg slot, address, command
+I1     T1     A4       V1           1*        >=>   SLOT <= "[Ljava.lang.Object;@7a0f1664"
+I1     T1     A4       V1           1*        >=>   ADDRESS <= "TEST1"
+I1     T1     A4       V1           1*        >=>   COMMAND <= "hi"
+I1     T1     A4       V1           1*     28 *-* if command~caselessEquals("Hi")
+I1     T1     A4       V1           1*     28 *-*   then
+I1     T1     A4       V1           1*     28 *-*     return "Hi, who are you?"
+I2     T1     A3                            2 *-* say "rc="pp2(rc)
+I2     T1     A3                              >V>   RC => "Hi, who are you?"
+
+
+===============================================================================
 2021 aug 14
 
 Rony implemented a class "humanizeTraceOutput" which transforms on the fly a

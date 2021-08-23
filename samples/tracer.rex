@@ -66,15 +66,16 @@ Description :
     Use -filter to filter out the lines which are not a trace
 
     The expected input format is something like that (in case of 32-bit pointers) :
-    0000f5fc 7efb0180 7eeee7a0 00000         >I> Routine D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    0000f5fc 7efb0180 7eeee7a0 00000         >I> Routine A_ROUTINE in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    0000f5fc 7efb29f8 7eeee7a0 00001*        >I> Method INIT with scope "The COROUTINE class" in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    0000f5fc 7efb29f8 7eeee7a0 00001*     44 *-* self~table = .IdentityTable~new
-    00010244 00000000 00000000 00000  Error 99 running D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\trace\doit.rex line 17:  Translation error
-    00010244 00000000 00000000 00000  Error 99.916:  Unrecognized directive instruction
+    0bee66b0 0000f5fc 7efb0180 7eeee7a0 00000         >I> Routine D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
+    0bee66b0 0000f5fc 7efb0180 7eeee7a0 00000         >I> Routine A_ROUTINE in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
+    0bee66b0 0000f5fc 7efb29f8 7eeee7a0 00001*        >I> Method INIT with scope "The COROUTINE class" in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
+    0bee66b0 0000f5fc 7efb29f8 7eeee7a0 00001*     44 *-* self~table = .IdentityTable~new
+    0bee66b0 00010244 00000000 00000000 00000  Error 99 running D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\trace\doit.rex line 17:  Translation error
+    0bee66b0 00010244 00000000 00000000 00000  Error 99.916:  Unrecognized directive instruction
 
     See RexxActivity::traceOutput
     Utilities::snprintf(buffer, sizeof buffer - 1, CONCURRENCY_TRACE,
+                                                   (activity) ? activity->getInstance() : NULL,
                                                    Utilities::currentThreadId(),
                                                    activation,
                                                    (activation) ? activation->getVariableDictionary() : NULL,
@@ -84,19 +85,19 @@ Description :
     The same format with 64-bit pointers is also supported.
     See common\Utilities.hpp
     #ifdef __REXX64__
-    #define CONCURRENCY_TRACE "%16.16x %16.16x %16.16x %5.5hu%c "
+    #define CONCURRENCY_TRACE "%16.16x %16.16x %16.16x %16.16x %5.5hu%c "
     #else
-    #define CONCURRENCY_TRACE "%8.8x %8.8x %8.8x %5.5hu%c "
+    #define CONCURRENCY_TRACE "%8.8x %8.8x %8.8x %8.8x %5.5hu%c "
     #endif
 
 
     The same format with human-readable ids is also supported :
-    T1   A1                   >I> Routine D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    T1   A1                   >I> Routine A_ROUTINE in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    T1   A2     V1     1*          >I> Method INIT with scope "The COROUTINE class" in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    T1   A2     V1     1*       44 *-* self~table = .IdentityTable~new
-    T2   A0                 Error 99 running D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\trace\doit.rex line 17:  Translation error
-    T2   A0                 Error 99.916:  Unrecognized directive instruction
+    I1     T1     A1                          >I> Routine D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
+    I1     T1     A1                          >I> Routine A_ROUTINE in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
+    I1     T1     A2       V1          1*          >I> Method INIT with scope "The COROUTINE class" in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
+    I1     T1     A2       V1          1*       44 *-* self~table = .IdentityTable~new
+    I1     T2     A0                        Error 99 running D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\trace\doit.rex line 17:  Translation error
+    I1     T2     A0                        Error 99.916:  Unrecognized directive instruction
 
     The classic trace (without any concurrency trace) is also supported.
     That lets generate a CSV file, more easy to analyze/filter.
@@ -115,6 +116,7 @@ Implementation notes:
     This subclass analyzes the attributes in its perimeter, and then delegates to its superclass, until reaching the class Tracer.TraceLine.
     ::attribute rawLine                                    ::class Tracer.UnknownFormat
         Specific to concurrency trace
+        ::attribute interpreterId                          ::class Tracer.WithActivationInfo
         ::attribute threadId                               ::class Tracer.WithActivationInfo
         ::attribute activationId                           ::class Tracer.WithActivationInfo
         ::attribute varDictId                              ::class Tracer.WithActivationInfo
@@ -143,7 +145,8 @@ Implementation notes:
                 ::class Tracer.UnknownActivation
 
 
-    Helper classes to manage the task, activation and variable's dictionnary identifiers:
+    Helper classes to manage the interpreter, task, activation and variable's dictionnary identifiers:
+        Tracer.Interpreter
         Tracer.Thread
         Tracer.Activation
         Tracer.VariableDictionary
@@ -165,6 +168,7 @@ Implementation notes:
     Attributes of a Tracer.TraceLineCsv.
     They are filled by the method prepareCsv of the most specialized subclass instanciated by the parser.
     This subclass stores its own attributes, and then delegates to its superclass, until reaching the class Tracer.TraceLine.
+        ::attribute interpreterId   .Tracer.Interpreter~fromId(traceLineParser~interpreterId)~hrId
         ::attribute threadId        .Tracer.Thread~fromId(traceLineParser~threadId)~hrId
         ::attribute activationId    .Tracer.Activation~fromId(traceLineParser~activationId)~hrId
         ::attribute varDictId       .Tracer.VariableDictionary~fromId(traceLineParser~varDictId)~hrId

@@ -3056,6 +3056,7 @@ void  Activity::traceOutput(RexxActivation *activation, RexxString *line)
         struct ConcurrencyInfos concurrencyInfos;
         Utilities::GetConcurrencyInfos(concurrencyInfos);
         Utilities::snprintf(buffer, sizeof buffer - 1, CONCURRENCY_TRACE,
+                                                       concurrencyInfos.interpreter,
                                                        concurrencyInfos.threadId,
                                                        concurrencyInfos.activation,
                                                        concurrencyInfos.variableDictionary,

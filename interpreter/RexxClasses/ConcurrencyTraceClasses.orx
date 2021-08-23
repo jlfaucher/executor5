@@ -116,7 +116,7 @@ Implementation notes:
         ::attribute executable      traceLineParser~method or traceLineParser~routine
         ::attribute line            traceLineParser~lineNumber
         ::attribute prefix          traceLineParser~traceprefix
-        ::attribute source          traceLineParser~restOfTrace -- empty when kind, scope, executable and package are provided (because redundant)
+        ::attribute trace           traceLineParser~restOfTrace -- empty when kind, scope, executable and package are provided (because redundant)
         ::attribute package         traceLineParser~package
         ::attribute raw             traceLineParser~rawline or traceLineParser~rawTrace
 
@@ -375,7 +375,7 @@ end
     stream~charout("executable") ; stream~charout(self~sep)
     stream~charout("line") ; stream~charout(self~sep)
     stream~charout("prefix") ; stream~charout(self~sep)
-    stream~charout("source") ; stream~charout(self~sep)
+    stream~charout("trace") ; stream~charout(self~sep)
     stream~charout("package") ; stream~charout(self~sep)
     stream~charout("raw") -- ; stream~charout(self~sep)
     stream~lineout("")
@@ -392,7 +392,7 @@ end
 ::attribute executable
 ::attribute line
 ::attribute prefix
-::attribute source
+::attribute trace
 ::attribute package
 ::attribute raw
 
@@ -409,7 +409,7 @@ end
     self~executable = ""
     self~line = ""
     self~prefix = ""
-    self~source = ""
+    self~trace = ""
     self~package = ""
     self~raw = ""
 
@@ -440,7 +440,7 @@ end
     self~charout(stream, self~executable)
     self~charout(stream, self~line)
     self~charout(stream, self~prefix)
-    self~charout(stream, self~source)
+    self~charout(stream, self~trace)
     self~charout(stream, self~package)
     self~charout(stream, self~raw)
     stream~lineout("")
@@ -917,7 +917,7 @@ end
     forward class (super) continue
     csv~line = self~lineNumber
     csv~prefix = self~tracePrefix
-    csv~source = self~restOfTrace
+    csv~trace = self~restOfTrace
     return .true
 
 
@@ -949,7 +949,7 @@ end
     use strict arg csv, _filter
     forward class (super) continue
 
-    csv~source = "" -- self~restOfTrace -- redundant with kind, executable, package.
+    csv~trace = "" -- self~restOfTrace -- redundant with kind, executable, package.
 
     -- The superclass WithActivationInfo manages the following attributes,
     -- but only when the concurrency trace is available.
@@ -989,7 +989,7 @@ end
     use strict arg csv, _filter
     forward class (super) continue
 
-    csv~source = "" -- self~restOfTrace -- redundant with kind, scope, executable, package.
+    csv~trace = "" -- self~restOfTrace -- redundant with kind, scope, executable, package.
 
     -- The superclass WithActivationInfo manages the following attributes,
     -- but only when the concurrency trace is available.

@@ -179,7 +179,7 @@ Implementation notes:
         ::attribute executable      traceLineParser~method or traceLineParser~routine
         ::attribute line            traceLineParser~lineNumber
         ::attribute prefix          traceLineParser~traceprefix
-        ::attribute source          traceLineParser~restOfTrace -- empty when kind, scope, executable and package are provided (because redundant)
+        ::attribute trace           traceLineParser~restOfTrace -- empty when kind, scope, executable and package are provided (because redundant)
         ::attribute package         traceLineParser~package
         ::attribute raw             traceLineParser~rawline or traceLineParser~rawTrace
 

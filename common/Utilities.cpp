@@ -69,6 +69,50 @@ void Utilities::GetConcurrencyInfos(struct ConcurrencyInfos &concurrencyInfos)
 }
 
 
+bool Utilities::FormatConcurrencyInfos(char *buffer, size_t bufferSize)
+{
+    if (buffer == NULL) return false;
+    *buffer = '\0';
+    struct ConcurrencyInfos concurrencyInfos;
+    Utilities::GetConcurrencyInfos(concurrencyInfos);
+    int n =  0;
+    if (concurrencyInfos.variableDictionary == 0)
+    {
+        // don't display variableDictionary, reserveCount and lock
+        n = Utilities::snprintf(buffer, bufferSize - 1, CONCURRENCY_TRACE_NO_VAR,
+                                                        concurrencyInfos.interpreter,
+                                                        concurrencyInfos.activity,
+                                                        concurrencyInfos.activation,
+                                                        "",
+                                                        "",
+                                                        concurrencyInfos.lock);
+    }
+    else if (concurrencyInfos.reserveCount == 0)
+    {
+        // don't display reserveCount and lock
+        n = Utilities::snprintf(buffer, bufferSize - 1, CONCURRENCY_TRACE_NO_RESERVE,
+                                                        concurrencyInfos.interpreter,
+                                                        concurrencyInfos.activity,
+                                                        concurrencyInfos.activation,
+                                                        concurrencyInfos.variableDictionary,
+                                                        "",
+                                                        concurrencyInfos.lock);
+    }
+    else
+    {
+        // full display
+        n = Utilities::snprintf(buffer, bufferSize - 1, CONCURRENCY_TRACE,
+                                                        concurrencyInfos.interpreter,
+                                                        concurrencyInfos.activity,
+                                                        concurrencyInfos.activation,
+                                                        concurrencyInfos.variableDictionary,
+                                                        concurrencyInfos.reserveCount,
+                                                        concurrencyInfos.lock);
+    }
+    return n > 0;
+}
+
+
 /**
  * Locate the first occurrence of any character from a given set.
  *

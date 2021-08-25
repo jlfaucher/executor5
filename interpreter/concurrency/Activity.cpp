@@ -80,11 +80,21 @@
 
 #include <stdio.h>
 #include <time.h>
+#include <atomic>
 
 // we use lots of global names here.
 using namespace GlobalNames;
 
 const size_t ACT_STACK_SIZE = 20;
+
+// not sure that atomic is needed. ooRexx has a GIL but...
+static std::atomic<uint32_t> counter(0); // to generate idntfr for concurrency trace
+
+uint32_t Activity::getIdntfr()
+{
+    if (idntfr == 0) idntfr = ++counter;
+    return idntfr;
+}
 
 
 /**
@@ -3050,18 +3060,10 @@ void  Activity::traceOutput(RexxActivation *activation, RexxString *line)
 
     if (Utilities::traceConcurrency())
     {
-        // Add thread id, activation id and lock flag.
+        // Add interpreter id, activity id, activation id, reserve count and lock flag.
         // Should help to analyze the traces of a multithreaded script...
         char buffer[CONCURRENCY_BUFFER_SIZE];
-        struct ConcurrencyInfos concurrencyInfos;
-        Utilities::GetConcurrencyInfos(concurrencyInfos);
-        Utilities::snprintf(buffer, sizeof buffer - 1, CONCURRENCY_TRACE,
-                                                       concurrencyInfos.interpreter,
-                                                       concurrencyInfos.threadId,
-                                                       concurrencyInfos.activation,
-                                                       concurrencyInfos.variableDictionary,
-                                                       concurrencyInfos.reserveCount,
-                                                       concurrencyInfos.lock);
+        Utilities::FormatConcurrencyInfos(buffer, sizeof buffer);
         pline = pline->concatToCstring(buffer);
     }
 

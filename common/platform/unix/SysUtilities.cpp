@@ -120,13 +120,6 @@ int Utilities::snprintf(char *buffer, size_t count, const char *format, ...)
 }
 
 
-// Could be in SysThread.cpp, but for the moment, it's here...
-wholenumber_t Utilities::currentThreadId()
-{
-    return (wholenumber_t)pthread_self();
-}
-
-
 // This indicator is used to control the display of additional informations in the trace output for concurrency.
 static bool TRACE_CONCURRENCY = false;
 

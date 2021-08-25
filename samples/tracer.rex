@@ -40,7 +40,7 @@
 /****
 
 Usage :
-    tracer [-csv] [-filter] [<traceFile>]
+    tracer [-csv] [-filter] [-removePrefix] [<traceFile>]
 
 
 Examples :
@@ -63,41 +63,26 @@ Description :
 
     Use -csv to generate a CSV output.
 
-    Use -filter to filter out the lines which are not a trace
+    Use -filter to filter out the lines which are not a trace.
 
-    The expected input format is something like that (in case of 32-bit pointers) :
-    0bee66b0 0000f5fc 7efb0180 7eeee7a0 00000         >I> Routine D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    0bee66b0 0000f5fc 7efb0180 7eeee7a0 00000         >I> Routine A_ROUTINE in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    0bee66b0 0000f5fc 7efb29f8 7eeee7a0 00001*        >I> Method INIT with scope "The COROUTINE class" in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    0bee66b0 0000f5fc 7efb29f8 7eeee7a0 00001*     44 *-* self~table = .IdentityTable~new
-    0bee66b0 00010244 00000000 00000000 00000  Error 99 running D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\trace\doit.rex line 17:  Translation error
-    0bee66b0 00010244 00000000 00000000 00000  Error 99.916:  Unrecognized directive instruction
+    Use -removePrefix to remove any text up to (including) ">" at the begining of each line
 
-    See RexxActivity::traceOutput
-    Utilities::snprintf(buffer, sizeof buffer - 1, CONCURRENCY_TRACE,
-                                                   (activity) ? activity->getInstance() : NULL,
-                                                   Utilities::currentThreadId(),
-                                                   activation,
-                                                   (activation) ? activation->getVariableDictionary() : NULL,
-                                                   (activation) ? activation->getReserveCount() : 0,
-                                                   (activation && activation->isObjectScopeLocked()) ? '*' : ' ');
-
-    The same format with 64-bit pointers is also supported.
-    See common\Utilities.hpp
-    #ifdef __REXX64__
-    #define CONCURRENCY_TRACE "%16.16x %16.16x %16.16x %16.16x %5.5hu%c "
-    #else
-    #define CONCURRENCY_TRACE "%8.8x %8.8x %8.8x %8.8x %5.5hu%c "
-    #endif
-
-
-    The same format with human-readable ids is also supported :
+    The expected input format is something like that after removing any prefix (human-readable ids) :
     R1     T1     A1                           >I> Routine D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
     R1     T1     A1                           >I> Routine A_ROUTINE in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
     R1     T1     A2       V1           1*          >I> Method INIT with scope "The COROUTINE class" in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
     R1     T1     A2       V1           1*       44 *-* self~table = .IdentityTable~new
     R1     T2     A0                         Error 99 running D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\trace\doit.rex line 17:  Translation error
     R1     T2     A0                         Error 99.916:  Unrecognized directive instruction
+
+    See GetConcurrencyInfos in RexxActivation.cpp:
+            infos.threadId           = SysActivity::queryThreadID(); // to check consistency with activity
+        T   infos.activity           = activity ? activity->getIdntfr() : 0;
+        R   infos.interpreter        = interpreter ? interpreter->getIdntfr() : 0;
+        A   infos.activation         = activation ? activation->getIdntfr() : 0;
+        V   infos.variableDictionary = variableDictionary ? variableDictionary->getIdntfr() : 0;
+        n   infos.reserveCount       = activation ? activation-> getReserveCount() : 0;
+        *   infos.lock               = (activation && activation->isObjectScopeLocked()) ? '*' : ' ';
 
     The classic trace (without any concurrency trace) is also supported.
     That lets generate a CSV file, more easy to analyze/filter.
@@ -187,12 +172,14 @@ Implementation notes:
 
 csv = .false
 filter = .false
+removePrefix = .false
 parse arg args
 do forever
     parse var args current rest
     if current~left(1) == "-" then do
         if current~caselessEquals("-csv") then csv = .true
         else if current~caselessEquals("-filter") then filter = .true
+        else if current~caselessEquals("-removePrefix") then removePrefix = .true
         else do
             say "[error] Invalid option : "current
             return 1
@@ -216,6 +203,11 @@ if csv then .Tracer.TraceLineCsv~lineoutTitle(streamOut)
 do while streamIn~state="READY"
     rawLine=streamIn~linein
     if streamIn~state="NOTREADY", rawLine == "" then leave
+    if removePrefix, rawLine~word(1)~contains(">") then do
+        newStart = rawLine~pos(">") + 1
+        if rawLine~subchar(newStart) == " " then newStart = rawLine~verify(" ", "N", newStart)
+        rawLine = rawLine~substr(newStart)
+    end
     currentTrace = traceLineParser~parse(rawLine)
     currentTrace~lineOut(streamOut, csv, filter)
 end
@@ -228,12 +220,6 @@ return 0
 -------------------------------------------------------------------------------
 ::class Tracer.Utility public
 -------------------------------------------------------------------------------
-
-::method isHex class
-    use strict arg str, length
-    if str~length <> length then return .false
-    return str~verify("0123456789abcdefABCDEF") == 0
-
 
 ::method quoted class
     -- Returns a quoted string.
@@ -259,9 +245,6 @@ return 0
 ::class Tracer.TraceLineParser public
 -------------------------------------------------------------------------------
 
-::constant hexIdWidth64bit 16 -- width in digit count of hex id
-::constant hexIdWidth32bit 8 -- width in characters of hex id
-
 ::attribute rawLine
     -- Specific to concurrency trace
     ::attribute interpreterId
@@ -281,16 +264,6 @@ return 0
             ::attribute package
 
 
-::method isHexId64bit class
-    use strict arg id
-    return .Tracer.Utility~isHex(id, .Tracer.TraceLineParser~hexIdWidth64bit) -- Ex : 0001654c0001654c
-
-
-::method isHexId32bit class
-    use strict arg id
-    return .Tracer.Utility~isHex(id, .Tracer.TraceLineParser~hexIdWidth32bit) -- Ex : 0001654c
-
-
 ::method init
     rawLine = ""
     interpreterId = ""
@@ -307,40 +280,6 @@ return 0
     method = ""
     scope = ""
     package = ""
-
-
-::method parse64bit
-    use strict arg -- none
-    parse value self~rawLine with,
-            1 self~interpreterId >(.Tracer.TraceLineParser~hexIdWidth64bit),
-            +1 self~threadId >(.Tracer.TraceLineParser~hexIdWidth64bit),
-            +1 self~activationId >(.Tracer.TraceLineParser~hexIdWidth64bit),
-            +1 self~varDictId >(.Tracer.TraceLineParser~hexIdWidth64bit),
-            +1 self~reserveCount >(.Tracer.WithActivationInfo~reserveCountRawWidth) self~lock >1,
-            +1 self~rawTrace
-    return  .Tracer.TraceLineParser~isHexId64bit(self~interpreterId) &,
-            .Tracer.TraceLineParser~isHexId64bit(self~threadId) &,
-            .Tracer.TraceLineParser~isHexId64bit(self~activationId) &,
-            .Tracer.TraceLineParser~isHexId64bit(self~varDictId) &,
-            self~reserveCount~datatype("W") &,
-            (self~lock == " " | self~lock == "*")
-
-
-::method parse32bit
-    use strict arg -- none
-    parse value self~rawLine with,
-            1 self~interpreterId >(.Tracer.TraceLineParser~hexIdWidth32bit),
-            +1 self~threadId >(.Tracer.TraceLineParser~hexIdWidth32bit),
-            +1 self~activationId >(.Tracer.TraceLineParser~hexIdWidth32bit),
-            +1 self~varDictId >(.Tracer.TraceLineParser~hexIdWidth32bit),
-            +1 self~reserveCount >(.Tracer.WithActivationInfo~reserveCountRawWidth) self~lock >1,
-            +1 self~rawTrace
-    return  .Tracer.TraceLineParser~isHexId32bit(self~interpreterId) &,
-            .Tracer.TraceLineParser~isHexId32bit(self~threadId) &,
-            .Tracer.TraceLineParser~isHexId32bit(self~activationId) &,
-            .Tracer.TraceLineParser~isHexId32bit(self~varDictId) &,
-            self~reserveCount~datatype("W") &,
-            (self~lock == " " | self~lock == "*")
 
 
 ::method parseHrId
@@ -380,9 +319,7 @@ return 0
 
     -- Several concurrency trace formats supported
     concurrencyTrace = "none"
-    if self~parse64bit then concurrencyTrace = 64 -- 64-bit pointers
-    else if self~parse32bit then concurrencyTrace = 32 -- 32-bit pointers
-    else if self~parseHrId then concurrencyTrace = "hr" -- hr ids (parsing a trace already hr-ized)
+    if self~parseHrId then concurrencyTrace = "hr" -- hr ids (parsing a trace already hr-ized)
     else self~clearConcurrencyTrace
 
     if self~rawTrace~pos("Error") == 1 then currentTrace = .Tracer.ErrorTrace~new
@@ -398,11 +335,11 @@ return 0
             if self~tracePrefix == ">I>" then do
                 if self~restOfTrace~pos("Routine ") == 1 then do
                     currentTrace = .Tracer.RoutineActivation~new
-                    parse value self~restOfTrace with "Routine " self~routine " in package " self~package
+                    parse value self~restOfTrace with 'Routine "' self~routine '" in package "' self~package '"' .
                 end
                 else if self~restOfTrace~pos("Method ") == 1 then do
                     currentTrace = .Tracer.MethodActivation~new
-                    parse value self~restOfTrace with "Method " self~method ' with scope "' self~scope '" in package ' self~package
+                    parse value self~restOfTrace with 'Method "' self~method '" with scope "' self~scope '" in package "' self~package '"' .
                 end
                 else currentTrace = .Tracer.UnknownActivation~new
             end
@@ -704,6 +641,12 @@ return 0
         varDict = .Tracer.VariableDictionary~new
         .Tracer.VariableDictionary~directory[varDictId] = varDict
         varDict~id = varDictId
+        /*
+        Remember:
+        varDictId is made only of spaces when the pointer is NULL: the test varDictId = "" returns .true (non strict equal).
+        When printed, "V0" is replaced by spaces (see WithActivationInfo~charOut).
+        The case varDictId == "" should never happen.
+        */
         if varDictId == "" then varDict~hrId = ""
         else if varDictId = 0 | varDictId == self~hrId0 | varDictId = "" then varDict~hrId = self~hrId0 -- Always use V0 for null pointer
         else do
@@ -716,7 +659,7 @@ return 0
 
 ::method isHrId class
     use strict arg varDictId
-    if varDictId = "" then return .true -- special case, when parsing hr trace.
+    if varDictId~verify(" ") == 0 then return .true -- special case, when parsing hr trace.
     return varDictId~left(1) == self~hrIdLetter & varDictId~substr(2)~dataType("W")  -- Ex : V1, V12, V123, ...
 
 -- instance attributes

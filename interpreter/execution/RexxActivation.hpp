@@ -122,6 +122,7 @@ class RexxActivation : public ActivationBase
    void live(size_t) override;
    void liveGeneral(MarkReason reason) override;
 
+   uint32_t getIdntfr();
    RexxObject *dispatch() override;
    wholenumber_t digits() override;
    wholenumber_t fuzz() override;
@@ -631,5 +632,6 @@ class RexxActivation : public ActivationBase
     bool                 randomSet;     // random seed has been set
     size_t               blockNest;     // block instruction nesting level
     size_t               instructionCount;  // The number of instructions since we last yielded control
+    uint32_t             idntfr;        // idntfr for concurrency trace
  };
  #endif

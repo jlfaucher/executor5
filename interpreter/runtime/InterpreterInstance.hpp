@@ -79,6 +79,7 @@ public:
 
     RexxString *getDefaultEnvironment() { return defaultEnvironment; }
     Activity *getRootActivity() { return rootActivity; }
+    uint32_t getIdntfr();
 
     InterpreterInstance(ExitHandler *handlers);
     void addActivity(Activity *);
@@ -145,6 +146,7 @@ protected:
     RexxString          *searchPath;         // additional Rexx search path
     ArrayClass          *searchExtensions;   // extensions to search on for external calls
     void                *applicationData;    // application specific data
+    uint32_t            idntfr;              // idntfr for concurrency trace
     DirectoryClass      *localEnvironment;   // the current local environment
     StringTable         *commandHandlers;    // our list of command environment handlers
     StringTable         *requiresFiles;      // our list of requires files used by this instance

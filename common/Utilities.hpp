@@ -44,27 +44,25 @@
 #include <sys/types.h>
 #include <stdarg.h>
 
-#ifdef __REXX64__
-#define CONCURRENCY_TRACE "%16.16x %16.16x %16.16x %16.16x %5.5hu%c "
-#else
-#define CONCURRENCY_TRACE "%8.8x %8.8x %8.8x %8.8x %5.5hu%c "
-#endif
+/*
+"R1     T1     A2       V1           1* "
+"R99999 T99999 A9999999 V9999999 99999* "
+*/
+#define CONCURRENCY_TRACE            "R%-5u T%-5u A%-7u V%-7u %5hu%c "
+#define CONCURRENCY_TRACE_NO_RESERVE "R%-5u T%-5u A%-7u V%-7u %5s%c "
+#define CONCURRENCY_TRACE_NO_VAR     "R%-5u T%-5u A%-7u  %7s %5s%c "
 
 #define CONCURRENCY_BUFFER_SIZE 100 // Must be enough to support CONCURRENCY_TRACE
 
 
 // For concurrency trace
-class InterpreterInstance;
-class Activity;
-class RexxActivation;
-class VariableDictionary;
 struct ConcurrencyInfos
 {
-    InterpreterInstance *interpreter;
-    wholenumber_t threadId;
-    Activity *activity;
-    RexxActivation *activation;
-    VariableDictionary *variableDictionary;
+    uint32_t interpreter;
+    thread_id_t threadId;
+    uint32_t activity;
+    uint32_t activation;
+    uint32_t variableDictionary;
     unsigned short reserveCount;
     char lock;
 };
@@ -85,13 +83,13 @@ public:
     static const char *locateCharacter(const char *s, const char *set, size_t l);
     static int vsnprintf(char *buffer, size_t count, const char *format, va_list args);
     static int snprintf(char *buffer, size_t count, const char *format, ...);
-    static wholenumber_t currentThreadId(); // Could be in SysThread.hpp, but for the moment, it's here...
     static void traceConcurrency(bool);
     static bool traceConcurrency();
 
     // For concurrency trace
     static void SetConcurrencyInfosCollector(ConcurrencyInfosCollector);
     static void GetConcurrencyInfos(struct ConcurrencyInfos &concurrencyInfos);
+    static bool FormatConcurrencyInfos(char *buffer, size_t bufferSize);
 };
 
 

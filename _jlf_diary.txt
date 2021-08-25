@@ -4,6 +4,29 @@ Hence the creation of a new Github repository Executor5...
 
 
 ===============================================================================
+2021 aug 25
+
+Concurrency trace:
+- Give up the integration in rexx.img. Now, the interpreter creates directly the
+  human-readable identifiers using global counters (Rony's suggestion).
+- The classes for parsing the trace output are moved back to the script tracer.rex.
+- The script tracer.rex no longer supports hexadecimal pointers as input.
+- The script tracer.rex supports a new option -removePrefix to remove any text
+  up to (including) ">" in the first word of each input line. If spaces follow
+  the prefix, they are removed too.
+
+    Prefix removed, parsing starts at R3:
+    REXXtrc>R3     T7     A9       V4           1*      9 *-* if a > 10 then
+    MyPrefix>  R3     T7     A9       V4           1*      9 *-* if a > 10 then
+      MyPrefix>  R3     T7     A9       V4           1*      9 *-* if a > 10 then
+
+    Nothing removed, parsing starts at the 1st character:
+    My Prefix>  R3     T7     A9       V4           1*      9 *-* if a > 10 then
+    R3     T7     A9       V4           1*      9 *-* if a > 10 then
+      R3     T7     A9       V4           1*      9 *-* if a > 10 then
+
+
+===============================================================================
 2021 aug 23
 
 Concurrency trace:

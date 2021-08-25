@@ -195,7 +195,6 @@ class VariableDictionary : public RexxInternalObject
     void         drop(RexxString *);
     void         dropStemVariable(RexxString *);
     void         reserve(Activity *);
-    unsigned short getReserveCount() { return reserveCount; } // for trace
     void         release(Activity *);
     bool         transfer(Activity *);
 
@@ -204,6 +203,9 @@ class VariableDictionary : public RexxInternalObject
     RexxObject  *getCompoundVariableRealValue(RexxString *stem, RexxInternalObject **tail, size_t tailCount);
 
     RexxObject  *realStemValue(RexxString *stemName);
+
+    uint32_t getIdntfr();
+    inline unsigned short getReserveCount() { return reserveCount; } // for trace
 
     inline bool isScope(RexxClass *otherScope) { return scope == otherScope; }
     inline VariableDictionary *getNextDictionary() { return nextDictionary; }
@@ -227,6 +229,7 @@ protected:
     unsigned short reserveCount;         // number of times reserved
     VariableDictionary *nextDictionary;  // chained object dictionary
     RexxClass *scope;                    // scopy of this object dictionary
+    uint32_t idntfr;                     // idntfr for concurrency trace
 };
 
 inline VariableDictionary *new_variableDictionary(size_t s) { return new VariableDictionary(s); }

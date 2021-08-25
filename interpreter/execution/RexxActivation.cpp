@@ -82,20 +82,36 @@
 #include "CommandIOConfiguration.hpp"
 #include "CommandIOContext.hpp"
 #include "LibraryPackage.hpp"
+#include <atomic>
 
+
+// not sure that atomic is needed. ooRexx has a GIL but...
+static std::atomic<uint32_t> counter(0); // to generate idntfr for concurrency trace
+
+uint32_t RexxActivation::getIdntfr()
+{
+    if (idntfr == 0) idntfr = ++counter;
+    return idntfr;
+}
 
 // For concurrency trace
 // This function is called via Utility::GetConcurrencyInfos, because sometimes
 // it's not possible to include RexxActivation.hpp to call directly this function.
+// (Executor is tracing the semaphores, Executor5 doesn't, could be simplified)
 void GetConcurrencyInfos(ConcurrencyInfos &infos)
 {
-    infos.threadId = Utilities::currentThreadId();
-    infos.activity = ActivityManager::currentActivity;
-    infos.interpreter = (infos.activity ? infos.activity->getInstance() : NULL);
-    infos.activation = (infos.activity ? infos.activity->getCurrentRexxFrame() : NULL);
-    infos.variableDictionary = (infos.activation ? infos.activation->getVariableDictionary() : NULL);
-    infos.reserveCount = (infos.activation ? infos.activation-> getReserveCount() : 0);
-    infos.lock = (infos.activation && infos.activation->isObjectScopeLocked() ? '*' : ' ');
+    Activity *activity = ActivityManager::currentActivity;
+    InterpreterInstance *interpreter = (activity ? activity->getInstance() : NULL);
+    RexxActivation *activation = (activity ? activity->getCurrentRexxFrame() : NULL);
+    VariableDictionary *variableDictionary = (activation ? activation->getVariableDictionary() : NULL);
+
+    infos.threadId = SysActivity::queryThreadID(); // to check consistency with activity
+    infos.activity = activity ? activity->getIdntfr() : 0;
+    infos.interpreter = interpreter ? interpreter->getIdntfr() : 0;
+    infos.activation = activation ? activation->getIdntfr() : 0;
+    infos.variableDictionary = variableDictionary ? variableDictionary->getIdntfr() : 0;
+    infos.reserveCount = activation ? activation-> getReserveCount() : 0;
+    infos.lock = (activation && activation->isObjectScopeLocked()) ? '*' : ' ';
 }
 
 

@@ -110,6 +110,18 @@ void SysInterpreterInstance::initialize(InterpreterInstance *i, RexxOption *opti
         }
     }
 
+    concurrencyTraceEnabled = false;    // off by default
+
+    // check the current environment for RXTRACE_CONCURRENCY
+    if (GetEnvironmentVariable("RXTRACE_CONCURRENCY", rxTraceBuf, 8))
+    {
+        // if this is set to on, start with tracing enabled
+        if (!Utilities::strCaselessCompare(rxTraceBuf, "ON"))
+        {
+            concurrencyTraceEnabled = true;   // turn on tracing of top-level activations for this instance
+        }
+    }
+
     // Allow Rexx console output to use virtual terminal (VT) sequences.
     // This is based on the examples Microsoft gives in
     // https://docs.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences

@@ -174,6 +174,8 @@ class Activity : public RexxInternalObject
     void        relinquish();
     bool        halt(RexxString *);
     bool        setTrace(bool);
+    inline bool concurrencyTrace() { return instance ? instance->concurrencyTrace() : false; }
+    inline void concurrencyTrace(bool b) { if (instance) instance->concurrencyTrace(b); }
     inline void yieldControl() { releaseAccess(); requestAccess(); }
     void        yield();
     void        releaseAccess();

@@ -111,6 +111,8 @@ public:
     void removeInactiveActivities();
     bool haltAllActivities(RexxString *);
     void traceAllActivities(bool on);
+    inline bool concurrencyTrace() { return sysInstance.concurrencyTrace(); }
+    inline void concurrencyTrace(bool b) { sysInstance.concurrencyTrace(b); }
     RexxString *resolveProgramName(RexxString *name, RexxString *dir, RexxString *ext, ResolveType type);
     inline SecurityManager *getSecurityManager() { return securityManager; }
     void setSecurityManager(RexxObject *m);

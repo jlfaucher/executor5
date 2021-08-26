@@ -87,7 +87,7 @@ using namespace GlobalNames;
 
 const size_t ACT_STACK_SIZE = 20;
 
-// not sure that atomic is needed. ooRexx has a GIL but...
+
 static std::atomic<uint32_t> counter(0); // to generate idntfr for concurrency trace
 
 uint32_t Activity::getIdntfr()
@@ -3047,6 +3047,86 @@ SecurityManager *Activity::getInstanceSecurityManager()
 }
 
 
+/*
+"R1     T1     A2       V1           1* "
+"R99999 T99999 A9999999 V9999999 99999* "
+*/
+#define CONCURRENCY_TRACE            "R%-5u T%-5u A%-7u V%-7u %5hu%c "
+#define CONCURRENCY_TRACE_NO_RESERVE "R%-5u T%-5u A%-7u V%-7u %5s%c "
+#define CONCURRENCY_TRACE_NO_VAR     "R%-5u T%-5u A%-7u  %7s %5s%c "
+
+#define CONCURRENCY_BUFFER_SIZE 100 // Must be enough to support CONCURRENCY_TRACE
+
+
+struct ConcurrencyInfos
+{
+    uint32_t interpreter;
+    uint32_t activity;
+    uint32_t activation;
+    uint32_t variableDictionary;
+    unsigned short reserveCount;
+    char lock;
+};
+
+
+void GetConcurrencyInfos(Activity *activity, RexxActivation *activation, ConcurrencyInfos &infos)
+{
+    InterpreterInstance *interpreter = (activity ? activity->getInstance() : NULL);
+    VariableDictionary *variableDictionary = (activation ? activation->getVariableDictionary() : NULL);
+
+    /* R */ infos.interpreter = interpreter ? interpreter->getIdntfr() : 0;
+    /* T */ infos.activity = activity ? activity->getIdntfr() : 0;
+    /* A */ infos.activation = activation ? activation->getIdntfr() : 0;
+    /* V */ infos.variableDictionary = variableDictionary ? variableDictionary->getIdntfr() : 0;
+    /* n */ infos.reserveCount = activation ? activation-> getReserveCount() : 0;
+    /* * */ infos.lock = (activation && activation->isObjectScopeLocked()) ? '*' : ' ';
+}
+
+
+bool FormatConcurrencyInfos(Activity *activity, RexxActivation *activation, char *buffer, size_t bufferSize)
+{
+    if (buffer == NULL) return false;
+    *buffer = '\0';
+    struct ConcurrencyInfos concurrencyInfos;
+    GetConcurrencyInfos(activity, activation, concurrencyInfos);
+    int n =  0;
+    if (concurrencyInfos.variableDictionary == 0)
+    {
+        // don't display variableDictionary and reserveCount. lock is always a space.
+        n = snprintf(buffer, bufferSize - 1, CONCURRENCY_TRACE_NO_VAR,
+                                             concurrencyInfos.interpreter,
+                                             concurrencyInfos.activity,
+                                             concurrencyInfos.activation,
+                                             "",
+                                             "",
+                                             concurrencyInfos.lock);
+    }
+    else if (concurrencyInfos.reserveCount == 0)
+    {
+        // don't display reserveCount. lock is always a space.
+        n = snprintf(buffer, bufferSize - 1, CONCURRENCY_TRACE_NO_RESERVE,
+                                             concurrencyInfos.interpreter,
+                                             concurrencyInfos.activity,
+                                             concurrencyInfos.activation,
+                                             concurrencyInfos.variableDictionary,
+                                             "",
+                                             concurrencyInfos.lock);
+    }
+    else
+    {
+        // full display
+        n = snprintf(buffer, bufferSize - 1, CONCURRENCY_TRACE,
+                                             concurrencyInfos.interpreter,
+                                             concurrencyInfos.activity,
+                                             concurrencyInfos.activation,
+                                             concurrencyInfos.variableDictionary,
+                                             concurrencyInfos.reserveCount,
+                                             concurrencyInfos.lock);
+    }
+    return n > 0;
+}
+
+
 /**
  * Write out a line of trace output.
  *
@@ -3058,12 +3138,12 @@ void  Activity::traceOutput(RexxActivation *activation, RexxString *line)
     // make sure this is a real string value (likely, since we constructed it in the first place)
     Protected<RexxString> pline = line->stringTrace();
 
-    if (Utilities::traceConcurrency())
+    if (concurrencyTrace())
     {
         // Add interpreter id, activity id, activation id, reserve count and lock flag.
         // Should help to analyze the traces of a multithreaded script...
         char buffer[CONCURRENCY_BUFFER_SIZE];
-        Utilities::FormatConcurrencyInfos(buffer, sizeof buffer);
+        FormatConcurrencyInfos(this, activation, buffer, sizeof buffer);
         pline = pline->concatToCstring(buffer);
     }
 

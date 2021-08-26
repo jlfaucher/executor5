@@ -85,7 +85,6 @@
 #include <atomic>
 
 
-// not sure that atomic is needed. ooRexx has a GIL but...
 static std::atomic<uint32_t> counter(0); // to generate idntfr for concurrency trace
 
 uint32_t RexxActivation::getIdntfr()
@@ -93,39 +92,6 @@ uint32_t RexxActivation::getIdntfr()
     if (idntfr == 0) idntfr = ++counter;
     return idntfr;
 }
-
-// For concurrency trace
-// This function is called via Utility::GetConcurrencyInfos, because sometimes
-// it's not possible to include RexxActivation.hpp to call directly this function.
-// (Executor is tracing the semaphores, Executor5 doesn't, could be simplified)
-void GetConcurrencyInfos(ConcurrencyInfos &infos)
-{
-    Activity *activity = ActivityManager::currentActivity;
-    InterpreterInstance *interpreter = (activity ? activity->getInstance() : NULL);
-    RexxActivation *activation = (activity ? activity->getCurrentRexxFrame() : NULL);
-    VariableDictionary *variableDictionary = (activation ? activation->getVariableDictionary() : NULL);
-
-    infos.threadId = SysActivity::queryThreadID(); // to check consistency with activity
-    infos.activity = activity ? activity->getIdntfr() : 0;
-    infos.interpreter = interpreter ? interpreter->getIdntfr() : 0;
-    infos.activation = activation ? activation->getIdntfr() : 0;
-    infos.variableDictionary = variableDictionary ? variableDictionary->getIdntfr() : 0;
-    infos.reserveCount = activation ? activation-> getReserveCount() : 0;
-    infos.lock = (activation && activation->isObjectScopeLocked()) ? '*' : ' ';
-}
-
-
-class ConcurrencyInfosCollectorInitializer
-{
-    public:
-    // Store a pointer to the functionGetConcurrencyInfos in the Utilities area.
-    ConcurrencyInfosCollectorInitializer() { Utilities::SetConcurrencyInfosCollector(&GetConcurrencyInfos); }
-};
-
-
-// The goal of this declaration is to activate the constructor during the initialization
-static ConcurrencyInfosCollectorInitializer initializer;
-
 
 /**
  * Create a new activation object

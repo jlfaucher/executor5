@@ -205,7 +205,7 @@ class VariableDictionary : public RexxInternalObject
     RexxObject  *realStemValue(RexxString *stemName);
 
     uint32_t getIdntfr();
-    inline unsigned short getReserveCount() { return reserveCount; } // for trace
+    inline unsigned short getReserveCount() { return reserveCount; } // for concurrency trace
 
     inline bool isScope(RexxClass *otherScope) { return scope == otherScope; }
     inline VariableDictionary *getNextDictionary() { return nextDictionary; }

@@ -75,10 +75,9 @@ Description :
     R1     T2     A0                         Error 99 running D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\trace\doit.rex line 17:  Translation error
     R1     T2     A0                         Error 99.916:  Unrecognized directive instruction
 
-    See GetConcurrencyInfos in RexxActivation.cpp:
-            infos.threadId           = SysActivity::queryThreadID(); // to check consistency with activity
-        T   infos.activity           = activity ? activity->getIdntfr() : 0;
+    See GetConcurrencyInfos in Activity.cpp:
         R   infos.interpreter        = interpreter ? interpreter->getIdntfr() : 0;
+        T   infos.activity           = activity ? activity->getIdntfr() : 0;
         A   infos.activation         = activation ? activation->getIdntfr() : 0;
         V   infos.variableDictionary = variableDictionary ? variableDictionary->getIdntfr() : 0;
         n   infos.reserveCount       = activation ? activation-> getReserveCount() : 0;

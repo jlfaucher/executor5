@@ -64,12 +64,15 @@ public:
     void terminate();
     void registerCommandHandlers(InterpreterInstance *i);
     void setupProgram(RexxActivation *activation);
+    inline bool concurrencyTrace() { return concurrencyTraceEnabled; }
+    inline void concurrencyTrace(bool b) { concurrencyTraceEnabled = b; }
 
 protected:
     void addSearchExtension(const char *name);
 
     InterpreterInstance *instance;       // backlink to our instance container
     bool  externalTraceEnabled;   // are we started with external trace on
+    bool  concurrencyTraceEnabled;   // are we started with concurrency trace on
 };
 
 

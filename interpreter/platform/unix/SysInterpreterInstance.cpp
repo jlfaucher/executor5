@@ -69,6 +69,17 @@ void SysInterpreterInstance::initialize(InterpreterInstance *i, RexxOption *opti
         }
     }
 
+    concurrencyTraceEnabled = false;    // off by default
+    /* scan current environment,         */
+    rxTraceBuf = getenv("RXTRACE_CONCURRENCY");
+    if (rxTraceBuf != NULL)
+    {
+        if (!Utilities::strCaselessCompare(rxTraceBuf, "ON"))    /* request to turn on?               */
+        {
+            concurrencyTraceEnabled = true;   // turn on concurrency tracing for this instance
+        }
+    }
+
     // add our default search extension as both upper and lower case
     addSearchExtension(".REX");
     addSearchExtension(".rex");

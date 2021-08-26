@@ -4,6 +4,34 @@ Hence the creation of a new Github repository Executor5...
 
 
 ===============================================================================
+2021 aug 26
+
+Concurrency trace:
+Simplified integration, no need to get the value of RXTRACE_CONCURRENCY the earliest
+possible, no need to collect concurrency informations from several places (contrary
+to Executor where the concurrency trace is displayed for each semaphore in debug mode).
+
+Impacted files:
+.\cmakelists.txt
+.\common\utilities.hpp
+.\interpreter\concurrency\activity.cpp
+.\interpreter\concurrency\activity.hpp
+.\interpreter\execution\rexxactivation.cpp
+.\interpreter\execution\rexxactivation.hpp
+.\interpreter\execution\variabledictionary.cpp
+.\interpreter\execution\variabledictionary.hpp
+.\interpreter\platform\unix\sysinterpreterinstance.cpp
+.\interpreter\platform\unix\sysinterpreterinstance.hpp
+.\interpreter\platform\windows\sysinterpreterinstance.cpp
+.\interpreter\platform\windows\sysinterpreterinstance.hpp
+.\interpreter\runtime\interpreterinstance.cpp
+.\interpreter\runtime\interpreterinstance.hpp
+
+New file:
+.\samples\tracer.rex
+
+
+===============================================================================
 2021 aug 25
 
 Concurrency trace:

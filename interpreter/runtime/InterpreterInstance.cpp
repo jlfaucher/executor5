@@ -53,7 +53,7 @@
 #include "RoutineClass.hpp"
 #include <atomic>
 
-// not sure that atomic is needed. ooRexx has a GIL but...
+
 static std::atomic<uint32_t> counter(0); // to generate idntfr for concurrency trace
 
 uint32_t InterpreterInstance::getIdntfr()

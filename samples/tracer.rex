@@ -37,11 +37,16 @@
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 
-/****
 
+parse arg args
+call main args
+return result
+
+--::options trace i
+
+::resource usage
 Usage :
-    tracer [-csv] [-filter] [-removePrefix] [<traceFile>]
-
+    tracer [-csv] [-description] [-filter] [-help] [-removePrefix] [<traceFile>]
 
 Examples :
     (Remember : you MUST redirect stderr to stdout with 2>&1)
@@ -55,24 +60,28 @@ Examples :
 
     rexx tracer -csv my_trace_file.txt
 
+::END
 
+
+::resource description
 Description :
-    Convert a trace to an annotated trace.
+    Parse a trace output and rewrite each line atfer optional filtering/transformation.
     If no <traceFile> is specified then read from stdin.
-    The annotated trace is sent to stdout.
+    The transformed trace is sent to stdout.
 
     Use -csv to generate a CSV output.
+    The name of the executable is repeated on each line of the CSV output.
 
     Use -filter to filter out the lines which are not a trace.
 
     Use -removePrefix to remove any text up to (including) ">" at the begining of each line
 
-    The expected input format is something like that after removing any prefix (human-readable ids) :
-    R1     T1     A1                           >I> Routine D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    R1     T1     A1                           >I> Routine A_ROUTINE in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
-    R1     T1     A2       V1           1*          >I> Method INIT with scope "The COROUTINE class" in package D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\generator\coroutine.cls
+    The expected input format is something like that after removing any prefix:
+    R1     T1     A1                                >I> Routine D:\lib.cls in package D:\lib.cls
+    R1     T1     A1                                >I> Routine A_ROUTINE in package D:\lib.cls
+    R1     T1     A2       V1           1*          >I> Method INIT with scope "The DB class" in package D:\lib.cls
     R1     T1     A2       V1           1*       44 *-* self~table = .IdentityTable~new
-    R1     T2     A0                         Error 99 running D:\local\Rexx\ooRexx\svn\sandbox\jlf\samples\trace\doit.rex line 17:  Translation error
+    R1     T2     A0                         Error 99 running D:\local\doit.rex line 17:  Translation error
     R1     T2     A0                         Error 99.916:  Unrecognized directive instruction
 
     See GetConcurrencyInfos in Activity.cpp:
@@ -83,10 +92,14 @@ Description :
         n   infos.reserveCount       = activation ? activation-> getReserveCount() : 0;
         *   infos.lock               = (activation && activation->isObjectScopeLocked()) ? '*' : ' ';
 
-    The classic trace (without any concurrency trace) is also supported.
-    That lets generate a CSV file, more easy to analyze/filter.
-    Without concurrency trace, it's not possible to get the name of the executable for each line of the CSV file.
+    The classic trace without concurrency informations is also supported.
+    That lets generate a CSV file for the classic trace, more easy to analyze/filter.
+    It's not possible to repeat the name of the executableon on each line of the CSV output.
 
+::END
+
+
+/****
 
 Implementation notes:
     traceLineParser = .Tracer.TraceLineParser~new -- you can create a new instance for each line to parse (if you want to keep the attributes), or reuse the same instance (the attributes are reset before parsing)
@@ -169,19 +182,31 @@ Implementation notes:
 
 ****/
 
+::routine main
+
 csv = .false
 filter = .false
 removePrefix = .false
+showDescription = .false
+showUsage = .false
+errorCount = 0
+
 parse arg args
 do forever
     parse var args current rest
     if current~left(1) == "-" then do
-        if current~caselessEquals("-csv") then csv = .true
-        else if current~caselessEquals("-filter") then filter = .true
-        else if current~caselessEquals("-removePrefix") then removePrefix = .true
+        -- accept -option or --option
+        if current~left(2) == "--" then current = current~substr(3)
+        else current = current~substr(2)
+
+        if "csv"~caselessAbbrev(current, 1) then csv = .true
+        else if "description"~caselessAbbrev(current, 1) then showDescription = .true
+        else if "filter"~caselessAbbrev(current, 1) then filter = .true
+        else if "help"~caselessAbbrev(current, 1) then showUsage = .true
+        else if "removePrefix"~caselessAbbrev(current, 1) then removePrefix = .true
         else do
             say "[error] Invalid option : "current
-            return 1
+            errorCount += 1
         end
         args = rest
     end
@@ -190,6 +215,10 @@ do forever
         leave
     end
 end
+
+if errorCount > 0 | showUsage then say .resources["USAGE"]
+if showDescription then say .resources["DESCRIPTION"]
+if errorCount > 0 | showUsage | showDescription then return errorCount <> 0
 
 streamIn = .stdin
 traceFile = .Tracer.Utility~unquoted(traceFile)
@@ -213,8 +242,6 @@ end
 
 return 0
 
-
---::options trace i
 
 -------------------------------------------------------------------------------
 ::class Tracer.Utility public

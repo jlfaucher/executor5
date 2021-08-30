@@ -13,7 +13,6 @@ to Executor where the concurrency trace is displayed for each semaphore in debug
 
 Impacted files:
 .\cmakelists.txt
-.\common\utilities.hpp
 .\interpreter\concurrency\activity.cpp
 .\interpreter\concurrency\activity.hpp
 .\interpreter\execution\rexxactivation.cpp

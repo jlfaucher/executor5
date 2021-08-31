@@ -4,6 +4,24 @@ Hence the creation of a new Github repository Executor5...
 
 
 ===============================================================================
+2021 aug 31
+
+Concurrency trace:
+
+Before the change to use global counters, the identifiers in the column Thread
+were system thread identifiers. Since this change, they are activities identifiers.
+
+When running the JavaFX "address book" application from the BSF4ooRexx samples
+directory "samples\JavaFX\fxml_99", it appears that the count of activities is
+way bigger than the count of system threads (197 activities for 2 system threads).
+
+Implementation modified to display again system thread identifiers.
+For that, I use a collection to associate short ids with system threads.
+It’s a C++ collection, not an ooRexx collection. Always-growing, this is not a
+problem, because the number of system threads is limited (a few thousands).
+
+
+===============================================================================
 2021 aug 26
 
 Concurrency trace:

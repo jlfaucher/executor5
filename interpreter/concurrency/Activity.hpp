@@ -380,7 +380,6 @@ class Activity : public RexxInternalObject
     SysSemaphore        runSem;         // activity run control semaphore
     SysSemaphore        guardSem;       // guard expression semaphore
     SysActivity currentThread;          // descriptor for this thread
-    uint32_t            idntfr;         // idntfr for concurrency trace
     const NumericSettings *numericSettings; // current activation setting values
 
     bool     stackcheck;                // stack space is to be checked

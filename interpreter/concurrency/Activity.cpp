@@ -81,6 +81,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <atomic>
+#include <unordered_map>
 
 // we use lots of global names here.
 using namespace GlobalNames;
@@ -89,11 +90,13 @@ const size_t ACT_STACK_SIZE = 20;
 
 
 static std::atomic<uint32_t> counter(0); // to generate idntfr for concurrency trace
+static std::unordered_map<thread_id_t, uint32_t> threadIDs; // to associate idntfr to system threads
 
 uint32_t Activity::getIdntfr()
 {
-    if (idntfr == 0) idntfr = ++counter;
-    return idntfr;
+    thread_id_t threadID = currentThread.getThreadID();
+    if (threadIDs.find(threadID) == threadIDs.end()) threadIDs[threadID] = ++counter;
+    return threadIDs[threadID];
 }
 
 

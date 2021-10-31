@@ -20,16 +20,16 @@ platform/windows/install/uninstall.ico -text svneol=unset#applicatiion/octet-str
 platform/windows/orxw.ico -text svneol=unset#applicatiion/octet-stream
 platform/windows/rexx.ico -text svneol=unset#applicatiion/octet-stream
 rexxapi/server/platform/windows/rxapi.ico -text
-samples/api/classic/unix/api/callrexx/Makefile.unix -text
-samples/api/classic/unix/api/rexxapi1/Makefile.apple -text
-samples/api/classic/unix/api/rexxapi1/Makefile.linux -text
-samples/api/classic/unix/api/rexxapi1/readme.txt -text
-samples/api/classic/unix/api/rexxapi2/Makefile.apple -text
-samples/api/classic/unix/api/rexxapi2/Makefile.linux -text
-samples/api/classic/unix/api/rexxapi2/readme.txt -text
-samples/api/classic/unix/api/rexxapi3/Makefile.apple -text
-samples/api/classic/unix/api/rexxapi3/Makefile.linux -text
-samples/api/classic/unix/api/rexxapi3/readme.txt -text
+samples/api/classic/unix/callrexx/Makefile.unix -text
+samples/api/classic/unix/rexxapi1/Makefile.apple -text
+samples/api/classic/unix/rexxapi1/Makefile.linux -text
+samples/api/classic/unix/rexxapi1/readme.txt -text
+samples/api/classic/unix/rexxapi2/Makefile.apple -text
+samples/api/classic/unix/rexxapi2/Makefile.linux -text
+samples/api/classic/unix/rexxapi2/readme.txt -text
+samples/api/classic/unix/rexxapi3/Makefile.apple -text
+samples/api/classic/unix/rexxapi3/Makefile.linux -text
+samples/api/classic/unix/rexxapi3/readme.txt -text
 samples/api/classic/windows/callrxnt/callrxnt.ico -text svneol=unset#applicatiion/octet-stream
 samples/api/classic/windows/callrxwn/callrxwn.ico -text svneol=unset#applicatiion/octet-stream
 samples/api/classic/windows/rexxexit/rexxexit.ico -text svneol=unset#applicatiion/octet-stream

@@ -20,6 +20,7 @@ platform/windows/install/uninstall.ico -text svneol=unset#applicatiion/octet-str
 platform/windows/orxw.ico -text svneol=unset#applicatiion/octet-stream
 platform/windows/rexx.ico -text svneol=unset#applicatiion/octet-stream
 rexxapi/server/platform/windows/rxapi.ico -text
+samples/api/classic/unix/api/callrexx/Makefile.unix -text
 samples/api/classic/unix/api/rexxapi1/Makefile.apple -text
 samples/api/classic/unix/api/rexxapi1/Makefile.linux -text
 samples/api/classic/unix/api/rexxapi1/readme.txt -text

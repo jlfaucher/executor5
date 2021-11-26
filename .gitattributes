@@ -21,31 +21,9 @@ platform/windows/install/uninstall.ico -text svneol=unset#applicatiion/octet-str
 platform/windows/orxw.ico -text svneol=unset#applicatiion/octet-stream
 platform/windows/rexx.ico -text svneol=unset#applicatiion/octet-stream
 rexxapi/server/platform/windows/rxapi.ico -text
-samples/api/c++/external/CMakeLists.txt -text
-samples/api/c++/external/Makefile.unix -text
-samples/api/c++/external/Makefile.windows -text
-samples/api/c++/external/external_methods.cpp -text
-samples/api/c++/external/external_methods_routines.cpp -text
-samples/api/c++/external/external_routines.cpp -text
-samples/api/c++/external/readme.txt -text
-samples/api/c++/external/useExternalMethods.rex -text
-samples/api/c++/external/useExternalMethodsRoutines.rex -text
-samples/api/c++/external/useExternalRoutines.rex -text
-samples/api/c++/external/useExternalRoutines2.rex -text
-samples/api/classic/unix/callrexx/Makefile.unix -text
-samples/api/classic/unix/rexxapi1/Makefile.apple -text
-samples/api/classic/unix/rexxapi1/Makefile.linux -text
-samples/api/classic/unix/rexxapi1/readme.txt -text
-samples/api/classic/unix/rexxapi2/Makefile.apple -text
-samples/api/classic/unix/rexxapi2/Makefile.linux -text
-samples/api/classic/unix/rexxapi2/readme.txt -text
-samples/api/classic/unix/rexxapi3/Makefile.apple -text
-samples/api/classic/unix/rexxapi3/Makefile.linux -text
-samples/api/classic/unix/rexxapi3/readme.txt -text
 samples/api/classic/windows/callrxnt/callrxnt.ico -text svneol=unset#applicatiion/octet-stream
 samples/api/classic/windows/callrxwn/callrxwn.ico -text svneol=unset#applicatiion/octet-stream
 samples/api/classic/windows/rexxexit/rexxexit.ico -text svneol=unset#applicatiion/octet-stream
-samples/api/readme.txt -text
 samples/factor.rex -text
 samples/windows/ole/apps/samp06.mwp -text
 samples/windows/oodialog/bmp/bigpiece.bmp -text svneol=unset#image/bmp

@@ -10,6 +10,7 @@ extensions/platform/windows/oodialog/oodialog.ico -text svneol=unset#applicatiio
 extensions/platform/windows/oodialog/rexx.ico -text
 platform/unix/macos/install/Readme_ooRexx.txt -text
 platform/unix/macos/install/Readme_ooRexx_USB.txt -text
+platform/unix/macos/install/ooRexx_on_USB.png -text
 platform/unix/macos/install/oorexx.png -text
 platform/unix/menu/rexxtry.xml -text svneol=native#text
 platform/unix/oorexx.appdata.xml -text svneol=native#text

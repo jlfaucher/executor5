@@ -25,6 +25,10 @@ samples/api/classic/windows/callrxnt/callrxnt.ico -text svneol=unset#applicatiio
 samples/api/classic/windows/callrxwn/callrxwn.ico -text svneol=unset#applicatiion/octet-stream
 samples/api/classic/windows/rexxexit/rexxexit.ico -text svneol=unset#applicatiion/octet-stream
 samples/factor.rex -text
+samples/windows/ole/apps/MSExcelCUrl.rex -text
+samples/windows/ole/apps/MSOutlook.rex -text
+samples/windows/ole/apps/MSPowerPoint.rex -text
+samples/windows/ole/apps/MSWordStyles.rex -text
 samples/windows/ole/apps/samp06.mwp -text
 samples/windows/oodialog/bmp/bigpiece.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/blank.bmp -text svneol=unset#image/bmp

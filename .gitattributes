@@ -35,6 +35,7 @@ samples/windows/ole/apps/MSInternetExplorer_getMethods.rex -text
 samples/windows/ole/apps/MSOutlook.rex -text
 samples/windows/ole/apps/MSOutlook_monitorInbox.rex -text
 samples/windows/ole/apps/MSPowerPoint_layouts.rex -text
+samples/windows/ole/apps/MSPowerPoint_present.rex -text
 samples/windows/ole/apps/MSWord_useStyles.rex -text
 samples/windows/ole/apps/ShellApplication_listSystemFolders.rex -text
 samples/windows/ole/apps/samp06.mwp -text

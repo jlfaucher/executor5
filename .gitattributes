@@ -29,6 +29,7 @@ samples/windows/ole/apps/AOO_scalc_chart.rex -text
 samples/windows/ole/apps/AOO_simpress_present.rex -text
 samples/windows/ole/apps/AOO_swriter_paragraphs.rex -text
 samples/windows/ole/apps/AOO_swriter_table.rex -text
+samples/windows/ole/apps/LotusWordPro_clickHereFields.mwp -text
 samples/windows/ole/apps/MSExcel_cURL.rex -text
 samples/windows/ole/apps/MSExcel_usingRexxArray.rex -text
 samples/windows/ole/apps/MSInternetExplorer_getMethods.rex -text
@@ -38,7 +39,6 @@ samples/windows/ole/apps/MSPowerPoint_layouts.rex -text
 samples/windows/ole/apps/MSPowerPoint_present.rex -text
 samples/windows/ole/apps/MSWord_useStyles.rex -text
 samples/windows/ole/apps/ShellApplication_listSystemFolders.rex -text
-samples/windows/ole/apps/samp06.mwp -text
 samples/windows/oodialog/bmp/bigpiece.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/blank.bmp -text svneol=unset#image/bmp
 samples/windows/oodialog/bmp/blanks.bmp -text svneol=unset#image/bmp

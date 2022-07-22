@@ -18,8 +18,14 @@
 /* Define to 1 if you have the <filehdr.h> header file. */
 #cmakedefine HAVE_FILEHDR_H
 
+/* Define to 1 if you have the 'getifaddrs' function. */
+#cmakedefine HAVE_GETIFADDRS
+
 /* Define to 1 if you have the 'getuserattr' function. */
 #cmakedefine HAVE_GETUSERATTR
+
+/* Define to 1 if you have the <ifaddrs.h> header file. */
+#cmakedefine HAVE_IFADDRS_H
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #cmakedefine HAVE_INTTYPES_H
@@ -87,6 +93,8 @@
 
 /* Define to 1 if KERN_PROC_PATHNAME is a valid symbol */
 #cmakedefine HAVE_KERN_PROC_PATHNAME
+/* Define to 1 if KERN_PROC_ARGV is a valid symbol */
+#cmakedefine HAVE_KERN_PROC_ARGV
 
 /* Define to 1 if struct lstat has a member st_mtim */
 #cmakedefine HAVE_STAT_ST_MTIM

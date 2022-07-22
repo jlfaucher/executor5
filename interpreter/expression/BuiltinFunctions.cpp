@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2021 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2022 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -62,10 +62,6 @@
 
 #include <stdio.h>
 #include <ctype.h>
-
-// lots of global names used here, so make the
-// namespace global.
-using namespace GlobalNames;
 
 // a note on the constants here.  These values are
 // used to define what arguments are used by a BIF.  For
@@ -835,7 +831,7 @@ BUILTIN(FORM)
 
     check_args(FORM);
 
-    return context->form() == Numerics::FORM_SCIENTIFIC ? SCIENTIFIC : ENGINEERING;
+    return context->form() == Numerics::FORM_SCIENTIFIC ? GlobalNames::SCIENTIFIC : GlobalNames::ENGINEERING;
 }
 
 
@@ -931,7 +927,7 @@ BUILTIN(ARG)
         size_t position = n->getValue();
         positive_integer(position, ARG, IntegerOne);
 
-        switch (toupper(option->getChar(0)))
+        switch (Utilities::toUpper(option->getChar(0)))
         {
             // 'A'rray
             case 'A':
@@ -1040,7 +1036,7 @@ BUILTIN(DATE)
         }
         else
         {
-            style = toupper(option->getChar(0));
+            style = Utilities::toUpper(option->getChar(0));
         }
     }
 
@@ -1059,7 +1055,7 @@ BUILTIN(DATE)
         }
         else
         {
-            style2 = toupper(option2->getChar(0));
+            style2 = Utilities::toUpper(option2->getChar(0));
         }
     }
 
@@ -1343,7 +1339,7 @@ BUILTIN(TIME)
             reportException(Error_Incorrect_call_list, "TIME", IntegerOne, "CEFHLMNORST", option);
         }
         // we only use the first character
-        style = toupper(option->getChar(0));
+        style = Utilities::toUpper(option->getChar(0));
     }
 
     // now repeat with the input style
@@ -1362,14 +1358,13 @@ BUILTIN(TIME)
         {
             reportException(Error_Incorrect_call_list, "TIME", IntegerThree, "CFHLMNOST", option2);
         }
-        style2 = toupper(option2->getChar(0));
+        style2 = Utilities::toUpper(option2->getChar(0));
     }
 
     // we have an input time, so we need to parse this
     if (intime != OREF_NULL)
     {
-        // the input timestamp is not valid with the elapsed time options, and
-        // using an offset as an input isn't really meaningful
+        // the input timestamp is not valid with the elapsed time options
         if (style == 'R' || style == 'E')
         {
             reportException(Error_Incorrect_call_invalid_conversion, "TIME", new_string((char *)&style, 1));
@@ -1421,20 +1416,14 @@ BUILTIN(TIME)
             case 'F':                        /* 'F'ull datetime stamp            */
             {
                 int64_t basetime;
-                if (!Numerics::objectToInt64(intime, basetime) || !timestamp.setBaseTime(basetime))
-                {
-                    reportException(Error_Incorrect_call_format_invalid, "TIME", intime, new_string((char *)&style2, 1));
-                }
+                valid = Numerics::objectToInt64(intime, basetime) && timestamp.setBaseTime(basetime);
                 break;
             }
 
             case 'T':                        /* 'T'icks datetime stamp            */
             {
                 int64_t basetime;
-                if (!Numerics::objectToInt64(intime, basetime) || !timestamp.setUnixTime(basetime))
-                {
-                    reportException(Error_Incorrect_call_format_invalid, "TIME", intime, new_string((char *)&style2, 1));
-                }
+                valid = Numerics::objectToInt64(intime, basetime) && timestamp.setUnixTime(basetime);
                 break;
             }
 
@@ -1442,8 +1431,8 @@ BUILTIN(TIME)
             {
                 // everything comes from the current time stamp, but we will adjust to the new offset
                 timestamp = current;                 // and by default we work off of that time
-                wholenumber_t i;
-                valid = intime->numberValue(i) && timestamp.adjustTimeZone(i);
+                int64_t i;
+                valid = Numerics::objectToInt64(intime, i) && timestamp.adjustTimeZone(i);
                 break;
             }
 
@@ -1454,7 +1443,7 @@ BUILTIN(TIME)
         }
         if (!valid)
         {
-            reportException(Error_Incorrect_call_format_invalid, "TIME", intime, new_string((char *)&style2, 1) );
+            reportException(Error_Incorrect_call_format_invalid, "TIME", intime, new_string((char *)&style2, 1));
         }
     }
 
@@ -1766,12 +1755,12 @@ BUILTIN(SYMBOL)
     // a parsing failure is "BAD"
     if (variable == OREF_NULL)
     {
-        return new_string("BAD");
+        return GlobalNames::BAD;
     }
     // if this is a constant symbol, this is LIT
     else if (isString(variable))
     {
-        return new_string("LIT");
+        return GlobalNames::LIT;
     }
     else
     {
@@ -1779,11 +1768,11 @@ BUILTIN(SYMBOL)
         // variables are "LIT", set variables are "VAR"
         if (!variable->exists(context))
         {
-            return new_string("LIT");
+            return GlobalNames::LIT;
         }
         else
         {
-            return new_string("VAR");
+            return GlobalNames::VAR;
         }
     }
 }
@@ -2155,10 +2144,10 @@ BUILTIN(LINEIN)
         // handle both via the exit and the actual queue object
         if (context->getActivity()->callPullExit(context, result))
         {
-            RexxObject *stream = context->getLocalEnvironment(STDQUE);
+            RexxObject *stream = context->getLocalEnvironment(GlobalNames::STDQUE);
             ProtectedObject result;
             // we do this using a LINEIN method
-            return stream->sendMessage(LINEIN, result);
+            return stream->sendMessage(GlobalNames::LINEIN, result);
         }
         return result;
     }
@@ -2175,15 +2164,15 @@ BUILTIN(LINEIN)
             // NAME only
             case 0:
             case 1:
-                return stream->sendMessage(LINEIN, result);
+                return stream->sendMessage(GlobalNames::LINEIN, result);
                 break;
             // start position specified
             case 2:
-                return stream->sendMessage(LINEIN, line, result);
+                return stream->sendMessage(GlobalNames::LINEIN, line, result);
                 break;
             // start and count specified
             case 3:
-                return stream->sendMessage(LINEIN, line, count, result);
+                return stream->sendMessage(GlobalNames::LINEIN, line, count, result);
                 break;
         }
     }
@@ -2208,7 +2197,7 @@ BUILTIN(CHARIN)
     // queue is not allowed for CHARIN
     if (check_queue(name))
     {
-        reportException(Error_Incorrect_call_queue_no_char, CHARIN);
+        reportException(Error_Incorrect_call_queue_no_char, GlobalNames::CHARIN);
     }
 
     // resolve the stream name and send it the appropriate message
@@ -2220,13 +2209,13 @@ BUILTIN(CHARIN)
     {
         case 0:
         case 1:
-            return stream->sendMessage(CHARIN, result);
+            return stream->sendMessage(GlobalNames::CHARIN, result);
             break;
         case 2:
-            return stream->sendMessage(CHARIN, position, result);
+            return stream->sendMessage(GlobalNames::CHARIN, position, result);
             break;
         case 3:
-            return stream->sendMessage(CHARIN, position, count, result);
+            return stream->sendMessage(GlobalNames::CHARIN, position, count, result);
             break;
     }
     return GlobalNames::NULLSTRING;
@@ -2256,9 +2245,9 @@ BUILTIN(LINEOUT)
             // lineout always queues to the queue
             if (string != OREF_NULL)
             {
-                RexxObject *stream = context->getLocalEnvironment(STDQUE);
+                RexxObject *stream = context->getLocalEnvironment(GlobalNames::STDQUE);
                 ProtectedObject result;
-                return stream->sendMessage(QUEUE, string, result);
+                return stream->sendMessage(GlobalNames::QUEUE, string, result);
             }
             else
             {
@@ -2273,17 +2262,24 @@ BUILTIN(LINEOUT)
         // resolve the stream name and send the message based on the arguments
         RexxObject *stream = context->resolveStream(name, false, fullName, &added);
         ProtectedObject result;
+        RexxObject *closeResult;
         switch (argcount)
         {
             case 0:
-            case 1:
-                return stream->sendMessage(LINEOUT, result);
+                return stream->sendMessage(GlobalNames::LINEOUT, result);
+                break;
+            case 1: // a close request
+                closeResult = stream->sendMessage(GlobalNames::LINEOUT, result);
+                // remove this from all tables table after the close
+
+                context->removeFileName(fullName);
+                return closeResult;
                 break;
             case 2:
-                return stream->sendMessage(LINEOUT, string, result);
+                return stream->sendMessage(GlobalNames::LINEOUT, string, result);
                 break;
             case 3:
-                return stream->sendMessage(LINEOUT, string, line, result);
+                return stream->sendMessage(GlobalNames::LINEOUT, string, line, result);
                 break;
         }
     }
@@ -2308,7 +2304,7 @@ BUILTIN(CHAROUT)
     // queues are not allowed with charout
     if (check_queue(name))
     {
-        reportException(Error_Incorrect_call_queue_no_char, CHAROUT);
+        reportException(Error_Incorrect_call_queue_no_char, GlobalNames::CHAROUT);
     }
 
     bool added;
@@ -2320,13 +2316,13 @@ BUILTIN(CHAROUT)
     {
         case 0:
         case 1:
-            return stream->sendMessage(CHAROUT, result);
+            return stream->sendMessage(GlobalNames::CHAROUT, result);
             break;
         case 2:
-            return stream->sendMessage(CHAROUT, string, result);
+            return stream->sendMessage(GlobalNames::CHAROUT, string, result);
             break;
         case 3:
-            return stream->sendMessage(CHAROUT, string, position, result);
+            return stream->sendMessage(GlobalNames::CHAROUT, string, position, result);
             break;
     }
     return GlobalNames::NULLSTRING;
@@ -2344,6 +2340,13 @@ BUILTIN(LINES)
 
     RexxString *name = optional_string(LINES, name); /* get the string name               */
     RexxString *option = optional_string(LINES, option);
+
+    // the default for the BIF and the method are different, so if no
+    // option is given, we need to force it to Normal
+    if (option == OREF_NULL)
+    {
+        option = GlobalNames::NORMAL;
+    }
     RexxObject *result;
     ProtectedObject resultObj;
     int opt = 'N';
@@ -2351,7 +2354,7 @@ BUILTIN(LINES)
     if (option != OREF_NULL)
     {
         // get the first character
-        opt = toupper(option->getChar(0));
+        opt = Utilities::toUpper(option->getChar(0));
         if (opt != 'C' && opt != 'N')
         {
             reportException(Error_Incorrect_call_list, "ARG", IntegerTwo, "NC", option);
@@ -2361,8 +2364,8 @@ BUILTIN(LINES)
     // for the queue, return the count of items in the queue
     if (check_queue(name))
     {
-        RexxObject *stream = context->getLocalEnvironment(STDQUE);
-        result = stream->sendMessage(QUEUED, resultObj);
+        RexxObject *stream = context->getLocalEnvironment(GlobalNames::STDQUE);
+        result = stream->sendMessage(GlobalNames::QUEUED, resultObj);
     }
     else
     {
@@ -2370,7 +2373,7 @@ BUILTIN(LINES)
         Protected<RexxString> fullname;
         // resolve the stream
         RexxObject *stream = context->resolveStream(name, true, fullname, &added);
-        result = stream->sendMessage(LINES, option, resultObj);
+        result = stream->sendMessage(GlobalNames::LINES, option, resultObj);
     }
 
 
@@ -2404,7 +2407,7 @@ BUILTIN(CHARS)
     // queue not allowed with chars()
     if (check_queue(name))
     {
-        reportException(Error_Incorrect_call_queue_no_char, CHARS);
+        reportException(Error_Incorrect_call_queue_no_char, GlobalNames::CHARS);
     }
 
     // resolve the stream and send it the CHARS message
@@ -2412,7 +2415,7 @@ BUILTIN(CHARS)
     Protected<RexxString> fullname;
     RexxObject *stream = context->resolveStream(name, true, fullname, &added);
     ProtectedObject result;
-    return stream->sendMessage(CHARS, result);
+    return stream->sendMessage(GlobalNames::CHARS, result);
 }
 
 
@@ -2436,11 +2439,12 @@ BUILTIN(STREAM)
     // null string not allowed for the name
     if (name->getLength() == 0)
     {
-        reportException(Error_Incorrect_call_stream_name, STREAM, name);
+        reportException(Error_Incorrect_call_stream_name, GlobalNames::STREAM, name);
     }
 
     RexxString *action = optional_string(STREAM, operation);
     RexxString *command = optional_string(STREAM, command);
+
 
     char action_char = STREAM_STATUS;
     // decode the action
@@ -2451,7 +2455,7 @@ BUILTIN(STREAM)
         {
             reportException(Error_Incorrect_call_list, "STREAM", IntegerTwo, "SDC", action);
         }
-        action_char = toupper(action->getChar(0));
+        action_char = Utilities::toUpper(action->getChar(0));
     }
 
     switch (action_char)
@@ -2462,14 +2466,14 @@ BUILTIN(STREAM)
                 // no third argument allowed with status
                 if (argcount > 2)
                 {
-                    reportException(Error_Incorrect_call_maxarg, STREAM, IntegerTwo);
+                    reportException(Error_Incorrect_call_maxarg, GlobalNames::STREAM, IntegerTwo);
                 }
 
                 Protected<RexxString> fullname;
                 // get the stream object and get the state
                 RexxObject *stream = context->resolveStream(name, true, fullname, NULL);
                 ProtectedObject result;
-                return stream->sendMessage(STATE, result);
+                return stream->sendMessage(GlobalNames::STATE, result);
                 break;
             }
 
@@ -2479,13 +2483,13 @@ BUILTIN(STREAM)
                 // only 2 args allowed here also
                 if (argcount > 2)
                 {
-                    reportException(Error_Incorrect_call_maxarg, STREAM, IntegerTwo);
+                    reportException(Error_Incorrect_call_maxarg, GlobalNames::STREAM, IntegerTwo);
                 }
 
                 Protected<RexxString> fullname;
                 RexxObject *stream = context->resolveStream(name, true, fullname, NULL);
                 ProtectedObject result;
-                return stream->sendMessage(DESCRIPTION, result);
+                return stream->sendMessage(GlobalNames::DESCRIPTION, result);
                 break;
             }
 
@@ -2495,7 +2499,7 @@ BUILTIN(STREAM)
                 //the third argument is required here
                 if (argcount < 3)
                 {
-                    reportException(Error_Incorrect_call_minarg, STREAM, IntegerThree);
+                    reportException(Error_Incorrect_call_minarg, GlobalNames::STREAM, IntegerThree);
                 }
                 ProtectedObject p(command);
 
@@ -2507,42 +2511,42 @@ BUILTIN(STREAM)
                 ProtectedObject p1(command_upper);
 
                 // an open request
-                if (command_upper->wordPos(new_string("OPEN"), OREF_NULL)->getValue() > 0)
+                if (command_upper->wordPos(GlobalNames::OPEN, OREF_NULL)->getValue() > 0)
                 {
                     Protected<RexxString> fullname;
                     bool added;
                     RexxObject *stream = context->resolveStream(name, true, fullname, &added);
                     ProtectedObject resultObj;
-                    RexxString *result = (RexxString *)stream->sendMessage(COMMAND, command, resultObj);
+                    RexxString *result = (RexxString *)stream->sendMessage(GlobalNames::COMMAND, command, resultObj);
                     // if open failed, remove the stream object from stream table again
                     if (!result->strCompare("READY:"))
                     {
-                        context->getStreams()->remove(fullname);
+                        context->removeFileName(fullname);
                     }
                     return result;
                 }
                 // a close request
-                else if (command_upper->wordPos(new_string("CLOSE"), OREF_NULL)->getValue() > 0)
+                else if (command_upper->wordPos(GlobalNames::CLOSE, OREF_NULL)->getValue() > 0)
                 {
                     bool added;
                     Protected<RexxString> fullname;
                     RexxObject *stream = context->resolveStream(name, true, fullname, &added);
                     ProtectedObject resultObj;
-                    RexxString *result = (RexxString *)stream->sendMessage(COMMAND, command, resultObj);
+                    RexxString *result = (RexxString *)stream->sendMessage(GlobalNames::COMMAND, command, resultObj);
                     // remove this from the table after the close
-                    context->getStreams()->remove(fullname);
+                    context->removeFileName(fullname);
                     return result;
                 }
                 // these are real operations that might cause an implicit open
-                else if (command_upper->wordPos(new_string("SEEK"), OREF_NULL)->getValue() > 0 ||
-                    command_upper->wordPos(new_string("POSITON"), OREF_NULL)->getValue() > 0)
+                else if (command_upper->wordPos(GlobalNames::SEEK, OREF_NULL)->getValue() > 0 ||
+                    command_upper->wordPos(GlobalNames::POSITION, OREF_NULL)->getValue() > 0)
                 {
                     bool added;
                     Protected<RexxString> fullname;
                     RexxObject *stream = context->resolveStream(name, true, fullname, &added);
                     // this is a real operation, so pass along to the stream object
                     ProtectedObject resultObj;
-                    RexxString *result = (RexxString *)stream->sendMessage(COMMAND, command, resultObj);
+                    RexxString *result = (RexxString *)stream->sendMessage(GlobalNames::COMMAND, command, resultObj);
                     return result;
                 }
                 // all other commands just pass to the resolved stream object
@@ -2551,7 +2555,7 @@ BUILTIN(STREAM)
                     Protected<RexxString> fullname;
                     RexxObject *stream = context->resolveStream(name, true, fullname, NULL);
                     ProtectedObject result;
-                    return stream->sendMessage(COMMAND, command, result);
+                    return stream->sendMessage(GlobalNames::COMMAND, command, result);
                 }
                 break;
             }
@@ -2576,9 +2580,9 @@ BUILTIN(QUEUED)
     // see if the exit handles this, otherwise send a message to the current queue
     if (context->getActivity()->callQueueSizeExit(context, queuesize))
     {
-        RexxObject *queue = context->getLocalEnvironment(STDQUE);
+        RexxObject *queue = context->getLocalEnvironment(GlobalNames::STDQUE);
         ProtectedObject result;
-        return queue->sendMessage(QUEUED, result);
+        return queue->sendMessage(GlobalNames::QUEUED, result);
     }
     else
     {
@@ -2607,7 +2611,7 @@ BUILTIN(CONDITION)
             reportException(Error_Incorrect_call_list, "CONDITION", IntegerOne, "ACDIORS", option);
         }
 
-        style = toupper(option->getChar(0));
+        style = Utilities::toUpper(option->getChar(0));
     }
 
     // get the current trapped condition
@@ -2619,7 +2623,7 @@ BUILTIN(CONDITION)
         case 'A':
             if (conditionobj != OREF_NULL)
             {
-                RexxObject *result = (RexxObject *)conditionobj->get(ADDITIONAL);
+                RexxObject *result = (RexxObject *)conditionobj->get(GlobalNames::ADDITIONAL);
                 // return either .nil or the additional information
                 if (result == OREF_NULL)
                 {
@@ -2640,7 +2644,7 @@ BUILTIN(CONDITION)
         case 'I':
             if (conditionobj != OREF_NULL)
             {
-                return (RexxObject *)conditionobj->get(INSTRUCTION);
+                return (RexxObject *)conditionobj->get(GlobalNames::INSTRUCTION);
             }
             break;
 
@@ -2649,7 +2653,7 @@ BUILTIN(CONDITION)
             if (conditionobj != OREF_NULL)
             {
                 // get the description from the object, return a null string if not there
-                RexxObject *result = (RexxObject *)conditionobj->get(DESCRIPTION);
+                RexxObject *result = (RexxObject *)conditionobj->get(GlobalNames::DESCRIPTION);
                 if (result == OREF_NULL)
                 {
                     result = GlobalNames::NULLSTRING;
@@ -2663,7 +2667,7 @@ BUILTIN(CONDITION)
             // if we have a condition object, return that value
             if (conditionobj != OREF_NULL)
             {
-                return (RexxObject *)conditionobj->get(CONDITION);
+                return (RexxObject *)conditionobj->get(GlobalNames::CONDITION);
             }
             break;
 
@@ -2681,7 +2685,7 @@ BUILTIN(CONDITION)
             // get the current trap state from the condition object if we have one
             if (conditionobj != OREF_NULL)
             {
-                return context->trapState((RexxString *)conditionobj->get(CONDITION));
+                return context->trapState((RexxString *)conditionobj->get(GlobalNames::CONDITION));
             }
             break;
 
@@ -2809,7 +2813,7 @@ BUILTIN(RXQUEUE)
     RexxString *queueName = optional_string(RXQUEUE, name);
     ProtectedObject result;
 
-    switch (toupper(option->getChar(0)))
+    switch (Utilities::toUpper(option->getChar(0)))
     {
         // 'G'et the current queue name
         case 'G':
@@ -2819,7 +2823,7 @@ BUILTIN(RXQUEUE)
             {
                 reportException(Error_Incorrect_call_maxarg, "RXQUEUE", IntegerOne);
             }
-            RexxObject *queue = context->getLocalEnvironment(STDQUE);
+            RexxObject *queue = context->getLocalEnvironment(GlobalNames::STDQUE);
             return queue->sendMessage(GlobalNames::GET, result);
         }
 
@@ -2828,22 +2832,22 @@ BUILTIN(RXQUEUE)
         {
             RexxObject *t = OREF_NULL;   // required for the findClass call
             // we need the RexxQueue class for this
-            RexxClass *rexxQueue = TheRexxPackage->findClass(REXXQUEUE, t);
+            RexxClass *rexxQueue = TheRexxPackage->findClass(GlobalNames::REXXQUEUE, t);
 
             // if no queue name specified, we allow a name to be
             // created for us
             if (queueName == OREF_NULL)
             {
-                return rexxQueue->sendMessage(new_string("CREATE"), result);
+                return rexxQueue->sendMessage(GlobalNames::CREATE, result);
             }
             else
             {
                 // this must be a valid symbol
                 if (queueName->isSymbol() == STRING_BAD_VARIABLE)
                 {
-                    reportException(Error_Incorrect_call_symbol, new_string("RXQUEUE"), IntegerTwo, queueName);
+                    reportException(Error_Incorrect_call_symbol, GlobalNames::RXQUEUE, IntegerTwo, queueName);
                 }
-                return rexxQueue->sendMessage(new_string("CREATE"), queueName, result);
+                return rexxQueue->sendMessage(GlobalNames::CREATE, queueName, result);
             }
         }
 
@@ -2853,17 +2857,17 @@ BUILTIN(RXQUEUE)
             // queueName is required
             if (queueName == OREF_NULL)
             {
-                reportException(Error_Incorrect_call_minarg, "RXQUEUE", IntegerTwo);
+                reportException(Error_Incorrect_call_minarg, GlobalNames::RXQUEUE, IntegerTwo);
             }
             // give the exit a pass at this
             context->getActivity()->callQueueNameExit(context, queueName);
             // this must be a valid symbol
             if (queueName->isSymbol() == STRING_BAD_VARIABLE)
             {
-                reportException(Error_Incorrect_call_symbol, new_string("RXQUEUE"), IntegerTwo, queueName);
+                reportException(Error_Incorrect_call_symbol, GlobalNames::RXQUEUE, IntegerTwo, queueName);
             }
-            RexxObject *queue = context->getLocalEnvironment(STDQUE);
-            return queue->sendMessage(new_string("SET"), queueName, result);
+            RexxObject *queue = context->getLocalEnvironment(GlobalNames::STDQUE);
+            return queue->sendMessage(GlobalNames::SET, queueName, result);
         }
 
         // 'O'pen a new queue name...creates if needed
@@ -2872,18 +2876,18 @@ BUILTIN(RXQUEUE)
             // queueName is required
             if (queueName == OREF_NULL)
             {
-                reportException(Error_Incorrect_call_minarg, "RXQUEUE", IntegerTwo);
+                reportException(Error_Incorrect_call_minarg, GlobalNames::RXQUEUE, IntegerTwo);
             }
             // we need the RexxQueue class for this
             RexxObject *t = OREF_NULL;   // required for the findClass call
 
-            RexxClass *rexxQueue = TheRexxPackage->findClass(REXXQUEUE, t);
+            RexxClass *rexxQueue = TheRexxPackage->findClass(GlobalNames::REXXQUEUE, t);
             // this must be a valid symbol
             if (queueName->isSymbol() == STRING_BAD_VARIABLE)
             {
-                reportException(Error_Incorrect_call_symbol, new_string("RXQUEUE"), IntegerTwo, queueName);
+                reportException(Error_Incorrect_call_symbol, GlobalNames::RXQUEUE, IntegerTwo, queueName);
             }
-            return rexxQueue->sendMessage(new_string("OPEN"), queueName, result);
+            return rexxQueue->sendMessage(GlobalNames::OPEN, queueName, result);
         }
 
         // 'E'xists
@@ -2892,18 +2896,18 @@ BUILTIN(RXQUEUE)
             // queueName is required
             if (queueName == OREF_NULL)
             {
-                reportException(Error_Incorrect_call_minarg, "RXQUEUE", IntegerTwo);
+                reportException(Error_Incorrect_call_minarg, GlobalNames::RXQUEUE, IntegerTwo);
             }
             RexxObject *t = OREF_NULL;   // required for the findClass call
 
             // we need the RexxQueue class for this
-            RexxClass *rexxQueue = TheRexxPackage->findClass(REXXQUEUE,t);
+            RexxClass *rexxQueue = TheRexxPackage->findClass(GlobalNames::REXXQUEUE, t);
             // this must be a valid symbol
             if (queueName->isSymbol() == STRING_BAD_VARIABLE)
             {
-                reportException(Error_Incorrect_call_symbol, new_string("RXQUEUE"), IntegerTwo, queueName);
+                reportException(Error_Incorrect_call_symbol, GlobalNames::RXQUEUE, IntegerTwo, queueName);
             }
-            return rexxQueue->sendMessage(new_string("EXISTS"), queueName, result);
+            return rexxQueue->sendMessage(GlobalNames::EXISTS, queueName, result);
         }
 
         // 'D'elete
@@ -2912,18 +2916,18 @@ BUILTIN(RXQUEUE)
             // queueName is required
             if (queueName == OREF_NULL)
             {
-                reportException(Error_Incorrect_call_minarg, "RXQUEUE", IntegerTwo);
+                reportException(Error_Incorrect_call_minarg, GlobalNames::RXQUEUE, IntegerTwo);
             }
             RexxObject *t = OREF_NULL;   // required for the findClass call
 
             // we need the RexxQueue class for this
-            RexxClass *rexxQueue = TheRexxPackage->findClass(REXXQUEUE, t);
+            RexxClass *rexxQueue = TheRexxPackage->findClass(GlobalNames::REXXQUEUE, t);
             // this must be a valid symbol
             if (queueName->isSymbol() == STRING_BAD_VARIABLE)
             {
-                reportException(Error_Incorrect_call_symbol, new_string("RXQUEUE"), IntegerTwo, queueName);
+                reportException(Error_Incorrect_call_symbol, GlobalNames::RXQUEUE, IntegerTwo, queueName);
             }
-            return rexxQueue->sendMessage(new_string("DELETE"), queueName, result);
+            return rexxQueue->sendMessage(GlobalNames::DELETE_STR, queueName, result);
         }
 
         default:

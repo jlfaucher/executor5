@@ -95,6 +95,7 @@ public:
     RexxObject *getMaxArraySize();
     RexxObject *getRexxExecutable();
     RexxObject *getRexxLibrary();
+    RexxObject *getDebug();
 
     RexxObject *copyRexx();
     RexxObject *newRexx(RexxObject **args, size_t argc);

@@ -52,5 +52,5 @@ cmake_policy(VERSION 2.8...3.3)
 #/*----------------------------------------------------------------------------*/
 project (samples-windows)
 
-add_subdirectory (api)
+# add_subdirectory (api)
 

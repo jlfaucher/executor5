@@ -1,12 +1,12 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2014 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2022 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
 /* distribution. A copy is also available at the following address:           */
-/* https://www.oorexx.org/license.html                         */
+/* https://www.oorexx.org/license.html                                        */
 /*                                                                            */
 /* Redistribution and use in source and binary forms, with or                 */
 /* without modification, are permitted provided that the following            */
@@ -55,9 +55,9 @@
 //  MAIN program
 //
 int WINAPI WinMain(
-    HINSTANCE hInstance,	// handle to current instance
-    HINSTANCE hPrevInstance,	// handle to previous instance
-    LPSTR lpCmdLine,	// pointer to command line
+    HINSTANCE hInstance,                 // handle to current instance
+    HINSTANCE hPrevInstance,             // handle to previous instance
+    LPSTR lpCmdLine,                     // pointer to command line
     int nCmdShow)
 {
     int32_t rc;                          /* actually running program RC       */
@@ -121,7 +121,7 @@ int WINAPI WinMain(
 
         pgmThrdInst->DirectoryPut(dir, rxcargs, "SYSCARGS");
 
-        LocalFree(argv);        // released the parsed argguments
+        GlobalFree(argv);        // release the parsed arguments
         // call the interpreter
         result = pgmThrdInst->CallProgram(program_name, rxargs);
         // display any error message if there is a condition.  if there was an
@@ -140,7 +140,7 @@ int WINAPI WinMain(
             sprintf(arg_buffer, "Error %zd.%1zd running program %s line %zd\n\n  %s\n  %s", conditionInfo.rc, minorCode,
                 pgmThrdInst->StringData(conditionInfo.program), conditionInfo.position,
                 pgmThrdInst->StringData(conditionInfo.errortext), pgmThrdInst->StringData(conditionInfo.message));
-            MessageBox(NULL, arg_buffer, "Object Object Rexx Execution Error", MB_OK | MB_ICONHAND);
+            MessageBox(NULL, arg_buffer, "Open Object Rexx Execution Error", MB_OK | MB_ICONHAND);
 
             pgmInst->Terminate();
             return -rc;   // well, the negation of the error number is the return code
@@ -155,7 +155,4 @@ int WINAPI WinMain(
 
     return rc;
 }
-
-
-
 

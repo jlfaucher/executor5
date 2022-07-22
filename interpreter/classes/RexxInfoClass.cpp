@@ -526,3 +526,16 @@ RexxObject *RexxInfo::getRexxLibrary()
 }
 
 
+/**
+ * If compiled for debugging, then returns .true, .false else
+ *
+ * @return The end-of-line separator, as a string.
+ */
+RexxObject *RexxInfo::getDebug()
+{
+#ifdef _DEBUG
+   return TheTrueObject;
+#else
+   return TheFalseObject;
+#endif
+}

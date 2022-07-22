@@ -1,6 +1,6 @@
 #/*----------------------------------------------------------------------------*/
 #/*                                                                            */
-#/* Copyright (c) 2014-2021 Rexx Language Association. All rights reserved.    */
+#/* Copyright (c) 2014-2022 Rexx Language Association. All rights reserved.    */
 #/*                                                                            */
 #/* This program and the accompanying materials are made available under       */
 #/* the terms of the Common Public License v1.0 which accompanies this         */
@@ -47,12 +47,13 @@ else ()
     # for other platforms
     cmake_minimum_required (VERSION 2.8.12)
 endif ()
-cmake_policy(VERSION 2.8...3.20)
+# CMP0091 introduced in 3.15 must stay OLD for our /MD -> /MT hack to work
+cmake_policy(VERSION 2.8...3.3)
 
 # must come before the project command
-# 13.6 High Sierra is the minimum system supported
+# 10.13.6 High Sierra is the minimum system supported
 if( APPLE AND BUILD_OSX_UNIVERSAL_BINARIES )
-  set( CMAKE_OSX_DEPLOYMENT_TARGET 13.6 CACHE STRING  "" FORCE)
+  set( CMAKE_OSX_DEPLOYMENT_TARGET 10.13.6 CACHE STRING  "" FORCE)
 endif()
 
 project (ooRexx)
@@ -164,9 +165,6 @@ set (VERSION_INFO "-version-info ${ORX_CURRENT}:${ORX_REVISION}:${ORX_AGE}")
 set (ORX_VERSION ${ORX_CURRENT}.${ORX_AGE}.${ORX_REVISION})
 
 
-# The following are general settings
-# Always create shared libraries (DLLs)
-set (CMAKE_CXX_CREATE_SHARED_MODULE 1)
 # Set the platform subdirectory name
 if (WIN32)
    set (ORX_PLATFORM_DIR platform/windows)
@@ -280,18 +278,19 @@ else ()
    if (APPLE AND CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
      set (CMAKE_INSTALL_PREFIX $ENV{HOME}/Applications/ooRexx${ORX_MAJOR}
        CACHE PATH "Default install path" FORCE)
-     set (INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/lib)
+     set (INSTALL_LIB_DIR lib)
    else ()
-     set (INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+     set (INSTALL_LIB_DIR ${CMAKE_INSTALL_LIBDIR})
    endif ()
    message(STATUS "CMAKE_INSTALL_PREFIX is ${CMAKE_INSTALL_PREFIX}")
    message(STATUS "INSTALL_LIB_DIR is ${INSTALL_LIB_DIR}")
 
-   set (INSTALL_EXECUTABLE_DIR ${CMAKE_INSTALL_PREFIX}/bin)
+   set (INSTALL_EXECUTABLE_DIR bin)
    set (INSTALL_CLS_DIR ${INSTALL_EXECUTABLE_DIR})
-   set (INSTALL_INCLUDE_DIR ${CMAKE_INSTALL_PREFIX}/include)
-   set (INSTALL_SAMPLES_DIR ${CMAKE_INSTALL_PREFIX}/share/${CMAKE_PROJECT_NAME})
-   set (INSTALL_MAN_DIR ${CMAKE_INSTALL_PREFIX}/share/man)
+   set (INSTALL_INCLUDE_DIR include)
+   set (INSTALL_SAMPLES_DIR share/${CMAKE_PROJECT_NAME}/samples)
+   set (INSTALL_DOC_DIR share/${CMAKE_PROJECT_NAME}/doc)
+   set (INSTALL_MAN_DIR share/man)
 endif ()
 
 # Set compiler and linker flags common to all build environments
@@ -343,7 +342,6 @@ if (WIN32)
             /DWIN32 /D_WINDOWS /DHAVE_CONFIG_H)
 else ()
    add_definitions(-DORX_VER=${ORX_MAJOR} -DORX_REL=${ORX_MINOR} -DORX_MOD=${ORX_MOD_LVL} -DORX_BLD=${ORX_BLD_LVL}
-
             -DOOREXX_COPY_YEAR="${ORX_COPY_YEAR}"
             -DORX_SYS_STR="${ORX_SYS_STR}"
              -D_GNU_SOURCE
@@ -400,7 +398,8 @@ if (NOT WIN32)
   check_symbol_exists(FS_CASEFOLD_FL linux/fs.h HAVE_FS_CASEFOLD_FL)
   check_symbol_exists(_NSGetExecutablePath mach-o/dyld.h HAVE_NSGETEXECUTABLEPATH)
   check_symbol_exists(getexecname stdlib.h HAVE_GETEXECNAME)
-  check_symbol_exists(KERN_PROC_PATHNAME sys/sysctl.h HAVE_KERN_PROC_PATHNAME)
+  check_symbol_exists(KERN_PROC_PATHNAME "sys/types.h;sys/sysctl.h" HAVE_KERN_PROC_PATHNAME)
+  check_symbol_exists(KERN_PROC_ARGV "sys/types.h;sys/sysctl.h" HAVE_KERN_PROC_ARGV)
   check_struct_has_member("struct stat" st_mtim sys/stat.h HAVE_STAT_ST_MTIM)
   check_struct_has_member("struct stat" st_mtimespec sys/stat.h HAVE_STAT_ST_MTIMESPEC)
   check_include_file(pwd.h HAVE_PWD_H)
@@ -415,6 +414,8 @@ if (NOT WIN32)
   check_include_file(sys/time.h HAVE_SYS_TIME_H)
   check_include_file(sys/utsname.h HAVE_SYS_UTSNAME_H)
   check_include_file(sys/wait.h HAVE_SYS_WAIT_H)
+  check_include_file(ifaddrs.h HAVE_IFADDRS_H)
+  check_symbol_exists(getifaddrs "sys/types.h;sys/socket.h;ifaddrs.h" HAVE_GETIFADDRS)
   set (CURSES_NEED_NCURSES TRUE)
   include(FindCurses) # sets CURSES_HAVE_NCURSES_H and CURSES_HAVE_NCURSES_NCURSES_H
   message(STATUS "CURSES_HAVE_NCURSES_H is ${CURSES_HAVE_NCURSES_H}")
@@ -529,6 +530,8 @@ if (WIN32)
 string(REGEX REPLACE "/EHsc" "/EHsc-" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 # This replaces the /MD compile flag with /MT.
+# as soon as we can require CMake minimum of 3.15 below hack should be replaced with
+# set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 set(CompilerFlags
         CMAKE_CXX_FLAGS
         CMAKE_CXX_FLAGS_DEBUG
@@ -1036,7 +1039,7 @@ add_custom_command(OUTPUT ${ORX_IMAGE_OUTPUT_LOCATION}/rexx.img
            WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
 add_custom_target(rexx_img ALL DEPENDS ${ORX_IMAGE_OUTPUT_LOCATION}/rexx.img)
-install(PROGRAMS ${ORX_IMAGE_OUTPUT_LOCATION}/rexx.img COMPONENT Core DESTINATION ${INSTALL_LIB_DIR} PERMISSIONS OWNER_EXECUTE GROUP_EXECUTE WORLD_EXECUTE OWNER_READ GROUP_READ WORLD_READ)
+install(PROGRAMS ${ORX_IMAGE_OUTPUT_LOCATION}/rexx.img COMPONENT Core DESTINATION ${INSTALL_LIB_DIR} PERMISSIONS OWNER_EXECUTE GROUP_EXECUTE WORLD_EXECUTE OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 #################### rxapi (executable) #########################
 # additional source files required by specific platforms
@@ -1345,9 +1348,10 @@ if (NOT WIN32)
    target_include_directories(orxncurses PUBLIC
              ${build_api_dir}
              ${build_api_platform_dir}
-             ${build_extensions_dir}/orxncurses)
+             ${build_extensions_dir}/orxncurses
+             ${CURSES_INCLUDE_DIRS})
    # Extra link library definitions
-   target_link_libraries(orxncurses rexx rexxapi ncurses ${CMAKE_REQUIRED_LIBRARIES})
+   target_link_libraries(orxncurses rexx rexxapi  ${CURSES_LIBRARIES} ${CMAKE_REQUIRED_LIBRARIES})
    # Make sure ncurses.cls gets copied
    add_custom_target(ncurses_cls  ALL DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ncurses.cls)
    set_target_properties(orxncurses PROPERTIES SOVERSION ${ORX_API_LEVEL})
@@ -1397,9 +1401,9 @@ if (WIN32)
    set (OOD_MAJOR 4)
    set (OOD_MINOR 2)
    set (OOD_MOD_LVL 4)
-   set (OOD_BLD_LVL 11861)
-   set (OOD_VER_STR "4.2.4.12250")
-   set (OOD_COPY_YEAR "2005-2021")
+   set (OOD_BLD_LVL 12373)
+   set (OOD_VER_STR "4.2.4.12373")
+   set (OOD_COPY_YEAR "2005-2022")
 
    #################### ooshapes.dll ################
    # Sources for ooshapes.dll
@@ -1797,7 +1801,7 @@ if (NOT WIN32)
       add_custom_target(${name}_man ALL DEPENDS ${name}.${cat}.gz)
       install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${name}.${cat}.gz
           DESTINATION ${INSTALL_MAN_DIR}/man${cat}
-          PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
+          PERMISSIONS OWNER_READ GROUP_READ WORLD_READ OWNER_WRITE)
    endmacro (add_manpage)
 
    add_manpage (rexx 1)
@@ -1805,7 +1809,7 @@ if (NOT WIN32)
    add_manpage (rxqueue 1)
    add_manpage (rxsubcom 1)
 
-   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${build_samples_dir}/readme.txt DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${CMAKE_PROJECT_NAME})
+   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${build_samples_dir}/readme.txt DESTINATION ${INSTALL_SAMPLES_DIR})
 endif ()
 
 
@@ -1824,7 +1828,9 @@ add_subdirectory (testbinaries)
 
 # The Windows installer assumes we have the docs available.  Don't try building
 # any of the installer stuff if this is not available.
-if (WIN32 AND DOC_SOURCE_DIR)
+if (DOC_SOURCE_DIR)
+
+ if (WIN32)
    # Add the install directory to the module path so the custom template can be located.
    set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/${build_platform_dir}/install ${CMAKE_MODULE_PATH})
 
@@ -1991,8 +1997,13 @@ if (WIN32 AND DOC_SOURCE_DIR)
       file(TO_NATIVE_PATH ${DOC_SOURCE_DIR} NATIVE_DOC_DIR)
 
       # Name of the installer file we're going to create
-      set(INSTALLER_FILE "ooRexx-${ORX_VERSION_NSIS}.windows.${NSIS_CPU}.exe")
-      set(INSTALLER_SCRIPT "ooRexx-${ORX_VERSION_NSIS}.windows.${NSIS_CPU}.nsi")
+      if (DEFINED OS_DIST)
+         set(INSTALLER_FILE "ooRexx-${ORX_VERSION_NSIS}.${OS_DIST}.${NSIS_CPU}.exe")
+         set(INSTALLER_SCRIPT "ooRexx-${ORX_VERSION_NSIS}.${OS_DIST}.${NSIS_CPU}.nsi")
+      else ()
+         set(INSTALLER_FILE "ooRexx-${ORX_VERSION_NSIS}.windows.${NSIS_CPU}.exe")
+         set(INSTALLER_SCRIPT "ooRexx-${ORX_VERSION_NSIS}.windows.${NSIS_CPU}.nsi")
+      endif ()
 
       # create an installer file from the template
       message(STATUS "Building NSIS template ${INSTALLER_SCRIPT}")
@@ -2079,6 +2090,29 @@ if (WIN32 AND DOC_SOURCE_DIR)
           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
           COMMENT "Removing NSIS installer build files")
    endif()
+
+   else () # Unix
+	   # install each of the doc files
+	   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/CHANGES COMPONENT Docs DESTINATION ${INSTALL_DOC_DIR} RENAME CHANGES.txt)
+	   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/ReleaseNotes COMPONENT Docs DESTINATION ${INSTALL_DOC_DIR} RENAME ReleaseNotes.txt)
+
+	   install(FILES ${DOC_SOURCE_DIR}/readme.pdf COMPONENT Docs DESTINATION ${INSTALL_DOC_DIR})
+	   install(FILES ${DOC_SOURCE_DIR}/ootest.pdf COMPONENT Docs DESTINATION ${INSTALL_DOC_DIR})
+	   install(FILES ${DOC_SOURCE_DIR}/orxncurses.pdf COMPONENT Docs DESTINATION ${INSTALL_DOC_DIR})
+	
+	   install(FILES ${DOC_SOURCE_DIR}/rexxapi.pdf COMPONENT Docs DESTINATION ${INSTALL_DOC_DIR})
+	   install(FILES ${DOC_SOURCE_DIR}/rexxextensions.pdf COMPONENT Docs DESTINATION ${INSTALL_DOC_DIR})
+	   install(FILES ${DOC_SOURCE_DIR}/rexxgtk.pdf COMPONENT Docs DESTINATION ${INSTALL_DOC_DIR})
+	
+	   install(FILES ${DOC_SOURCE_DIR}/rexxpg.pdf COMPONENT Docs DESTINATION ${INSTALL_DOC_DIR})
+	   install(FILES ${DOC_SOURCE_DIR}/rexxref.pdf COMPONENT Docs DESTINATION ${INSTALL_DOC_DIR})
+	   install(FILES ${DOC_SOURCE_DIR}/rxmath.pdf COMPONENT Docs DESTINATION ${INSTALL_DOC_DIR})
+	   install(FILES ${DOC_SOURCE_DIR}/rxsock.pdf COMPONENT Docs DESTINATION ${INSTALL_DOC_DIR})
+	   install(FILES ${DOC_SOURCE_DIR}/rxftp.pdf COMPONENT Docs DESTINATION ${INSTALL_DOC_DIR})
+
+	   install(FILES ${DOC_SOURCE_DIR}/unixextensions.pdf COMPONENT Docs DESTINATION ${INSTALL_DOC_DIR})
+
+   endif()	
 endif ()
 
 
@@ -2091,8 +2125,8 @@ endif ()
 # Build an RPM
 if (BUILD_RPM)
    # Set up the desktop menu
-   SET(ORX_DESKTOP_DIR     ${CMAKE_INSTALL_PREFIX}/share/applications)
-   SET(ORX_PIXMAPS_DIR     ${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/48x48/apps)
+   SET(ORX_DESKTOP_DIR share/applications)
+   SET(ORX_PIXMAPS_DIR share/icons/hicolor/48x48/apps)
    configure_file(${ORX_PLATFORM_DIR}/menu/rexxtry.desktop.in ${PROJECT_BINARY_DIR}/rexxtry.desktop)
    INSTALL (FILES ${PROJECT_BINARY_DIR}/rexxtry.desktop DESTINATION ${ORX_DESKTOP_DIR})
    #INSTALL (FILES ${ORX_PLATFORM_DIR}/menu/rexxtry.xml DESTINATION ${ORX_DESKTOP_DIR})
@@ -2102,9 +2136,9 @@ if (BUILD_RPM)
    find_program(XDG-MIME_EXECUTABLE xdg-mime)
    find_program(XDG-DESKTOP-MENU_EXECUTABLE xdg-desktop-menu)
    INSTALL(CODE "
-     #execute_process(COMMAND ${XDG-MIME_EXECUTABLE} install --novendor ${ORX_DESKTOP_DIR}/rexxtry.xml)
-     execute_process(COMMAND ${XDG-DESKTOP-MENU_EXECUTABLE} install --novendor ${ORX_DESKTOP_DIR}/rexxtry.desktop)
-     execute_process(COMMAND ${XDG-MIME_EXECUTABLE} default ${ORX_DESKTOP_DIR}/rexxtry.desktop application/x-ooRexx-item)
+     #execute_process(COMMAND ${XDG-MIME_EXECUTABLE} install --novendor ${CMAKE_INSTALL_PREFIX}/${ORX_DESKTOP_DIR}/rexxtry.xml)
+     execute_process(COMMAND ${XDG-DESKTOP-MENU_EXECUTABLE} install --novendor ${CMAKE_INSTALL_PREFIX}/${ORX_DESKTOP_DIR}/rexxtry.desktop)
+     execute_process(COMMAND ${XDG-MIME_EXECUTABLE} default ${CMAKE_INSTALL_PREFIX}/${ORX_DESKTOP_DIR}/rexxtry.desktop application/x-ooRexx-item)
      ")
    # This prevents the rpm from generating these subdirectories in the install.
    set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION
@@ -2159,8 +2193,8 @@ endif ()
 # Build a DEB
 if (BUILD_DEB)
    # Set up the desktop menu
-   SET(ORX_DESKTOP_DIR     ${CMAKE_INSTALL_PREFIX}/share/applications)
-   SET(ORX_PIXMAPS_DIR     ${CMAKE_INSTALL_PREFIX}/share/icons)
+   SET(ORX_DESKTOP_DIR share/applications)
+   SET(ORX_PIXMAPS_DIR share/icons)
    configure_file(${ORX_PLATFORM_DIR}/menu/rexxtry.desktop.in ${PROJECT_BINARY_DIR}/rexxtry.desktop)
    INSTALL (FILES ${PROJECT_BINARY_DIR}/rexxtry.desktop DESTINATION ${ORX_DESKTOP_DIR})
    #INSTALL (FILES ${ORX_PLATFORM_DIR}/menu/rexxtry.xml DESTINATION ${ORX_DESKTOP_DIR})
@@ -2170,9 +2204,9 @@ if (BUILD_DEB)
    find_program(XDG-MIME_EXECUTABLE xdg-mime)
    find_program(XDG-DESKTOP-MENU_EXECUTABLE xdg-desktop-menu)
    INSTALL(CODE "
-     #execute_process(COMMAND ${XDG-MIME_EXECUTABLE} install --novendor ${ORX_DESKTOP_DIR}/rexxtry.xml)
-     execute_process(COMMAND ${XDG-DESKTOP-MENU_EXECUTABLE} install --novendor ${ORX_DESKTOP_DIR}/rexxtry.desktop)
-     execute_process(COMMAND ${XDG-MIME_EXECUTABLE} default ${ORX_DESKTOP_DIR}/rexxtry.desktop application/x-ooRexx-item)
+     #execute_process(COMMAND ${XDG-MIME_EXECUTABLE} install --novendor ${CMAKE_INSTALL_PREFIX}/${ORX_DESKTOP_DIR}/rexxtry.xml)
+     execute_process(COMMAND ${XDG-DESKTOP-MENU_EXECUTABLE} install --novendor ${CMAKE_INSTALL_PREFIX}/${ORX_DESKTOP_DIR}/rexxtry.desktop)
+     execute_process(COMMAND ${XDG-MIME_EXECUTABLE} default ${CMAKE_INSTALL_PREFIX}/${ORX_DESKTOP_DIR}/rexxtry.desktop application/x-ooRexx-item)
      ")
    set(CPACK_GENERATOR DEB)
    # The package name MUST be in lower case.
@@ -2243,8 +2277,9 @@ if (BUILD_DMG)
       set(CPACK_PACKAGE_RELEASE ${ORX_BLD_LVL})
    endif ()
 
-   if (DEFINED OS_DIST)
-      set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL}-${CPACK_PACKAGE_RELEASE}.${OS_DIST}.${CMAKE_SYSTEM_PROCESSOR}")
+# This was changed to cope with arm64 or x86_64 or both
+   if( APPLE AND BUILD_OSX_UNIVERSAL_BINARIES )
+      set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL}-${CPACK_PACKAGE_RELEASE}.${OS_DIST}.arm64.x86_64")
    else ()
       set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${ORX_MAJOR}.${ORX_MINOR}.${ORX_MOD_LVL}-${CPACK_PACKAGE_RELEASE}.${CMAKE_SYSTEM_PROCESSOR}")
    endif ()

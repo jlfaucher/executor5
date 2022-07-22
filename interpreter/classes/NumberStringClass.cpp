@@ -1339,7 +1339,7 @@ bool numberStringScan(const char *number, size_t length)
     }
 
     // we're at a non-digit.  Check for the start of an exponent.
-    if (toupper(*inPtr) == 'E')
+    if (*inPtr == 'E' || *inPtr == 'e')
     {
         // we must have digits after this...fail if this the end of the string.
         if (++inPtr >= endData)
@@ -2209,6 +2209,15 @@ RexxString *NumberString::formatInternal(wholenumber_t integers, wholenumber_t d
             else
             {
                 decimalDigits = adjustedDecimals;
+            }
+
+            // this can happen if there is a round out on the top digit when we
+            // are truncating and exponential notation is now required. In that situation
+            // we have more decimals that we are allowed to use
+            if (adjustedDecimals > decimals)
+            {
+                adjustedDecimals = decimals;
+                decimalDigits = decimals;
             }
             // in theory, everything has been adjusted to the point where
             // decimals is >= to the adjusted size
@@ -4066,15 +4075,15 @@ NumberString *NumberString::newInstanceFromDouble(double number, wholenumber_t p
     // special strings for those.
     if (std::isnan(number))
     {
-        return (NumberString *)new_string("nan");
+        return (NumberString *)GlobalNames::NAN_VAL;
     }
     else if (number == +HUGE_VAL)
     {
-        return (NumberString *)new_string("+infinity");
+        return (NumberString *)GlobalNames::INFINITY_PLUS;
     }
     else if (number == -HUGE_VAL)
     {
-        return (NumberString *)new_string("-infinity");
+        return (NumberString *)GlobalNames::INFINITY_MINUS;
     }
 
     // with precision restricted to a maximum of 16, the length of a %.*g

@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2021 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2022 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -428,7 +428,7 @@ HashCode RexxObject::hash()
         // we need to have a return value for this.
         if (result.isNull())
         {
-            reportException(Error_No_result_object_message, new_string("HASHCODE"));
+            reportException(Error_No_result_object_message, GlobalNames::HASHCODE);
         }
 
         // the default version sends us a string containing binary data.
@@ -920,6 +920,9 @@ RexxObject *RexxObject::messageSend(RexxString *msgname, RexxObject **arguments,
 RexxObject *RexxObject::messageSend(RexxString *msgname, RexxObject **arguments, size_t count,
     RexxClass *startscope, ProtectedObject &result)
 {
+    // validate that the scope override is valid (FORWARD uses this method, this way no need to check TO option)
+    validateScopeOverride(startscope);
+
     // perform a stack space check
     ActivityManager::currentActivity->checkStackSpace();
 
@@ -1942,45 +1945,13 @@ RexxObject *RexxObject::requestRexx(RexxString *name)
  */
 void RexxObject::validateScopeOverride(RexxClass *scope)
 {
+    // validate the starting scope if we've been given one
     if (scope != OREF_NULL)
     {
-        if (!isInstanceOf(scope))
+        if (! this->behaviour->hasScope((RexxClass *)scope))
         {
             reportException(Error_Incorrect_method_array_noclass, this, scope);
         }
-    }
-}
-
-
-/**
- * Validate that this is an appropriate context for invoking
- * a superclass override.
- *
- * @param target The invocation target object.
- */
-void RexxObject::validateOverrideContext(RexxObject *target, RexxClass *scope)
-{
-    // no scope override, so this is good
-    if (scope == OREF_NULL)
-    {
-        return;
-    }
-
-    // validate the message creator now
-    ActivationBase *activation = ActivityManager::currentActivity->getTopStackFrame();
-    // have an activation?
-    if (activation != OREF_NULL)
-    {
-        // get the receiving object
-        RexxObject *sender = activation->getReceiver();
-        if (sender != target)
-        {
-            reportException(Error_Execution_super);
-        }
-    }
-    else
-    {
-        reportException(Error_Execution_super);
     }
 }
 
@@ -2012,7 +1983,6 @@ RexxObject *RexxObject::sendWith(RexxObject *message, ArrayClass *args)
     {
         // validate that the scope override is valid
         validateScopeOverride(startScope);
-        validateOverrideContext(this, startScope);
         messageSend(messageName, arguments->messageArgs(), arguments->messageArgCount(), startScope, r);
     }
     return (RexxObject *)r;
@@ -2053,7 +2023,6 @@ RexxObject *RexxObject::send(RexxObject **arguments, size_t argCount)
     {
         // validate that the scope override is valid
         validateScopeOverride(startScope);
-        validateOverrideContext(this, startScope);
         messageSend(messageName, arguments + 1, argCount - 1, startScope, r);
     }
     return (RexxObject *)r;
@@ -2128,7 +2097,6 @@ MessageClass *RexxObject::startCommon(RexxObject *message, RexxObject **argument
     // validate the starting scope now, if specified.  We'll validate this in this
     // thread first.
     validateScopeOverride(startScope);
-    validateOverrideContext(this, startScope);
 
     // creeate the new message object and start it.
     Protected<ArrayClass> argArray = new_array(argCount, arguments);
@@ -2698,6 +2666,66 @@ RexxInternalObject *RexxInternalObject::clone()
     // will not be oldspace.
     cloneObj->setNewSpace();
     return cloneObj;
+}
+
+
+/**
+ * Provide a dump of the header part of an object. This is generally
+ * used when an invalid heap object is detected during garbage collection.
+ */
+void RexxInternalObject::dumpObject()
+{
+    printf("GC detected invalid object size=%zd (type=%zd, min=%zd, grain=%zd)" line_end, getObjectSize(), getObjectTypeNumber(), Memory::MinimumObjectSize, Memory::ObjectGrain);
+    // hexdump the first 64 bytes
+    unsigned char *s = (unsigned char *)this;
+    for (int lines = 1; lines <= 2; lines++)
+    {
+        for (int blocks = 1; blocks <= 8; blocks++)
+        {
+            printf("%02x%02x%02x%02x ", *s, *(s + 1), *(s + 2), *(s + 3));
+            s += 4;
+        }
+        printf(line_end);
+    }
+}
+
+
+/**
+ * Perform a simple validation on an object so we can detect corrupted
+ * objects during garbage collection
+ *
+ * @return True if the object is value, false if it fails any of the validity tests.
+ */
+bool RexxInternalObject::isValid()
+{
+    // Test #1, is the size valid
+    if (!Memory::isValidSize(getObjectSize()))
+    {
+        return false;
+    }
+
+#if 0
+    // The following tests seem line a good idea, but unfortunately
+    // it only works with live objects. A dead object on the pool
+    // has neither a valid bahaviour pointer nor a valid virtual function pointer.
+    // I'm leaving this in here just in case we figure out how to make these tests work.
+
+    size_t typeNumber = getObjectTypeNumber();
+    // Test #2 is the type indicator correct?
+    if (typeNumber > T_Last_Class_Type)
+    {
+        return false;
+    }
+    // Test #3, is the object's virtual function pointer the correct one for the type.
+    // this can detect problems where the front part of the object has been overlayed.
+    if (!checkVirtualFunctions(memoryObject.virtualFunctionTable[typeNumber]))
+    {
+        return false;
+    }
+#endif
+
+    // the object is at least consistent
+    return true;
 }
 
 

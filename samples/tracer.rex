@@ -94,7 +94,7 @@ Description :
 
     The classic trace without concurrency informations is also supported.
     That lets generate a CSV file for the classic trace, more easy to analyze/filter.
-    It's not possible to repeat the name of the executableon on each line of the CSV output.
+    It's not possible to repeat the name of the executable on each line of the CSV output.
 
 ::END
 

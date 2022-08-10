@@ -1,7 +1,7 @@
+#!/usr/bin/env rexx
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
-/* Copyright (c) 1995, 2004 IBM Corporation. All rights reserved.             */
-/* Copyright (c) 2005-2022 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2021 Rexx Language Association. All rights reserved.         */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -35,24 +35,48 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.               */
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
-/*******************************************************************/
-/* ADSI Sample 1:                                                  */
-/*                                                                 */
-/* Retrieve information about a computer with ADSI.                */
-/*                                                                 */
-/*                                                                 */
-/*******************************************************************/
 
-ComputerName = value("COMPUTERNAME",,"ENVIRONMENT")
-myComputer = .OLEObject~GetObject("WinNT://"||ComputerName||",computer")
+/* Purpose: display information about this script and the Rexx version in use */
+say "At       :" .DateTime~new
+parse source s
+say "source   :" s
+parse version v
+say "version  :" v
+call dumpRexxInfo
 
-say "Standard properties of this computer:"
-say left("Name:",   10) myComputer~name
-say left("Class:",  10) myComputer~class
-say left("GUID:",   10) myComputer~guid
-say left("ADsPath:",10) myComputer~adspath
-say left("Parent:", 10) myComputer~parent
-say left("Schema:", 10) myComputer~schema
+/* Show information from .RexxInfo about this ooRexx installation */
+::routine dumpRexxInfo
+   say '.RexxInfo:'
+   clz=.RexxInfo~class           -- get .RexxInfo's class object
+   instMeths=clz~methods(.nil)   -- query all its instance methods
+   i=0                           -- set counter to 0
+   loop methName over instMeths~allIndexes~sort -- loop over sorted method names
+      if methName="COPY" then iterate  -- skip COPY method (would cause a runtime error)
+      i+=1                             -- increase counter
+      value=.rexxInfo~send(methName)   -- send message
+      if methName="ENDOFLINE" then value='"'value~c2x'"x'   -- make it displayable
+      value=value~string               -- make sure we get the string value
+      if value~pos("9999")>0 | value~pos("0000")>0 then  -- a large number?
+         value=chunk(value)            -- format number
+      say i~right(9)":" left(methName" ",18,'.')":" value
+   end
 
-return 0
+/* Format large numbers in American style; could be used to format credit card numbers
+   as well (sep=' ' and size=4). Edited to account for a leading sign.
+   Author: Gil Barmwater, cf. his post on 2021-11-13 in the RexxLA mailing list
+*/
+::routine chunk public
+    use arg str, sep=',', size=3
 
+    sign=""                         -- if a sign, remove and remember it
+    if pos(str~left(1),"+-")>0 then
+    do
+       sign=str~left(1)
+       str =substr(str,2)
+    end
+
+    if str~length > size then do
+        parse value str~length-size'|'str with p '|' +1 front +(p) back
+        str = chunk(front, sep, size)||sep||back
+    end
+    return sign||str    -- add sign back if any

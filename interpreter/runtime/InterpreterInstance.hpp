@@ -94,7 +94,6 @@ public:
     bool detachThread();
     bool detachThread(Activity *activity);
     Activity *spawnActivity(Activity *parent);
-    void exitCurrentThread();
     Activity *findActivity(thread_id_t threadId);
     Activity *findActivity();
     DirectoryClass *getLocalEnvironment();

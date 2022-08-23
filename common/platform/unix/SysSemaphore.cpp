@@ -123,6 +123,7 @@ int pthread_mutex_timedlock(pthread_mutex_t *mutex, const struct timespec *abs_t
         return ETIMEDOUT;
     }
 
+    // no need to trace concurrency here
     while ((pthread_rc = pthread_mutex_trylock(mutex)) == EBUSY)
     {
         struct timespec ts;
@@ -155,8 +156,9 @@ int pthread_mutex_timedlock(pthread_mutex_t *mutex, const struct timespec *abs_t
  *
  * @param create Indicates whether the semaphore should be created now.
  */
-SysSemaphore::SysSemaphore(bool createSem)
+SysSemaphore::SysSemaphore(const char *variable, bool createSem)
 {
+    semVariable = variable;
     postedCount = 0;
     created = false;
 
@@ -242,14 +244,20 @@ void SysSemaphore::post()
 /**
  * Wait for an event semaphore to be posted.
  */
-void SysSemaphore::wait()
+void SysSemaphore::wait(const char *ds, int di)
 {
     int rc;
 
     rc = pthread_mutex_lock(&semMutex);       // lock access to semaphore
     if (this->postedCount == 0)               // has it been posted?
     {
+#ifdef CONCURRENCY_DEBUG
+        Utilities::traceSemaphore("...... ... (SysSemaphore)%s.wait : before pthread_cond_wait(0x%x, 0x%x) from %s (0x%x)\n", semVariable, &(this->semCond), &(this->semMutex), ds, di);
+#endif
         rc = pthread_cond_wait(&semCond, &semMutex); // nope, then wait on it
+#ifdef CONCURRENCY_DEBUG
+        Utilities::traceSemaphore("...... ... (SysSemaphore)%s.wait : after pthread_cond_wait(0x%x, 0x%x) from %s (0x%x)\n", semVariable, &(this->semCond), &(this->semMutex), ds, di);
+#endif
     }
     rc = pthread_mutex_unlock(&semMutex);     // release mutex lock
 }
@@ -288,7 +296,7 @@ void SysSemaphore::createTimeOut(uint32_t t, timespec &ts)
  * @return       true if the event occurrec, false if there was
  *               a timeout.
  */
-bool SysSemaphore::wait(uint32_t t)           // takes a timeout in msecs
+bool SysSemaphore::wait(uint32_t t, const char *ds, int di)           // takes a timeout in msecs
 {
     struct timespec ts;                       // fill in the timeout spec
     int result = 0;
@@ -297,7 +305,13 @@ bool SysSemaphore::wait(uint32_t t)           // takes a timeout in msecs
     pthread_mutex_lock(&semMutex);            // lock access to semaphore
     while (result == 0 && !this->postedCount) // Has it been posted? Spurious wakeups may occur
     {                                         // wait with timeout
+#ifdef CONCURRENCY_DEBUG
+        Utilities::traceSemaphore("...... ... (SysSemaphore)%s.wait : before pthread_cond_timedwait(0x%x, 0x%x, &timestruct) from %s (0x%x)\n", semVariable, &(this->semCond), &(this->semMutex), ds, di);
+#endif
         result = pthread_cond_timedwait(&semCond, &semMutex, &ts);
+#ifdef CONCURRENCY_DEBUG
+        Utilities::traceSemaphore("...... ... (SysSemaphore)%s.wait : after pthread_cond_timedwait(0x%x, 0x%x, &timestruct) from %s (0x%x)\n", semVariable, &(this->semCond), &(this->semMutex), ds, di);
+#endif
     }
     pthread_mutex_unlock(&semMutex);          // release mutex lock
     // a false return means this timed out
@@ -325,8 +339,9 @@ void SysSemaphore::reset()
  * @param createSem
  * @param critical  Indicates this is a critical-time semaphore only held for a short period of time (ignored for unix-based)
  */
-SysMutex::SysMutex(bool createSem, bool critical)
+SysMutex::SysMutex(const char *variable, bool createSem, bool critical)
 {
+    mutexVariable = variable;
     if (createSem)
     {
         create();
@@ -387,7 +402,7 @@ void SysMutex::create(bool critical)
  *
  * @return true of the lock was obtained, false otherwise.
  */
-bool SysMutex::request(uint32_t t)
+bool SysMutex::request(uint32_t t, const char *ds, int di)
 {
     if (!created)
     {
@@ -396,7 +411,14 @@ bool SysMutex::request(uint32_t t)
 
     struct timespec ts;                       // fill in the timeout spec
     SysSemaphore::createTimeOut(t, ts);
-    return pthread_mutex_timedlock(&mutexMutex, &ts) == 0;
+#ifdef CONCURRENCY_DEBUG
+         Utilities::traceMutex("...... ... (SysMutex)%s.request : before pthread_mutex_timedlock(0x%x) from %s (0x%x)\n", mutexVariable, &mutexMutex, ds, di);
+#endif
+    bool result = pthread_mutex_timedlock(&mutexMutex, &ts) == 0;
+#ifdef CONCURRENCY_DEBUG
+         Utilities::traceMutex("...... ... (SysMutex)%s.request : after pthread_mutex_timedlock(0x%x) from %s (0x%x)\n", mutexVariable, &mutexMutex, ds, di);
+#endif
+    return result;
 }
 
 

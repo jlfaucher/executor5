@@ -142,7 +142,9 @@ inline char **getEnvironment()
 #define DEFRXSTRING 256                /* Default RXSTRING return size      */
 
 #if !defined(NDEBUG)
+#if !defined(_DEBUG)
 #define _DEBUG
+#endif
 #endif
 
 /*

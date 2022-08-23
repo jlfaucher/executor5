@@ -60,9 +60,9 @@
 
 
 // global resource lock
-SysMutex Interpreter::resourceLock;
+SysMutex Interpreter::resourceLock("Interpreter::resourceLock");
 // activity dispatch queue lock
-SysMutex Interpreter::dispatchLock;
+SysMutex Interpreter::dispatchLock("Interpreter::dispatchLock");
 
 QueueClass *Interpreter::interpreterInstances = OREF_NULL;
 
@@ -144,7 +144,7 @@ void Interpreter::processShutdown()
  */
 void Interpreter::startInterpreter(InterpreterStartupMode mode, const char *imageTarget)
 {
-    ResourceSection lock;
+    ResourceSection lock("ResourceSection lock in Interpreter::startInterpreter", 0);
 
     // has everything been shutdown?
     if (!isActive())
@@ -209,7 +209,7 @@ void Interpreter::initLocal()
 bool Interpreter::terminateInterpreter()
 {
     {
-        ResourceSection lock;   // lock in this section
+        ResourceSection lock("ResourceSection lock in Interpreter::terminateInterpreter", 1);   // lock in this section
         // if never even started up, then we've got a quick return
         if (!isActive())
         {
@@ -248,7 +248,7 @@ bool Interpreter::terminateInterpreter()
 
 
     {
-        ResourceSection lock;   // Now that we've released the kernel lock, we need to reacquire the resource lock
+        ResourceSection lock("ResourceSection lock in Interpreter::terminateInterpreter", 2);   // Now that we've released the kernel lock, we need to reacquire the resource lock
 
         // perform system-specific cleanup
         SystemInterpreter::terminateInterpreter();
@@ -326,7 +326,7 @@ InterpreterInstance *Interpreter::createInterpreterInstance(RexxOption *options)
     // so this needs to be done carefully and the initialization needs to be protected by
     // the resource lock during the entire process.
     {
-        ResourceSection lock;
+        ResourceSection lock("ResourceSection lock in Interpreter::createInterpreterInstance", 1);
         // if our instances list has not been created yet, then the memory subsystem has not
         // been created yet.  Keep the lock during the entire process.
         if (interpreterInstances == OREF_NULL)
@@ -343,7 +343,7 @@ InterpreterInstance *Interpreter::createInterpreterInstance(RexxOption *options)
     Protected<InterpreterInstance> instance = new InterpreterInstance();
 
     {
-        ResourceSection lock;
+        ResourceSection lock("ResourceSection lock in Interpreter::createInterpreterInstance", 2);
 
         // add this to the active list
         interpreterInstances->append(instance);
@@ -367,7 +367,7 @@ bool Interpreter::terminateInterpreterInstance(InterpreterInstance *instance)
 {
     // instance has already shut itself down....we need to remove it from
     // the active list.
-    ResourceSection lock;
+    ResourceSection lock("ResourceSection lock in Interpreter::terminateInterpreterInstance", 0);
 
     interpreterInstances->removeItem(instance);
     return true;
@@ -383,7 +383,7 @@ bool Interpreter::terminateInterpreterInstance(InterpreterInstance *instance)
  */
 bool Interpreter::isInstanceActive(InterpreterInstance *instance)
 {
-    ResourceSection lock;
+    ResourceSection lock("ResourceSection lock in Interpreter::isInstanceActive", 0);
 
     return interpreterInstances->hasItem(instance);
 }
@@ -394,7 +394,7 @@ bool Interpreter::isInstanceActive(InterpreterInstance *instance)
  */
 bool Interpreter::haltAllActivities(RexxString *name)
 {
-    ResourceSection lock;
+    ResourceSection lock("ResourceSection lock in Interpreter::haltAllActivities", 0);
     bool result = true;
 
     for (size_t listIndex = 1; listIndex <= interpreterInstances->items(); listIndex++)

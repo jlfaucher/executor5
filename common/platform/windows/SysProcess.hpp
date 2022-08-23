@@ -64,6 +64,10 @@ class SysProcess
      static const char* getLibraryLocation();
      static void beep(int frequency, int duration);
 
+    // can be called from anywhere, at any moment, by the interpreter.
+    // at the first call, will get its value from the system environment variable RXTRACE_CONCURRENCY.
+    static bool concurrencyTrace();
+
  protected:
      static const char* executableFullPath;
      static const char* libraryLocation;

@@ -71,7 +71,7 @@ public:
     inline void  operator delete(void *) {;}
 
     // methods associated with actual interpreter instances
-    inline InterpreterInstance(RESTORETYPE restoreType) { ; }
+    inline InterpreterInstance(RESTORETYPE restoreType) : terminationSem("InterpreterInstance::terminationSem") { ; }
     InterpreterInstance();
 
     void live(size_t) override;

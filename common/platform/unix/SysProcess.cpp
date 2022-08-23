@@ -74,6 +74,7 @@
 #if defined HAVE_KERN_PROC_PATHNAME || defined HAVE_KERN_PROC_ARGV
 # include <sys/sysctl.h>
 #endif
+#include "Utilities.hpp" // for Utilities::strCaselessCompare
 
 
 // full path of the currently running executable
@@ -342,4 +343,29 @@ void SysProcess::beep(int frequency, int duration)
     {
         printf("\a");
     }
+}
+
+
+// This indicator is used to control the display of additional informations in the trace output for concurrency.
+static bool CONCURRENCY_TRACE = false;
+
+bool SysProcess::concurrencyTrace()
+{
+    // I don't put this part of code in SystemInterpreter::setupProgram
+    // where RXTRACE is managed, because would be initialized too late :
+    // Some mutexes/semaphores have been already used before calling setupProgram.
+    static bool firstcall = true;
+    if (firstcall)
+    {
+        firstcall = false;
+        const char *rxTraceBuf = getenv("RXTRACE_CONCURRENCY");
+        if (rxTraceBuf != NULL)
+        {
+            if (Utilities::strCaselessCompare(rxTraceBuf, "ON") == 0)    /* request to turn on?               */
+            {
+                CONCURRENCY_TRACE = true;
+            }
+        }
+    }
+    return CONCURRENCY_TRACE;
 }

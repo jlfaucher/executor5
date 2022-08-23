@@ -76,7 +76,7 @@ void* EventSemaphoreClass::operator new(size_t size)
 /**
  * Default constructor for the EventSemaphore
  */
-EventSemaphoreClass::EventSemaphoreClass()
+EventSemaphoreClass::EventSemaphoreClass() : semaphore("EventSemaphoreClass::semaphore")
 {
     // initialize the semaphore
     semaphore.create();
@@ -159,7 +159,7 @@ RexxObject* EventSemaphoreClass::reset()
  * @return   true if the semaphore was posted,
  *           false if there was a timeout.
  */
-RexxObject* EventSemaphoreClass::wait(RexxObject *t)
+RexxObject* EventSemaphoreClass::wait(RexxObject *t, const char *ds, int di)
 {
     wholenumber_t timeout;
 
@@ -200,7 +200,7 @@ RexxObject* EventSemaphoreClass::wait(RexxObject *t)
     {
         UnsafeBlock releaser;
 
-        semaphore.wait();
+        semaphore.wait(ds, di);
         return TheTrueObject;
     }
     // for a zero wait, we just return the current posted status
@@ -212,7 +212,7 @@ RexxObject* EventSemaphoreClass::wait(RexxObject *t)
     {
         UnsafeBlock releaser;
 
-        return booleanObject(semaphore.wait((uint32_t)timeout));
+        return booleanObject(semaphore.wait((uint32_t)timeout, ds, di));
     }
 }
 

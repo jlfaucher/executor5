@@ -82,6 +82,7 @@
 #include <time.h>
 #include <atomic>
 #include <unordered_map>
+#include "SysThread.hpp"
 
 
 const size_t ACT_STACK_SIZE = 20;
@@ -90,11 +91,16 @@ const size_t ACT_STACK_SIZE = 20;
 static std::atomic<uint32_t> counter(0); // to generate idntfr for concurrency trace
 static std::unordered_map<thread_id_t, uint32_t> threadIDs; // to associate idntfr to system threads
 
+static uint32_t threadIDs_getIdntfr(thread_id_t threadID)
+{
+    if (threadIDs.find(threadID) == threadIDs.end()) threadIDs[threadID] = ++counter;
+    return threadIDs[threadID];
+}
+
 uint32_t Activity::getIdntfr()
 {
     thread_id_t threadID = currentThread.getThreadID();
-    if (threadIDs.find(threadID) == threadIDs.end()) threadIDs[threadID] = ++counter;
-    return threadIDs[threadID];
+    return threadIDs_getIdntfr(threadID);
 }
 
 
@@ -339,7 +345,7 @@ void Activity::enterCurrentThread()
  *               Indicates whether we're going to be running on the
  *               current thread, or creating a new thread.
  */
-Activity::Activity(GlobalProtectedObject &p, bool createThread)
+Activity::Activity(GlobalProtectedObject &p, bool createThread) :runSem("Activity::runSem"), guardSem("Activity::guardSem")
 {
     // we need to protect this from garbage collection while constructing.
     // unfortunately, we can't use ProtectedObject because that requires an
@@ -351,6 +357,13 @@ Activity::Activity(GlobalProtectedObject &p, bool createThread)
     // globally clear the object because we could be reusing the
     // object storage
     clearObject();
+
+    // clearObject overwrites the pointer to variable name of the semaphores...
+    // must reassign those pointers !!! otherwise, you see that in debug output :
+    // (SysSemaphore)(null).wait ... i.e. (null) instead of the variable name.
+    this->runSem.setSemVariable("Activity::runsem");
+    this->guardSem.setSemVariable("Activity::guardsem");
+
     // we need a stack that activaitons can use
     activations = new_internalstack(ACT_STACK_SIZE);
     // The framestack creates space for expression stacks and local variable tables
@@ -2205,7 +2218,7 @@ void Activity::waitForKernel()
  */
 void Activity::setupCurrentActivity()
 {
-    DispatchSection lock;
+    DispatchSection lock("DispatchSection lock in Activity::setupCurrentActivity", 0);
 
     // update the current activity pointer and the global numeric settings.
     ActivityManager::currentActivity = this;
@@ -3078,15 +3091,32 @@ SecurityManager *Activity::getInstanceSecurityManager()
 }
 
 
+#define CONCURRENCY_BUFFER_SIZE 100 // Must be enough to support CONCURRENCY_TRACE
+
 /*
 "R1     T1     A2       V1           1* "
 "R99999 T99999 A9999999 V9999999 99999* "
 */
-#define CONCURRENCY_TRACE            "R%-5u T%-5u A%-7u V%-7u %5hu%c "
-#define CONCURRENCY_TRACE_NO_RESERVE "R%-5u T%-5u A%-7u V%-7u %5s%c "
-#define CONCURRENCY_TRACE_NO_VAR     "R%-5u T%-5u A%-7u  %7s %5s%c "
 
-#define CONCURRENCY_BUFFER_SIZE 100 // Must be enough to support CONCURRENCY_TRACE
+// global format (not used, the components formats are used)
+#define CONCURRENCY_TRACE               "R%-5u T%-5u A%-7u V%-7u %5hu%c "
+
+#define CONCURRENCY_TRACE_INTERPRETER       "R%-5u "
+#define CONCURRENCY_TRACE_NO_INTERPRETER    " %5s "
+
+#define CONCURRENCY_TRACE_THREAD            "T%-5u "
+
+#define CONCURRENCY_TRACE_ACTIVATION        "A%-7u "
+#define CONCURRENCY_TRACE_NO_ACTIVATION     " %7s "
+
+#define CONCURRENCY_TRACE_VARIABLED         "V%-7u "
+#define CONCURRENCY_TRACE_NO_VARIABLED      " %7s "
+
+#define CONCURRENCY_TRACE_RESERVEC          "%5hu"
+#define CONCURRENCY_TRACE_NO_RESERVEC       "%5s"
+
+#define CONCURRENCY_TRACE_LOCK              "%c "
+
 
 
 struct ConcurrencyInfos
@@ -3106,7 +3136,7 @@ void GetConcurrencyInfos(Activity *activity, RexxActivation *activation, Concurr
     VariableDictionary *variableDictionary = (activation ? activation->getVariableDictionary() : NULL);
 
     /* R */ infos.interpreter = interpreter ? interpreter->getIdntfr() : 0;
-    /* T */ infos.activity = activity ? activity->getIdntfr() : 0;
+    /* T */ infos.activity = activity ? activity->getIdntfr() : threadIDs_getIdntfr(SysActivity::queryThreadID()); // use current system thread if no activity
     /* A */ infos.activation = activation ? activation->getIdntfr() : 0;
     /* V */ infos.variableDictionary = variableDictionary ? variableDictionary->getIdntfr() : 0;
     /* n */ infos.reserveCount = activation ? activation-> getReserveCount() : 0;
@@ -3121,41 +3151,69 @@ bool FormatConcurrencyInfos(Activity *activity, RexxActivation *activation, char
     struct ConcurrencyInfos concurrencyInfos;
     GetConcurrencyInfos(activity, activation, concurrencyInfos);
     int n =  0;
-    if (concurrencyInfos.variableDictionary == 0)
-    {
-        // don't display variableDictionary and reserveCount. lock is always a space.
-        n = snprintf(buffer, bufferSize - 1, CONCURRENCY_TRACE_NO_VAR,
-                                             concurrencyInfos.interpreter,
-                                             concurrencyInfos.activity,
-                                             concurrencyInfos.activation,
-                                             "",
-                                             "",
-                                             concurrencyInfos.lock);
-    }
-    else if (concurrencyInfos.reserveCount == 0)
-    {
-        // don't display reserveCount. lock is always a space.
-        n = snprintf(buffer, bufferSize - 1, CONCURRENCY_TRACE_NO_RESERVE,
-                                             concurrencyInfos.interpreter,
-                                             concurrencyInfos.activity,
-                                             concurrencyInfos.activation,
-                                             concurrencyInfos.variableDictionary,
-                                             "",
-                                             concurrencyInfos.lock);
-    }
-    else
-    {
-        // full display
-        n = snprintf(buffer, bufferSize - 1, CONCURRENCY_TRACE,
-                                             concurrencyInfos.interpreter,
-                                             concurrencyInfos.activity,
-                                             concurrencyInfos.activation,
-                                             concurrencyInfos.variableDictionary,
-                                             concurrencyInfos.reserveCount,
-                                             concurrencyInfos.lock);
-    }
+
+    if (concurrencyInfos.interpreter != 0) n += snprintf(buffer + n, bufferSize - 1 - n, CONCURRENCY_TRACE_INTERPRETER, concurrencyInfos.interpreter);
+    else n += snprintf(buffer + n, bufferSize - 1 - n, CONCURRENCY_TRACE_NO_INTERPRETER, "");
+
+    n += snprintf(buffer + n, bufferSize - 1 - n, CONCURRENCY_TRACE_THREAD, concurrencyInfos.activity);
+
+    if (concurrencyInfos.activation != 0) n += snprintf(buffer + n, bufferSize - 1 - n, CONCURRENCY_TRACE_ACTIVATION, concurrencyInfos.activation);
+    else n += snprintf(buffer + n, bufferSize - 1 - n, CONCURRENCY_TRACE_NO_ACTIVATION, "");
+
+    if (concurrencyInfos.variableDictionary != 0) n += snprintf(buffer + n, bufferSize - 1 - n, CONCURRENCY_TRACE_VARIABLED, concurrencyInfos.variableDictionary);
+    else n += snprintf(buffer + n, bufferSize - 1 - n, CONCURRENCY_TRACE_NO_VARIABLED, "");
+
+    if (concurrencyInfos.reserveCount != 0) n += snprintf(buffer + n, bufferSize - 1 - n, CONCURRENCY_TRACE_RESERVEC, concurrencyInfos.reserveCount);
+    else n += snprintf(buffer + n, bufferSize - 1 - n, CONCURRENCY_TRACE_NO_RESERVEC, "");
+
+    n += snprintf(buffer + n, bufferSize - 1 - n, CONCURRENCY_TRACE_LOCK, concurrencyInfos.lock);
+
     return n > 0;
 }
+
+
+void traceSemaphore(const char *format, va_list argptr)
+{
+    if (SysProcess::concurrencyTrace())
+    {
+        Activity * activity = ActivityManager::currentActivity;
+        RexxActivation *activation = activity ? activity-> getCurrentRexxFrame() : NULL;
+        char buffer[CONCURRENCY_BUFFER_SIZE];
+        FormatConcurrencyInfos(activity, activation, buffer, sizeof buffer);
+        fprintf(stderr, "%s", buffer);
+        vfprintf(stderr, format, argptr);
+    }
+}
+
+
+void traceMutex(const char *format, va_list argptr)
+{
+    if (SysProcess::concurrencyTrace())
+    {
+        Activity * activity = ActivityManager::currentActivity;
+        RexxActivation *activation = activity ? activity-> getCurrentRexxFrame() : NULL;
+        char buffer[CONCURRENCY_BUFFER_SIZE];
+        FormatConcurrencyInfos(activity, activation, buffer, sizeof buffer);
+        fprintf(stderr, "%s", buffer);
+        vfprintf(stderr, format, argptr);
+    }
+}
+
+
+class traceSemaphoreMutexInitializer
+{
+    public:
+    // Store a pointer to the functions traceSemaphore and traceMutex in the Utilities area.
+    traceSemaphoreMutexInitializer()
+    {
+        Utilities::SetTraceSemaphorePtr(&traceSemaphore);
+        Utilities::SetTraceMutexPtr(&traceMutex);
+    }
+};
+
+
+// The goal of this declaration is to activate the constructor during the initialization
+static traceSemaphoreMutexInitializer initializer;
 
 
 /**
@@ -3169,7 +3227,7 @@ void  Activity::traceOutput(RexxActivation *activation, RexxString *line)
     // make sure this is a real string value (likely, since we constructed it in the first place)
     Protected<RexxString> pline = line->stringTrace();
 
-    if (concurrencyTrace())
+    if (SysProcess::concurrencyTrace())
     {
         // Add interpreter id, activity id, activation id, reserve count and lock flag.
         // Should help to analyze the traces of a multithreaded script...
@@ -3676,7 +3734,7 @@ void Activity::cleanupMutexes()
         {
             MutexSemaphoreClass *mutex = (MutexSemaphoreClass *)semaphores->get(i);
             // release the semaphore until we get a failure so the nesting is unwound.
-            mutex->forceLockRelease();
+            mutex->forceLockRelease("Activity::cleanupMutexes", 0);
         }
 
         // clear out the mutex list.

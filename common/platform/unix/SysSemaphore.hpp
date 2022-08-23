@@ -49,44 +49,79 @@
 #include <stdlib.h>
 #include "rexx.h"
 #include "SysThread.hpp"
+#include "Utilities.hpp"
 
 class SysSemaphore {
 public:
-     SysSemaphore() : postedCount(0), created(false) { }
-     SysSemaphore(bool);
+     SysSemaphore(const char *variable) : postedCount(0), created(false), semVariable(variable) { }
+     SysSemaphore(const char *variable, bool);
      ~SysSemaphore() { ; }
      void create();
      inline void open() { ; }
      void close();
      void post();
-     void wait();
-     bool wait(uint32_t);
+     void wait(const char *ds, int di);
+     bool wait(uint32_t, const char *ds, int di);
      void reset();
      inline bool posted() { return postedCount != 0; }
      static void createTimeOut(uint32_t t, timespec &ts);
+     inline void setSemVariable(const char *variable) { semVariable = variable; } // See RexxActivity::RexxActivity, must reassign, so public setter needed.
 
 protected:
      pthread_cond_t  semCond;
      pthread_mutex_t semMutex;
      int postedCount;
      bool created;
+     const char *semVariable;
 };
 
 class SysMutex {
 public:
-     SysMutex() : created(false) { ; }
-     SysMutex(bool create, bool critical = false);
+     SysMutex(const char *variable) : created(false), mutexVariable(variable) { ; }
+     SysMutex(const char *variable, bool create, bool critical = false);
      ~SysMutex() { ; }
      void create(bool critical = false);
      inline void open() { ; }
      void close();
-     bool request(uint32_t t);
-     inline bool request() { if (!created) return false; return pthread_mutex_lock(&mutexMutex) == 0; }
-     inline bool release() { return pthread_mutex_unlock(&mutexMutex) == 0; }
-     inline bool requestImmediate() { return pthread_mutex_trylock(&mutexMutex) == 0;}
+     bool request(uint32_t t, const char *ds, int di);
+     inline bool request(const char *ds, int di)
+     {
+         if (!created) return false;
+#ifdef CONCURRENCY_DEBUG
+         Utilities::traceMutex("...... ... (SysMutex)%s.request : before pthread_mutex_lock(0x%x) from %s (0x%x)\n", mutexVariable, &mutexMutex, ds, di);
+#endif
+         bool result = pthread_mutex_lock(&mutexMutex) == 0;
+#ifdef CONCURRENCY_DEBUG
+         Utilities::traceMutex("...... ... (SysMutex)%s.request : after pthread_mutex_lock(0x%x) from %s (0x%x)\n", mutexVariable, &mutexMutex, ds, di);
+#endif
+         return result;
+     }
+     inline bool release(const char *ds, int di)
+     {
+#ifdef CONCURRENCY_DEBUG
+         Utilities::traceMutex("...... ... (SysMutex)%s.release : before pthread_mutex_unlock(0x%x) from %s (0x%x)\n", mutexVariable, &mutexMutex, ds, di);
+#endif
+         bool result = pthread_mutex_unlock(&mutexMutex) == 0;
+#ifdef CONCURRENCY_DEBUG
+         Utilities::traceMutex("...... ... (SysMutex)%s.release : after pthread_mutex_unlock(0x%x) from %s (0x%x)\n", mutexVariable, &mutexMutex, ds, di);
+#endif
+         return result;
+     }
+     inline bool requestImmediate(const char *ds, int di)
+     {
+#ifdef CONCURRENCY_DEBUG
+         Utilities::traceMutex("...... ... (SysMutex)%s.requestImmediate : before pthread_mutex_trylock(0x%x) from %s (0x%x)\n", mutexVariable, &mutexMutex, ds, di);
+#endif
+         bool result = pthread_mutex_trylock(&mutexMutex) == 0;
+#ifdef CONCURRENCY_DEBUG
+         Utilities::traceMutex("...... ... (SysMutex)%s.requestImmediate : after pthread_mutex_trylock(0x%x) from %s (0x%x)\n", mutexVariable, &mutexMutex, ds, di);
+#endif
+         return result;
+     }
 
 protected:
      pthread_mutex_t mutexMutex;
      bool created;
+     const char *mutexVariable;
 };
 #endif

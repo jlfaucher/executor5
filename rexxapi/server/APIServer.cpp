@@ -346,7 +346,7 @@ APIServerInstance *APIServer::getInstance(ServiceMessage &m)
  */
 void APIServer::requestLock()
 {
-    lock.request();
+    lock.request("APIServer::requestLock", 0);
 }
 
 
@@ -355,5 +355,5 @@ void APIServer::requestLock()
  */
 void APIServer::releaseLock()
 {
-    lock.release();
+    lock.release("APIServer::releaseLock", 0);
 }

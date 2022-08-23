@@ -196,7 +196,7 @@ QueueItem *DataQueue::getFirst()
  */
 bool DataQueue::pullData(ServerQueueManager *manager, ServiceMessage &message)
 {
-    Lock managerLock(manager->lock);   // this needs synchronization here
+    Lock managerLock(manager->lock, "DataQueue::pullData", 0);   // this needs synchronization here
 
     // now that we have the lock, clear the wait sem unconditionally.
     // this should be safe, as it is either already clear, and has waiters camped
@@ -254,7 +254,7 @@ void DataQueue::pull(ServerQueueManager *manager, ServiceMessage &message)
     else
     {
         {
-            Lock managerLock(manager->lock);
+            Lock managerLock(manager->lock, "DataQueue::pull", 1);
             // indicate we have another waiting queue
             addWaiter();
         }
@@ -268,7 +268,7 @@ void DataQueue::pull(ServerQueueManager *manager, ServiceMessage &message)
                 if (pullData(manager, message))
                 {
                     {
-                        Lock managerLock(manager->lock);
+                        Lock managerLock(manager->lock, "DataQueue::pull", 2);
                         // remove us as a waiter
                         removeWaiter();
                     }
@@ -316,7 +316,7 @@ DataQueue *QueueTable::locate(const char *name)
  */
 DataQueue *QueueTable::synchronizedLocate(ServerQueueManager *manager, const char *name)
 {
-    Lock managerLock(manager->lock);   // this needs synchronization here
+    Lock managerLock(manager->lock, "QueueTable::synchronizedLocate", 0);   // this needs synchronization here
     return locate(name);
 }
 
@@ -356,7 +356,7 @@ DataQueue *QueueTable::locate(SessionID id)
  */
 DataQueue *QueueTable::synchronizedLocate(ServerQueueManager *manager, SessionID id)
 {
-    Lock managerLock(manager->lock);   // this needs synchronization here
+    Lock managerLock(manager->lock, "QueueTable::synchronizedLocate", 0);   // this needs synchronization here
     return locate(id);
 }
 
@@ -536,7 +536,7 @@ DataQueue *ServerQueueManager::getSessionQueue(SessionID session)
 {
     // this could be redundant, but if called as a result of a PULL operation,
     // we're not holding the lock yet.  We need to nest the call.
-    Lock managerLock(lock);
+    Lock managerLock(lock, "ServerQueueManager::getSessionQueue", 0);
 
     DataQueue *queue = sessionQueues.locate(session);
     // not previously created?
@@ -880,7 +880,7 @@ void ServerQueueManager::dispatch(ServiceMessage &message)
         pullFromSessionQueue(message);
     }
     else {
-        Lock managerLock(lock);     // we need to synchronize on this instance
+        Lock managerLock(lock, "ServerQueueManager::dispatch", 0);     // we need to synchronize on this instance
         switch (message.operation)
         {
             case NEST_SESSION_QUEUE:

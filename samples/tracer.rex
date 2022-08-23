@@ -496,14 +496,20 @@ return 0
 
 
 ::method fromId class
-    use strict arg interpreterId
+    use strict arg interpreterId -- can be made of spaces, when parsing hr trace
     interpreter = .Tracer.Interpreter~directory[interpreterId]
     if .nil == interpreter then do
         interpreter = .Tracer.Interpreter~new
         .Tracer.Interpreter~directory[interpreterId] = interpreter
         interpreter~id = interpreterId
+        /*
+        Remember:
+        interpreterId is made only of spaces when the pointer is NULL: the test interpreterId = "" returns .true (non strict equal).
+        When printed, "R0" is replaced by spaces (see WithActivationInfo~charOut).
+        The case interpreterId == "" should never happen.
+        */
         if interpreterId == "" then interpreter~hrId = ""
-        else if interpreterId = 0 | interpreterId == self~hrId0 then interpreter~hrId = self~hrId0 -- Always use R0 for null pointer
+        else if interpreterId = 0 | interpreterId == self~hrId0 | interpreterId = "" then interpreter~hrId = self~hrId0 -- Always use R0 for null pointer
         else do
             .Tracer.Interpreter~counter += 1
             interpreter~hrId = self~hrIdLetter || .Tracer.Interpreter~counter
@@ -514,6 +520,7 @@ return 0
 
 ::method isHrId class
     use strict arg interpreterId
+    if interpreterId~verify(" ") == 0 then return .true -- special case, when parsing hr trace.
     return interpreterId~left(1) == self~hrIdLetter & interpreterId~substr(2)~dataType("W")  -- Ex : R1, R12, R123, ...
 
 
@@ -601,14 +608,20 @@ return 0
 
 -- Human-readable activation id
 ::method fromId class
-    use strict arg activationId
+    use strict arg activationId -- can be made of spaces, when parsing hr trace
     activation = .Tracer.Activation~directory[activationId]
     if .nil == activation then do
         activation = .Tracer.Activation~new
         .Tracer.Activation~directory[activationId] = activation
         activation~id = activationId
+        /*
+        Remember:
+        activationId is made only of spaces when the pointer is NULL: the test activationId = "" returns .true (non strict equal).
+        When printed, "A0" is replaced by spaces (see WithActivationInfo~charOut).
+        The case activationId == "" should never happen.
+        */
         if activationId == "" then activation~hrId = ""
-        else if activationId = 0 | activationId == self~hrId0 then activation~hrId = self~hrId0 -- Always use A0 for null pointer
+        else if activationId = 0 | activationId == self~hrId0 | activationId = "" then activation~hrId = self~hrId0 -- Always use A0 for null pointer
         else do
             .Tracer.Activation~counter += 1
             activation~hrId = self~hrIdLetter || .Tracer.Activation~counter
@@ -619,6 +632,7 @@ return 0
 
 ::method isHrId class
     use strict arg activationId
+    if activationId~verify(" ") == 0 then return .true -- special case, when parsing hr trace.
     return activationId~left(1) == self~hrIdLetter & activationId~substr(2)~dataType("W")  -- Ex : A1, A12, A123, ...
 
 -- instance attributes
@@ -828,8 +842,14 @@ return 0
     if self~noConcurrencyTrace then return .false
 
     interpreter = .Tracer.Interpreter~fromId(self~interpreterId)
+    interpreterHrId = interpreter~hrId
+    if interpreterHrId == "R0" then interpreterHrId = ""
+
     thread = .Tracer.Thread~fromId(self~threadId)
+
     activation = .Tracer.Activation~fromId(self~activationId)
+    activationHrId = activation~hrId
+    if activationHrId == "A0" then activationHrId = ""
 
     varDict = .Tracer.VariableDictionary~fromId(self~varDictId)
     varDictHrId = varDict~hrId
@@ -840,9 +860,9 @@ return 0
     if reserveCount <> "" then reserveCount = reserveCount~format(.Tracer.WithActivationInfo~reserveCountHrWidth)
 
     if spaceNeeded then stream~charout(" ")
-    stream~charout(interpreter~hrId~left(.Tracer.Interpreter~hrIdWidth),
+    stream~charout(interpreterHrId~left(.Tracer.Interpreter~hrIdWidth),
                    thread~hrId~left(.Tracer.Thread~hrIdWidth),
-                   activation~hrId~left(.Tracer.Activation~hrIdWidth),
+                   activationHrId~left(.Tracer.Activation~hrIdWidth),
                    varDictHrId~left(.Tracer.VariableDictionary~hrIdWidth),
                    reserveCount~left(.Tracer.WithActivationInfo~reserveCountHrWidth) || self~lock)
     return .true
@@ -854,13 +874,13 @@ return 0
     if self~noConcurrencyTrace then return .false
 
     interpreter = .Tracer.Interpreter~fromId(self~interpreterId)
-    csv~interpreterId = interpreter~hrId
+    if interpreter~hrId <> "R0" then csv~interpreterId = interpreter~hrId
 
     thread = .Tracer.Thread~fromId(self~threadId)
     csv~threadId = thread~hrId
 
     activation = .Tracer.Activation~fromId(self~activationId)
-    csv~activationId = activation~hrId
+    if activation~hrId <> "A0" then csv~activationId = activation~hrId
 
     varDict = .Tracer.VariableDictionary~fromId(self~varDictId)
     if varDict~hrId <> "V0" then csv~varDictId = varDict~hrId

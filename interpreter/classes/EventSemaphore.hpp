@@ -51,13 +51,13 @@ class EventSemaphoreClass : public RexxObject
      inline void  operator delete(void *) {; }
 
      EventSemaphoreClass();
-     inline EventSemaphoreClass(RESTORETYPE restoreType) {;}
+     inline EventSemaphoreClass(RESTORETYPE restoreType) : semaphore("EventSemaphoreClass::semaphore") {;}
 
      RexxObject *newRexx(RexxObject **args, size_t argc);
 
      RexxObject *close();
      RexxObject *post();
-     RexxObject *wait(RexxObject *timeOut);
+     RexxObject *wait(RexxObject *timeOut, const char *ds, int di);
      RexxObject* reset();
      RexxObject* posted();
 

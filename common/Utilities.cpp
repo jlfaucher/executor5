@@ -47,7 +47,54 @@
 #include <string.h>
 #include <ctype.h>
 #include <sys/types.h>
+#include <stdio.h>
 #include "Utilities.hpp"
+#include "SysProcess.hpp" // for SysProcess::concurrencyTrace
+
+
+// Pointer to the function traceSemaphore declared in Activity.cpp
+static TraceSemaphorePtr traceSemaphorePtr = NULL;
+
+void Utilities::SetTraceSemaphorePtr(TraceSemaphorePtr ptr)
+{
+    traceSemaphorePtr = ptr;
+}
+
+void Utilities::traceSemaphore(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    if (traceSemaphorePtr != NULL) traceSemaphorePtr(format, args);
+    else if (SysProcess::concurrencyTrace())
+    {
+        fprintf(stderr, "*** traceSemaphorePtr is NULL: ");
+        vfprintf(stderr, format, args);
+    }
+    va_end(args);
+}
+
+
+// Pointer to the function traceMutex declared in Activity.cpp
+static TraceMutexPtr traceMutexPtr = NULL;
+
+void Utilities::SetTraceMutexPtr(TraceMutexPtr ptr)
+{
+    traceMutexPtr = ptr;
+}
+
+void Utilities::traceMutex(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    if (traceMutexPtr != NULL) traceMutexPtr(format, args);
+    else if (SysProcess::concurrencyTrace())
+    {
+        fprintf(stderr, "*** traceMutexPtr is NULL: ");
+        vfprintf(stderr, format, args);
+    }
+    va_end(args);
+}
+
 
 /**
  * Locate the first occurrence of any character from a given set.

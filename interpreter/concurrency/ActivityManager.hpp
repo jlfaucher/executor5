@@ -79,7 +79,7 @@ public:
 
     inline static void lockKernel()
     {
-        kernelSemaphore.request();
+        kernelSemaphore.request("ActivityManager::lockKernel", 0);
         // keep track of the last time this was granted.
         lastLockTime = SysThread::getMillisecondTicks();
     }
@@ -92,7 +92,7 @@ public:
         currentActivity = OREF_NULL;
         sentinel = true;
         // now release the semaphore
-        kernelSemaphore.release();
+        kernelSemaphore.release("ActivityManager::unlockKernel", 0);
     }
 
     static void releaseAccess();
@@ -173,9 +173,9 @@ public:
         terminationSem.post();              /* let anyone who cares know we're done*/
     }
 
-    static inline void waitForTermination()
+    static inline void waitForTermination(const char *ds, int di)
     {
-        terminationSem.wait();              // wait until this is posted
+        terminationSem.wait(ds, di);              // wait until this is posted
     }
 
 protected:
@@ -359,22 +359,24 @@ protected:
 class SafeLock
 {
 public:
-    inline SafeLock(SysMutex &l) : lock(l)
+    inline SafeLock(SysMutex &l, const char *ds, int di) : lock(l), my_ds(ds), my_di(di)
     {
         // make sure we grab the target semaphore first, then
         // the kernel semaphore.
         UnsafeBlock releaser;
-        lock.request();
+        lock.request(my_ds, my_di);
     }
 
 
     inline ~SafeLock()
     {
-        lock.release();
+        lock.release(my_ds, my_di);
     }
 
 protected:
      SysMutex &lock;
+     const char *my_ds;
+     int my_di;
 };
 
 

@@ -78,10 +78,10 @@ bool ActivityManager::processTerminating = false;
 size_t ActivityManager::interpreterInstances = 0;
 
 // global lock for the interpreter
-SysMutex ActivityManager::kernelSemaphore;
+SysMutex ActivityManager::kernelSemaphore("ActivityManager::kernelSemaphore");
 
 // the termination complete semaphore
-SysSemaphore ActivityManager::terminationSem;
+SysSemaphore ActivityManager::terminationSem("ActivityManager::terminationSem");
 
 
 /**
@@ -132,7 +132,7 @@ void ActivityManager::liveGeneral(MarkReason reason)
  */
 void ActivityManager::addWaitingActivity(Activity *waitingAct, bool release )
 {
-    DispatchSection lock;                // need the dispatch queue lock
+    DispatchSection lock("DispatchSection lock in ActivityManager::addWaitingActivity", 0);                // need the dispatch queue lock
 
     bool inWaitQueue = false;            // used to see if we're waiting for permission to request the kernel lock
 
@@ -257,7 +257,7 @@ void ActivityManager::addWaitingActivity(Activity *waitingAct, bool release )
  */
 void ActivityManager::addWaitingApiActivity(Activity *waitingAct)
 {
-    DispatchSection lock;                // need the dispatch queue lock
+    DispatchSection lock("DispatchSection lock in ActivityManager::addWaitingApiActivity", 0);                // need the dispatch queue lock
 
     waitingAccess++;                     // indicate that we are waiting for access
     waitingApiAccess++;                  // indicate that we are waiting on behalf of an API call.
@@ -341,7 +341,7 @@ bool ActivityManager::dispatchNext()
  */
 void ActivityManager::returnWaitingActivity(Activity *waitingAct)
 {
-    DispatchSection lock;                // need the dispatch queue lock
+    DispatchSection lock("DispatchSection lock in ActivityManager::returnWaitingActivity", 0);                // need the dispatch queue lock
 
     waitingAccess++;                     // this one is back
     // this could be waiting because it is an API call back.
@@ -373,7 +373,7 @@ void ActivityManager::createInterpreter()
  */
 void ActivityManager::terminateInterpreter()
 {
-    ResourceSection lock;
+    ResourceSection lock("ResourceSection lock in ActivityManager::terminateInterpreter", 0);
 
     // if this is the last interpreter instance, then shutdown
     // the entire environment.
@@ -495,7 +495,7 @@ NativeActivation *ActivityManager::newNativeActivation(Activity *activity)
  */
 Activity* ActivityManager::createNewActivity()
 {
-    ResourceSection lock;                // lock the control information
+    ResourceSection lock("ResourceSection lock in ActivityManager::createNewActivity", 0);                // lock the control information
     // we need to protect the new Activity from garbage collection while constructing.
     // unfortunately, we can't use ProtectedObject because that requires an
     // active activity, which we can't guarantee at this point.
@@ -537,7 +537,7 @@ Activity *ActivityManager::createCurrentActivity()
     // create an activity object without creating a new thread
     Activity *activity = new Activity(p, false);
     // we need the resource lock while doing this.
-    ResourceSection lock;
+    ResourceSection lock("ResourceSection lock in ActivityManager::createCurrentActivity", 0);
     // add this to the activity table and return
     allActivities->append(activity);
     return activity;
@@ -623,7 +623,7 @@ bool ActivityManager::poolActivity(Activity *activity)
  */
 bool ActivityManager::haltActivity(thread_id_t  thread_id, RexxString * description )
 {
-    ResourceSection lock;
+    ResourceSection lock("ResourceSection lock in ActivityManager::haltActivity", 0);
     // locate the activity associated with this thread_id.  If not found, return
     // a failure.
     Activity *activity = findActivity(thread_id);
@@ -645,7 +645,7 @@ bool ActivityManager::haltActivity(thread_id_t  thread_id, RexxString * descript
  */
 bool ActivityManager::setActivityTrace(thread_id_t thread_id, bool  on_or_off )
 {
-    ResourceSection lock;
+    ResourceSection lock("ActivityManager::setActivityTrace", 0);
     // locate the activity associated with this thread_id.  If not found, return
     // a failure.
     Activity *activity = findActivity(thread_id);
@@ -680,7 +680,7 @@ void ActivityManager::yieldCurrentActivity()
 Activity *ActivityManager::findActivity(thread_id_t threadId)
 {
     // this is a critical section
-    ResourceSection lock;
+    ResourceSection lock("ResourceSection lock in ActivityManager::findActivity", 0);
 
     // NB:  New activities are pushed on to the end, so it's prudent to search
     // from the list end toward the front of the list.  Also, this ensures we
@@ -725,7 +725,7 @@ void ActivityManager::exit(int retcode)
  */
 void ActivityManager::releaseAccess()
 {
-    DispatchSection lock;                // need the dispatch queue lock
+    DispatchSection lock("DispatchSection lock in ActivityManager::releaseAccess", 0);                // need the dispatch queue lock
 
     // since we're releasing the semaphore, give any queued activities a nudge
     // forward in the request process.
@@ -772,7 +772,7 @@ bool ActivityManager::lockKernelImmediate()
     // dispatch queue
     if (!hasWaiters())
     {
-        return kernelSemaphore.requestImmediate();
+        return kernelSemaphore.requestImmediate("ActivityManager::lockKernelImmediate", 0);
     }
     return false;
 }
@@ -788,7 +788,7 @@ void ActivityManager::returnActivity(Activity *activityObject)
 {
     // START OF CRITICAL SECTION
     {
-        ResourceSection lock;
+        ResourceSection lock("ResourceSection lock in ActivityManager::returnActivity", 0);
         // remove this from the activte list
         allActivities->removeItem(activityObject);
         // if we ended up pushing an old activity down when we attached this
@@ -830,7 +830,7 @@ void ActivityManager::activityEnded(Activity *activityObject)
 {
     // START OF CRITICAL SECTION
     {
-        ResourceSection lock;       // this is a critical section
+        ResourceSection lock("ResourceSection lock in ActivityManager::activityEnded", 0);       // this is a critical section
         // and also remove from the global list
         allActivities->removeItem(activityObject);
         // cleanup any system resources this activity might own
@@ -896,7 +896,7 @@ void ActivityManager::returnRootActivity(Activity *activity)
     // make sure we release any system resources used by this activity, such as the semaphores
     activity->cleanupActivityResources();
 
-    ResourceSection lock;                // need the control block locks
+    ResourceSection lock("ResourceSection lock in ActivityManager::returnRootActivity", 0);                // need the control block locks
     // remove this from the activity list so it will never get
     // picked up again.
     allActivities->removeItem(activity);
@@ -963,7 +963,7 @@ Activity *ActivityManager::attachThread()
     // try the fast version first
     if (!lockKernelImmediate())
     {
-        DispatchSection lock;                // need the dispatch queue lock
+        DispatchSection lock("DispatchSection lock in ActivityManager::attachThread", 0);                // need the dispatch queue lock
 
         waitingAttaches++;                   // make sure we indicate that someone is waiting for this
         sentinel = true;
@@ -1007,7 +1007,7 @@ Activity *ActivityManager::attachThread()
  */
 void ActivityManager::suspendDispatch(Activity *activity)
 {
-    DispatchSection lock;                // need the dispatch queue lock
+    DispatchSection lock("DispatchSection lock in ActivityManager::suspendDispatch", 0);                // need the dispatch queue lock
 
     // decrement the waiting counter until this is returned to the queue
     waitingAccess--;

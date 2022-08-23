@@ -72,10 +72,10 @@ public:
     static void processStartup();
     static void processShutdown();
 
-    static inline void getResourceLock() { resourceLock.request(); }
-    static inline void releaseResourceLock() { resourceLock.release(); }
-    static inline void getDispatchLock() { dispatchLock.request(); }
-    static inline void releaseDispatchLock() { dispatchLock.release(); }
+    static inline void getResourceLock(const char *ds, int di) { resourceLock.request(ds, di); }
+    static inline void releaseResourceLock(const char *ds, int di) { resourceLock.release(ds, di); }
+    static inline void getDispatchLock(const char *ds, int di) { dispatchLock.request(ds, di); }
+    static inline void releaseDispatchLock(const char *ds, int di) { dispatchLock.release(ds, di); }
     static inline void createLocks()
     {
         // these are critical-time locks, which involves special processing on Windows
@@ -151,9 +151,9 @@ protected:
 class ResourceSection
 {
 public:
-    inline ResourceSection()
+    inline ResourceSection(const char *ds, int di) : my_ds(ds), my_di(di)
     {
-        Interpreter::getResourceLock();
+        Interpreter::getResourceLock(my_ds, my_di);
         terminated = false;
     }
 
@@ -161,7 +161,7 @@ public:
     {
         if (!terminated)
         {
-            Interpreter::releaseResourceLock();
+            Interpreter::releaseResourceLock(my_ds, my_di);
         }
     }
 
@@ -169,7 +169,7 @@ public:
     {
         if (!terminated)
         {
-            Interpreter::releaseResourceLock();
+            Interpreter::releaseResourceLock(my_ds, my_di);
             terminated = true;
         }
     }
@@ -179,7 +179,7 @@ public:
     {
         if (terminated)
         {
-            Interpreter::getResourceLock();
+            Interpreter::getResourceLock(my_ds, my_di);
             terminated = false;
         }
     }
@@ -187,6 +187,8 @@ public:
 private:
 
     bool terminated;       // we can release these as needed
+    const char *my_ds;
+    int my_di;
 };
 
 
@@ -196,9 +198,9 @@ private:
 class DispatchSection
 {
 public:
-    inline DispatchSection()
+    inline DispatchSection(const char *ds, int di) : my_ds(ds), my_di(di)
     {
-        Interpreter::getDispatchLock();
+        Interpreter::getDispatchLock(my_ds, my_di);
         terminated = false;
     }
 
@@ -206,7 +208,7 @@ public:
     {
         if (!terminated)
         {
-            Interpreter::releaseDispatchLock();
+            Interpreter::releaseDispatchLock(my_ds, my_di);
         }
     }
 
@@ -214,7 +216,7 @@ public:
     {
         if (!terminated)
         {
-            Interpreter::releaseDispatchLock();
+            Interpreter::releaseDispatchLock(my_ds, my_di);
             terminated = true;
         }
     }
@@ -224,7 +226,7 @@ public:
     {
         if (terminated)
         {
-            Interpreter::getDispatchLock();
+            Interpreter::getDispatchLock(my_ds, my_di);
             terminated = false;
         }
     }
@@ -232,6 +234,8 @@ public:
 private:
 
     bool terminated;       // we can release these as needed
+    const char *my_ds;
+    int my_di;
 };
 
 

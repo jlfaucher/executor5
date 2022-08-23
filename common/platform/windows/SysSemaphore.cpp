@@ -53,8 +53,9 @@ DWORD SysSemaphore::tlsNoMessageLoopIndex = TLS_OUT_OF_INDEXES;
  *
  * @param create Indicates whether the semaphore should be created now.
  */
-SysSemaphore::SysSemaphore(bool createSem)
+SysSemaphore::SysSemaphore(const char *variable, bool createSem)
 {
+    semVariable = variable;
     sem = 0;
     if (createSem)
     {
@@ -96,8 +97,9 @@ void SysSemaphore::close()
  * @param createSem
  * @param critical  Critical indicates the most efficient dispatching mechanism should be use.
  */
-SysMutex::SysMutex(bool createSem, bool critical)
+SysMutex::SysMutex(const char *variable, bool createSem, bool critical)
 {
+    mutexVariable = variable;
     mutexMutex = 0;
     bypassMessageLoop = critical;
     if (createSem)

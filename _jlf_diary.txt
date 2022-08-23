@@ -4,6 +4,45 @@ Hence the creation of a new Github repository Executor5...
 
 
 ===============================================================================
+2022 aug 13
+
+Concurrency trace:
+
+Apply to executor5 the changes made in executor4 to display trace informations
+related to SysSemaphore and SysMutex.
+The code is compiled only in debug mode, the trace infos are sent to stderr
+when the environment variable RXTRACE_CONCURRENCY=on.
+
+A new method SysProcess::concurrencyTrace is used to test if the display is
+activated. The old method InterpreterInstance::concurrencyTrace is still there
+but should be removed.
+
+The column T has alway a value.
+It's either the thread of the current activity, or the current system thread.
+The other columns can be empty.
+
+The script tracer.rex has been adapted to support an empty R or A.
+
+Example of output (simplified):
+RXTRACE_CONCURRENCY=on rexx -e "nop"
+...<cut>...
+       T1                              ...... ... (SysMutex)Interpreter::dispatchLock.release : before pthread_mutex_unlock(0x357e470) from DispatchSection lock in ActivityManager::releaseAccess (0x0)
+       T1                              ...... ... (SysMutex)Interpreter::dispatchLock.release : after pthread_mutex_unlock(0x357e470) from DispatchSection lock in ActivityManager::releaseAccess (0x0)
+R2     T1     A7                            1 *-* nop
+       T1                              ...... ... (SysMutex)ActivityManager::kernelSemaphore.requestImmediate : before pthread_mutex_trylock(0x357ccf8) from ActivityManager::lockKernelImmediate (0x0)
+       T1                              ...... ... (SysMutex)ActivityManager::kernelSemaphore.requestImmediate : after pthread_mutex_trylock(0x357ccf8) from ActivityManager::lockKernelImmediate (0x0)
+R2     T1     A8       V4              ...... ... (SysMutex)Interpreter::dispatchLock.release : before pthread_mutex_unlock(0x357e470) from DispatchSection lock in Activity::setupCurrentActivity (0x0)
+R2     T1     A8       V4              ...... ... (SysMutex)Interpreter::dispatchLock.release : after pthread_mutex_unlock(0x357e470) from DispatchSection lock in Activity::setupCurrentActivity (0x0)
+...<cut>...
+
+
+It's possible to have lines like that:
+    *** traceMutexPtr is NULL:...<cut>...
+It's an indication that some traces are displayed before the pointer to the trace
+function is set (rely on the initialization of static variables).
+
+
+===============================================================================
 2021 aug 31
 
 Concurrency trace:

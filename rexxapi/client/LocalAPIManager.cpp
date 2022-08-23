@@ -46,7 +46,7 @@
 
 // initialize static variables
 LocalAPIManager* LocalAPIManager::singleInstance = NULL;
-SysMutex LocalAPIManager::messageLock(true, true);
+SysMutex LocalAPIManager::messageLock("LocalAPIManager::messageLock", true, true);
 
 /**
  * Get the singleton instance of the local API manager.
@@ -55,7 +55,7 @@ SysMutex LocalAPIManager::messageLock(true, true);
  */
 LocalAPIManager *LocalAPIManager::getInstance()
 {
-    Lock lock(messageLock);                     // make sure we single thread this
+    Lock lock(messageLock, "Lock lock in LocalAPIManager::getInstance", 0);                     // make sure we single thread this
     if (singleInstance == NULL)
     {
         // create an intialize this.  If this fails, an exception is thrown
@@ -83,7 +83,7 @@ LocalAPIManager *LocalAPIManager::getInstance()
  */
 void LocalAPIManager::shutdownInstance()
 {
-    Lock lock(messageLock);                     // make sure we single thread this
+    Lock lock(messageLock, "Lock lock in LocalAPIManager::shutdownInstance", 0);                     // make sure we single thread this
     if (singleInstance != NULL)
     {
         // shutdown any connections with the server
@@ -285,7 +285,7 @@ void LocalAPIManager::establishServerConnection()
 ApiConnection *LocalAPIManager::getConnection()
 {
     {
-        Lock lock(messageLock);                     // make sure we single thread this
+        Lock lock(messageLock, "Lock lock in LocalAPIManager::getConnection", 0);                     // make sure we single thread this
         // if we have an active connection, grab it from the cache and
         // reuse it.
         if (!connections.empty())
@@ -316,7 +316,7 @@ void LocalAPIManager::returnConnection(ApiConnection *connection)
     }
 
     {
-        Lock lock(messageLock);                     // make sure we single thread this
+        Lock lock(messageLock, "Lock lock in LocalAPIManager::returnConnection", 0);                     // make sure we single thread this
         if (connections.size() < MAX_CONNECTIONS)
         {
             connections.push_back(connection);

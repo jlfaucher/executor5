@@ -46,7 +46,7 @@
 class ServerRegistrationManager
 {
 public:
-    ServerRegistrationManager() : functions(), exits(), commandHandlers(), lock() { lock.create(true); }
+    ServerRegistrationManager() : functions(), exits(), commandHandlers(), lock("ServerRegistrationManager::lock") { lock.create(true); }
     void terminateServer();
     // It will remove all the registration entries for a specific process
     void freeProcessRegistrations(SessionID session);

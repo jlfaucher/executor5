@@ -44,6 +44,7 @@
 
 #include "windows.h"
 #include "SysProcess.hpp"
+#include "Utilities.hpp" // for Utilities::strCaselessCompare
 
 
 // full path of the currently running executable
@@ -141,4 +142,29 @@ const char *SysProcess::getLibraryLocation()
 void SysProcess::beep(int frequency, int duration)
 {
     Beep((DWORD)frequency, (DWORD)duration);
+}
+
+
+// This indicator is used to control the display of additional informations in the trace output for concurrency.
+static bool CONCURRENCY_TRACE = false;
+
+bool SysProcess::concurrencyTrace()
+{
+    // I don't put this part of code in SystemInterpreter::setupProgram
+    // where RXTRACE is managed, because would be initialized too late :
+    // Some mutexes/semaphores have been already used before calling setupProgram.
+    static bool firstcall = true;
+    if (firstcall)
+    {
+        firstcall = false;
+        TCHAR rxTraceBuf[8];
+        if (GetEnvironmentVariable("RXTRACE_CONCURRENCY", rxTraceBuf, 8))
+        {
+            if (Utilities::strCaselessCompare(rxTraceBuf, "ON") == 0)    /* request to turn on?               */
+            {
+                CONCURRENCY_TRACE = true;
+            }
+        }
+    }
+    return CONCURRENCY_TRACE;
 }

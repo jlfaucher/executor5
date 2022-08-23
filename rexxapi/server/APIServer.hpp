@@ -52,7 +52,7 @@ class APIServerThread;
 class APIServer
 {
 public:
-    APIServer() : lock(), connectionManager(NULL), serverActive(false), instances(NULL), terminatedThreads() { }
+    APIServer() : lock("APIServer::lock"), connectionManager(NULL), serverActive(false), instances(NULL), terminatedThreads() { }
     virtual ~APIServer() { ; }
 
     void terminateServer();

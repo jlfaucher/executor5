@@ -103,7 +103,7 @@ class Activity : public RexxInternalObject
     void *operator new(size_t);
     inline void  operator delete(void *) { ; }
 
-    inline Activity(RESTORETYPE restoreType) { ; };
+    inline Activity(RESTORETYPE restoreType) : runSem("RexxActivity::runsem"), guardSem("RexxActivity::guardsem") { ; };
     Activity(GlobalProtectedObject &, bool);
 
     void live(size_t) override;
@@ -268,7 +268,7 @@ class Activity : public RexxInternalObject
         // we wait for a small interval, then post the semaphore
         // ourselves if we time out so the dispatcher knows we're no longer
         // waiting.
-        if (!runSem.wait(MaxDispatchWait))
+        if (!runSem.wait(MaxDispatchWait, "runsem", 0))
         {
             // our return indicates we timed out and are still in the wait queue
             timedOut = true;
@@ -278,9 +278,9 @@ class Activity : public RexxInternalObject
         return timedOut;
     }
 
-    inline void        waitForRunPermission() { waitingOnSemaphore = true; runSem.wait(); waitingOnSemaphore = false; }
+    inline void        waitForRunPermission() { waitingOnSemaphore = true; runSem.wait("runsem", 0); waitingOnSemaphore = false; }
     inline bool        hasRunPermission() { return dispatchPosted; }
-    inline void        waitForGuardPermission() { waitingOnSemaphore = true; guardSem.wait(); waitingOnSemaphore = false; }
+    inline void        waitForGuardPermission() { waitingOnSemaphore = true; guardSem.wait("guardsem", 0); waitingOnSemaphore = false; }
            void        waitForKernel();
 
     inline RexxActivation *getCurrentRexxFrame() {return currentRexxFrame;}

@@ -91,18 +91,18 @@ class DataQueue
 {
     friend class QueueTable;
 public:
-    DataQueue()
+    DataQueue() : waitSem("DataQueue::waitSem")
     {
         init();      // do common initilization
     }
 
-    DataQueue(SessionID s)
+    DataQueue(SessionID s) : waitSem("DataQueue::waitSem")
     {
         init();      // do common initilization
         session = s;
     }
 
-    DataQueue(const char *name)
+    DataQueue(const char *name) : waitSem("DataQueue::waitSem")
     {
         init();      // do common initilization
         setName(name);
@@ -143,7 +143,7 @@ public:
 
     inline void waitForData()
     {
-        waitSem.wait();
+        waitSem.wait("DataQueue::waitForData", 0);
     }
 
     inline bool hasWaiters()
@@ -241,7 +241,7 @@ class ServerQueueManager
     friend class DataQueue;     // needs access to the instance lock
     friend class QueueTable;    // needs access to the instance lock
 public:
-    ServerQueueManager() : namedQueues(), sessionQueues(), lock() { lock.create(true); }
+    ServerQueueManager() : namedQueues(), sessionQueues(), lock("ServerQueueManager::lock") { lock.create(true); }
 
     void terminateServer();
     void addToSessionQueue(ServiceMessage &message);

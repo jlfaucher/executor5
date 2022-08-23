@@ -75,7 +75,7 @@ void* MutexSemaphoreClass::operator new(size_t size)
 /**
  * Default constructor for the MutexSemaphore
  */
-MutexSemaphoreClass::MutexSemaphoreClass()
+MutexSemaphoreClass::MutexSemaphoreClass() : semaphore("MutexSemaphoreClass::semaphoe")
 {
     // initialize the semaphore
     semaphore.create();
@@ -158,7 +158,7 @@ void MutexSemaphoreClass::handleNesting()
  * @return true if this was successfully acquired,
  *         false if we timed out.
  */
-RexxObject* MutexSemaphoreClass::request(RexxObject *t)
+RexxObject* MutexSemaphoreClass::request(RexxObject *t, const char *ds, int di)
 {
     wholenumber_t timeout;
 
@@ -199,17 +199,17 @@ RexxObject* MutexSemaphoreClass::request(RexxObject *t)
     if (timeout < 0)
     {
         UnsafeBlock releaser;
-        acquired = semaphore.request();
+        acquired = semaphore.request(ds, di);
     }
     else if (timeout == 0)
     {
-        acquired = semaphore.requestImmediate();
+        acquired = semaphore.requestImmediate(ds, di);
     }
     else
     {
         UnsafeBlock releaser;
 
-        acquired = semaphore.request((uint32_t)timeout);
+        acquired = semaphore.request((uint32_t)timeout, ds, di);
     }
 
     // only do the nesting thing if we got the lock
@@ -227,7 +227,7 @@ RexxObject* MutexSemaphoreClass::request(RexxObject *t)
  *
  * @return true if this was successfully released, false if we were not the semaphore owners.
  */
-RexxObject* MutexSemaphoreClass::release()
+RexxObject* MutexSemaphoreClass::release(const char *ds, int di)
 {
     // don't even attempt this if this isn't held.
     if (nestCount == 0)
@@ -236,7 +236,7 @@ RexxObject* MutexSemaphoreClass::release()
     }
 
     // if this thread really owns this mutex, this will succeed
-    bool released = semaphore.release();
+    bool released = semaphore.release(ds, di);
     if (released)
     {
         nestCount--;
@@ -253,11 +253,11 @@ RexxObject* MutexSemaphoreClass::release()
 /**
  * Force this semaphore to release all of it's locks on thread termination.
  */
-void MutexSemaphoreClass::forceLockRelease()
+void MutexSemaphoreClass::forceLockRelease(const char *ds, int di)
 {
     while (nestCount > 0)
     {
-        semaphore.release();
+        semaphore.release(ds, di);
         nestCount--;
     }
 }

@@ -51,14 +51,14 @@ class MutexSemaphoreClass : public RexxObject
      inline void  operator delete(void *) {; }
 
      MutexSemaphoreClass();
-     inline MutexSemaphoreClass(RESTORETYPE restoreType) {;}
+     inline MutexSemaphoreClass(RESTORETYPE restoreType) : semaphore("MutexSemaphoreClass::semaphoe") {;}
 
      RexxObject* newRexx(RexxObject **args, size_t argc);
 
      RexxObject *close();
-     RexxObject *request(RexxObject *timeOut);
-     RexxObject *release();
-     void forceLockRelease();
+     RexxObject *request(RexxObject *timeOut, const char *ds, int di);
+     RexxObject *release(const char *ds, int di);
+     void forceLockRelease(const char *ds, int di);
 
      static void createInstance();
 

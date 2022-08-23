@@ -47,6 +47,7 @@
 
 #include "rexx.h"
 #include "SysThread.hpp"
+#include "Utilities.hpp"
 
 #include <stdlib.h>
 
@@ -56,21 +57,33 @@ inline bool waitHandle(HANDLE s, uint32_t timeout, bool noMessageLoop);
 class SysSemaphore
 {
  public:
-     SysSemaphore() : sem(0) {; }
-     SysSemaphore(bool create);
+     SysSemaphore(const char *variable) : sem(0), semVariable(variable) {; }
+     SysSemaphore(const char *variable, bool create);
      ~SysSemaphore() { close(); }
      void create();
      inline void open() {; }
      void close();
      void post() { SetEvent(sem); };
-     inline void wait()
+     inline void wait(const char *ds, int di)
      {
+#ifdef CONCURRENCY_DEBUG
+        Utilities::traceSemaphore("...... ... (SysSemaphore)%s.wait : before waitHandle(0x%x) from %s (0x%x)\n", semVariable, sem, ds, di);
+#endif
          waitHandle(sem, SysSemaphore::noMessageLoop());
+#ifdef CONCURRENCY_DEBUG
+        Utilities::traceSemaphore("...... ... (SysSemaphore)%s.wait : after pthread_cond_wait(0x%x) from %s (0x%x)\n", semVariable, sem, ds, di);
+#endif
      }
 
-     inline bool wait(uint32_t timeout)
+     inline bool wait(uint32_t timeout, const char *ds, int di)
      {
+#ifdef CONCURRENCY_DEBUG
+        Utilities::traceSemaphore("...... ... (SysSemaphore)%s.wait : before waitHandle(0x%x, %zu) from %s (0x%x)\n", semVariable, sem, (unsigned long)timeout, ds, di);
+#endif
          return waitHandle(sem, timeout, SysSemaphore::noMessageLoop());
+#ifdef CONCURRENCY_DEBUG
+        Utilities::traceSemaphore("...... ... (SysSemaphore)%s.wait : after pthread_cond_wait(0x%x, %zu) from %s (0x%x)\n", semVariable, sem, (unsigned long)timeout, ds, di);
+#endif
      }
 
      inline void reset() { ResetEvent(sem); }
@@ -91,12 +104,15 @@ class SysSemaphore
      static inline void setNoMessageLoop() { TlsSetValue(tlsNoMessageLoopIndex, (LPVOID)1); }
      static inline bool noMessageLoop() { return usingTls && ((DWORD_PTR)TlsGetValue(tlsNoMessageLoopIndex) == 1); }
 
+     inline void setSemVariable(const char *variable) { semVariable = variable; } // See RexxActivity::RexxActivity, must reassign, so public setter needed.
+
  protected:
      HANDLE sem;
 
  private:
      static bool usingTls;
      static DWORD tlsNoMessageLoopIndex;
+     const char *semVariable;
 
 };
 
@@ -104,48 +120,77 @@ class SysSemaphore
 class SysMutex
 {
  public:
-     SysMutex() : mutexMutex(0), bypassMessageLoop(false) { }
-     SysMutex(bool create, bool critical);
+     SysMutex(const char *variable) : mutexMutex(0), bypassMessageLoop(false), mutexVariable(variable) { }
+     SysMutex(const char *variable, bool create, bool critical);
      ~SysMutex() {; }
      void create(bool critical = false);
      void close();
-     inline bool request()
+     inline bool request(const char *ds, int di)
      {
          if (mutexMutex == 0)
          {
              return false;
          }
 
-         return waitHandle(mutexMutex, bypassMessageLoop || SysSemaphore::noMessageLoop());
+#ifdef CONCURRENCY_DEBUG
+         Utilities::traceMutex("...... ... (SysMutex)%s.request : before waitHandle(0x%x) from %s (0x%x)\n", mutexVariable, &mutexMutex, ds, di);
+#endif
+         bool result = waitHandle(mutexMutex, bypassMessageLoop || SysSemaphore::noMessageLoop());
+#ifdef CONCURRENCY_DEBUG
+         Utilities::traceMutex("...... ... (SysMutex)%s.request : after waitHandle(0x%x) from %s (0x%x)\n", mutexVariable, &mutexMutex, ds, di);
+#endif
+         return result;
      }
 
-     inline bool request(uint32_t timeout)
+     inline bool request(uint32_t timeout, const char *ds, int di)
      {
          if (mutexMutex == 0)
          {
              return false;
          }
 
-         return waitHandle(mutexMutex, timeout, bypassMessageLoop || SysSemaphore::noMessageLoop());
+#ifdef CONCURRENCY_DEBUG
+         Utilities::traceMutex("...... ... (SysMutex)%s.request : before waitHandle(0x%x, %zu) from %s (0x%x)\n", mutexVariable, &mutexMutex, (unsigned long)timeout, ds, di);
+#endif
+         bool result = waitHandle(mutexMutex, timeout, bypassMessageLoop || SysSemaphore::noMessageLoop());
+#ifdef CONCURRENCY_DEBUG
+         Utilities::traceMutex("...... ... (SysMutex)%s.request : after waitHandle(0x%x, %zu) from %s (0x%x)\n", mutexVariable, &mutexMutex, (unsigned long)timeout, ds, di);
+#endif
+         return result;
      }
 
-     inline bool release()
+     inline bool release(const char *ds, int di)
      {
          if (mutexMutex != 0)
          {
-             return ReleaseMutex(mutexMutex) != 0;
+#ifdef CONCURRENCY_DEBUG
+             Utilities::traceMutex("...... ... (SysMutex)%s.release : before ReleaseMutex(0x%x) from %s (0x%x)\n", mutexVariable, &mutexMutex, ds, di);
+#endif
+             bool result = ReleaseMutex(mutexMutex) != 0;
+#ifdef CONCURRENCY_DEBUG
+             Utilities::traceMutex("...... ... (SysMutex)%s.release : after ReleaseMutex(0x%x) from %s (0x%x)\n", mutexVariable, &mutexMutex, ds, di);
+#endif
+             return result;
          }
          return false;
      }
 
-     inline bool requestImmediate()
+     inline bool requestImmediate(const char *ds, int di)
      {
-         return WaitForSingleObject(mutexMutex, 0) != WAIT_TIMEOUT;
+#ifdef CONCURRENCY_DEBUG
+         Utilities::traceMutex("...... ... (SysMutex)%s.requestImmediate : before WaitForSingleObject(0x%x) from %s (0x%x)\n", mutexVariable, &mutexMutex, ds, di);
+#endif
+         bool result = WaitForSingleObject(mutexMutex, 0) != WAIT_TIMEOUT;
+#ifdef CONCURRENCY_DEBUG
+         Utilities::traceMutex("...... ... (SysMutex)%s.requestImmediate : after WaitForSingleObject(0x%x) from %s (0x%x)\n", mutexVariable, &mutexMutex, ds, di);
+#endif
+         return result;
      }
 
  protected:
      HANDLE mutexMutex;              // the actual mutex
      bool bypassMessageLoop;         // a force off for the message loop
+     const char *mutexVariable;
 };
 
 

@@ -41,6 +41,11 @@
 #define Included_Utilities
 
 #include <sys/types.h>
+#include <stdarg.h>
+
+// A pointer to these functions will be passed during the initialization of the interpreter.
+typedef void (*TraceSemaphorePtr) (const char *format, va_list argptr);
+typedef void (*TraceMutexPtr) (const char *format, va_list argptr);
 
 class Utilities
 {
@@ -57,6 +62,14 @@ public:
     static void strlower(char *str);
     static const char *strnchr(const char *, size_t n, char ch);
     static const char *locateCharacter(const char *s, const char *set, size_t l);
+
+    // For trace of semaphores
+    static void SetTraceSemaphorePtr(TraceSemaphorePtr ptr);
+    static void traceSemaphore(const char *format, ...);
+
+    // for trace of mutexes
+    static void SetTraceMutexPtr(TraceMutexPtr ptr);
+    static void traceMutex(const char *format, ...);
 };
 
 

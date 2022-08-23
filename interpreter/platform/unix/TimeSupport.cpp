@@ -113,7 +113,7 @@ int64_t SystemInterpreter::getNanosecondTicks()
 
 RexxMethod2(int, alarm_startTimer, wholenumber_t, numdays, wholenumber_t, alarmtime)
 {
-    SysSemaphore sem(true);              /* Event-semaphore                   */
+    SysSemaphore sem("sem in method alarm_startTimer", true);              /* Event-semaphore                   */
     int  msecInADay = 86400000;          /* number of milliseconds in a day   */
 
     /* set the state variables           */
@@ -125,7 +125,7 @@ RexxMethod2(int, alarm_startTimer, wholenumber_t, numdays, wholenumber_t, alarmt
         // use the semaphore to wait for an entire day.
         // if this returns true, then this was not a timeout, which
         // probably means this was cancelled.
-        if (sem.wait(msecInADay))
+        if (sem.wait(msecInADay, "method alarm_startTimer", 1))
         {
             /* Check if the alarm is canceled. */
             RexxObjectPtr cancelObj = context->GetObjectVariable("CANCELED");
@@ -143,7 +143,7 @@ RexxMethod2(int, alarm_startTimer, wholenumber_t, numdays, wholenumber_t, alarmt
     }
 
     // now we can just wait for the alarm time to expire
-    sem.wait(alarmtime);
+    sem.wait(alarmtime, "method alarm_startTimer", 2);
     return 0;
 }
 
@@ -173,7 +173,7 @@ RexxMethod1(int, alarm_stopTimer, POINTER, eventSemHandle)
  */
 RexxMethod0(int, ticker_createTimer)
 {
-    SysSemaphore *sem = new SysSemaphore(true);
+    SysSemaphore *sem = new SysSemaphore("sem in method ticker_createTimer", true);
 
     // set this as state variables
     context->SetObjectVariable("EVENTSEMHANDLE", context->NewPointer(sem));
@@ -194,7 +194,7 @@ RexxMethod3(int, ticker_waitTimer, POINTER, eventSemHandle, wholenumber_t, numda
         // use the semaphore to wait for an entire day.
         // if this returns true, then this was not a timeout, which
         // probably means this was cancelled.
-        if (sem->wait(msecInADay))
+        if (sem->wait(msecInADay, "method ticker_createTimer", 0))
         {
             /* Check if the alarm is canceled. */
             RexxObjectPtr cancelObj = context->GetObjectVariable("CANCELED");
@@ -215,7 +215,7 @@ RexxMethod3(int, ticker_waitTimer, POINTER, eventSemHandle, wholenumber_t, numda
     }
 
     // now we can just wait for the alarm time to expire
-    if (sem->wait(alarmtime))
+    if (sem->wait(alarmtime, "method ticker_createTimer", 0))
     {
         // this was not a timeout, so most probably it was cancelled
         if (context->GetObjectVariable("CANCELED") == context->True())

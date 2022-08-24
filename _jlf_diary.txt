@@ -485,6 +485,7 @@ Please reclone the repository from scratch.
 ===============================================================================
 History of merges.
 
+rev 12506
 rev 12500
 rev 12486
 rev 12286

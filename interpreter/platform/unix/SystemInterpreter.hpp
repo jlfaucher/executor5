@@ -51,19 +51,13 @@
 
 #include "RexxCore.h"
 
-#if defined( HAVE_SIGNAL_H )
 # include <signal.h>
-#endif
-
 #if defined( HAVE_SYS_SIGNAL_H )
 # include <sys/signal.h>
 #endif
 
-#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
-#else
 #include <time.h>
-#endif
 
 
 class InterpreterInstance;

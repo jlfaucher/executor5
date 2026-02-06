@@ -39,10 +39,7 @@
 # include "config.h"
 #endif
 
-#ifdef HAVE_PWD_H
 # include <pwd.h>
-#endif
-
 #include <unistd.h>
 #include "RexxCore.h"
 #include "StringClass.hpp"

@@ -38,14 +38,7 @@
 #/*----------------------------------------------------------------------------*/
 #/* Global settings                                                            */
 #/*----------------------------------------------------------------------------*/
-if (APPLE)
-# apple build with lower cmake version have an @rpath problem
-    cmake_minimum_required (VERSION 3.12)
-else()
-#for other platforms
-    cmake_minimum_required (VERSION 2.8.12)
-endif()
-cmake_policy(VERSION 2.8...3.3)
+cmake_minimum_required (VERSION 2.8.12...99.99)
 
 #/*----------------------------------------------------------------------------*/
 #/* Project settings                                                           */
@@ -107,6 +100,4 @@ target_include_directories(rexxinstance PUBLIC
             ${build_api_platform_dir})
 # Extra link library definitions
 target_link_libraries(rexxinstance orxexits rexx rexxapi)
-
-
 

@@ -45,14 +45,8 @@
 # include "config.h"
 #endif
 
-#ifdef HAVE_PWD_H
 # include <pwd.h>
-#endif
-
-#ifdef HAVE_DLFCN_H
 # include <dlfcn.h>
-#endif
-
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -151,6 +145,7 @@ const char* SysProcess::getExecutableFullPath()
     }
 #elif defined HAVE_KERN_PROC_ARGV
     // OpenBSD
+    // https://github.com/ziglang/zig/issues/6718#issuecomment-711134120
     // no means to retrieve the executable path, need to resort to argv[0]
     int mib[4] = {CTL_KERN, KERN_PROC_ARGS, getpid(), KERN_PROC_ARGV};
     size_t len;

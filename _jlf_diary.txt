@@ -17,7 +17,7 @@ A new method SysProcess::concurrencyTrace is used to test if the display is
 activated. The old method InterpreterInstance::concurrencyTrace is still there
 but should be removed.
 
-The column T has alway a value.
+The column T has always a value.
 It's either the thread of the current activity, or the current system thread.
 The other columns can be empty.
 

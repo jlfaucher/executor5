@@ -3094,26 +3094,35 @@ SecurityManager *Activity::getInstanceSecurityManager()
 #define CONCURRENCY_BUFFER_SIZE 100 // Must be enough to support CONCURRENCY_TRACE
 
 /*
-"R1     T1     A2       V1           1* "
-"R99999 T99999 A9999999 V9999999 99999* "
+Initial settings (no longer used)
+ 5      5      7        7       5
+R1     T1     A2       V1           1*
+R99999 T99999 A9999999 V9999999 99999*
+*/
+
+/*
+Compatibility with tracer (Executor format)
+ 3    5      5     2
+T1   A2     V1      1*
+T999 A99999 V99999 99*
 */
 
 // global format (not used, the components formats are used)
-#define CONCURRENCY_TRACE               "R%-5u T%-5u A%-7u V%-7u %5hu%c "
+#define CONCURRENCY_TRACE               "R%-4u T%-4u A%-6u V%-6u %2hu%c "
 
 #define CONCURRENCY_TRACE_INTERPRETER       "R%-5u "
 #define CONCURRENCY_TRACE_NO_INTERPRETER    " %5s "
 
-#define CONCURRENCY_TRACE_THREAD            "T%-5u "
+#define CONCURRENCY_TRACE_THREAD            "T%-3u "
 
-#define CONCURRENCY_TRACE_ACTIVATION        "A%-7u "
-#define CONCURRENCY_TRACE_NO_ACTIVATION     " %7s "
+#define CONCURRENCY_TRACE_ACTIVATION        "A%-5u "
+#define CONCURRENCY_TRACE_NO_ACTIVATION     " %5s "
 
-#define CONCURRENCY_TRACE_VARIABLED         "V%-7u "
-#define CONCURRENCY_TRACE_NO_VARIABLED      " %7s "
+#define CONCURRENCY_TRACE_VARIABLED         "V%-5u "
+#define CONCURRENCY_TRACE_NO_VARIABLED      " %5s "
 
-#define CONCURRENCY_TRACE_RESERVEC          "%5hu"
-#define CONCURRENCY_TRACE_NO_RESERVEC       "%5s"
+#define CONCURRENCY_TRACE_RESERVEC          "%2hu"
+#define CONCURRENCY_TRACE_NO_RESERVEC       "%2s"
 
 #define CONCURRENCY_TRACE_LOCK              "%c "
 
@@ -3152,8 +3161,10 @@ bool FormatConcurrencyInfos(Activity *activity, RexxActivation *activation, char
     GetConcurrencyInfos(activity, activation, concurrencyInfos);
     int n =  0;
 
+#if 0
     if (concurrencyInfos.interpreter != 0) n += snprintf(buffer + n, bufferSize - 1 - n, CONCURRENCY_TRACE_INTERPRETER, concurrencyInfos.interpreter);
     else n += snprintf(buffer + n, bufferSize - 1 - n, CONCURRENCY_TRACE_NO_INTERPRETER, "");
+#endif
 
     n += snprintf(buffer + n, bufferSize - 1 - n, CONCURRENCY_TRACE_THREAD, concurrencyInfos.activity);
 
